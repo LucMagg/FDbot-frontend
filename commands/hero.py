@@ -30,18 +30,7 @@ class Hero(commands.Cog):
   async def hero_app_command(self, interaction: discord.Interaction, héros: str):
     Logger.command_log('hero', interaction)
     await self.wait_message.post(interaction)
-
-    hero = Hero.get_hero(héros)
-    if not 'error' in hero.keys():
-      if hero['pet'] is not None:
-        pet = Hero.get_pet(hero['pet'])
-      else:
-        pet = None
-      response = {'title': '', 'description': Hero.description(self, hero, pet), 'color': hero['color'], 'pic': hero['image_url']}
-    else:
-      description = f"{self.error_msg['description']['hero'][0]['text']} {héros} {self.error_msg['description']['hero'][1]['text']}"
-      response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
-
+    response = Hero.get_response(self, héros)
     await self.wait_message.update(interaction, response)
     Logger.ok_log('hero')
 
@@ -56,6 +45,19 @@ class Hero(commands.Cog):
   def get_talent(whichone):
     talent = requests.get(f'{DB_PATH}talent/{str_to_slug(whichone)}')
     return talent.json()
+  
+  def get_response(self, héros):
+    hero = Hero.get_hero(héros)
+    if not 'error' in hero.keys():
+      if hero['pet'] is not None:
+        pet = Hero.get_pet(hero['pet'])
+      else:
+        pet = None
+      response = {'title': '', 'description': Hero.description(self, hero, pet), 'color': hero['color'], 'pic': hero['image_url']}
+    else:
+      description = f"{self.error_msg['description']['hero'][0]['text']} {héros} {self.error_msg['description']['hero'][1]['text']}"
+      response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
+    return response
   
   def description(self, hero, pet):
     return Hero.print_header(hero) + Hero.print_stats(hero) + Hero.print_lead(hero) + Hero.print_talents(hero) + Hero.print_gear(hero, self.bot.static_data.qualities) + Hero.print_pet(hero, pet) + Hero.print_comments(hero, Message(self.bot))
@@ -183,7 +185,7 @@ class Hero(commands.Cog):
       return ''
 
   def print_comments(hero, message):
-    to_return = '### Commentaires : ###\n'
+    to_return = f"### Commentaire{pluriel(hero['comments'])} : ###\n"
     if len(hero['comments']) > 0:
       for comment in hero['comments']:
         my_date = datetime.strptime(comment['date'], "%a, %d %b %Y %H:%M:%S %Z").strftime("%d/%m/%Y")

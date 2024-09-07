@@ -35,6 +35,12 @@ def pluriel(list):
 		return 's'
 	return ''
 
+def nick(message):
+	nickname = message.user.nick
+	if nickname is None:
+		nickname = message.user.global_name
+	return nickname
+
 
 def check_message_length(description):
 	footer_txt = Message.message('footer')['ok']

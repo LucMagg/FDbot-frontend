@@ -38,7 +38,8 @@ class MyBot(commands.Bot):
 
     extensions = [
       'commands.hero',
-      'commands.pet'
+      'commands.pet',
+      'commands.addcomment'
     ]
 
     # Chargement des extensions

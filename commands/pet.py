@@ -28,16 +28,18 @@ class Pet(commands.Cog):
   async def pet_app_command(self, interaction: discord.Interaction, pet: str):
     Logger.command_log('pet', interaction)
     await self.wait_message.post(interaction)
+    response = Pet.get_response(self, pet)
+    await self.wait_message.update(interaction, response)
+    Logger.ok_log('pet')
 
+  def get_response(self, pet):
     pet_item = Pet.get_pet(pet)
     if not 'error' in pet_item.keys():
       response = {'title': '', 'description': Pet.description(self, pet_item), 'color': pet_item['color'], 'pic': pet_item['image_url']}
     else:
       description = f"{self.error_msg['description']['pet'][0]['text']} {pet} {self.error_msg['description']['pet'][1]['text']}"
       response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
-
-    await self.wait_message.update(interaction, response)
-    Logger.ok_log('pet')
+    return response
 
   def get_pet(whichone):
     pet = requests.get(f'{DB_PATH}pet/{str_to_slug(whichone)}')
@@ -109,7 +111,7 @@ class Pet(commands.Cog):
     return to_return
 
   def print_comments(pet, message):
-    to_return = '### Commentaires : ###\n'
+    to_return = f"### Commentaire{pluriel(pet['comments'])} : ###\n"
     if len(pet['comments']) > 0:
       for comment in pet['comments']:
         my_date = datetime.strptime(comment['date'], "%a, %d %b %Y %H:%M:%S %Z").strftime("%d/%m/%Y")
