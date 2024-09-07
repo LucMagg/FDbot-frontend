@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 from utils.message import Message
 
-from utils.waitMessage import WaitMessage
+from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars, rank_text, pluriel
 
@@ -16,7 +16,7 @@ from config import DB_PATH
 class Hero(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
-    self.wait_message = WaitMessage(self.bot)
+    self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'hero'), None)
     self.error_msg = next((m for m in bot.static_data.messages if m['name'] == 'error'), None)
 
@@ -29,9 +29,9 @@ class Hero(commands.Cog):
   @app_commands.command(name='hero')
   async def hero_app_command(self, interaction: discord.Interaction, héros: str):
     Logger.command_log('hero', interaction)
-    await self.wait_message.post(interaction)
+    await self.send_message.post(interaction)
     response = Hero.get_response(self, héros)
-    await self.wait_message.update(interaction, response)
+    await self.send_message.update(interaction, response)
     Logger.ok_log('hero')
 
   def get_hero(whichone):

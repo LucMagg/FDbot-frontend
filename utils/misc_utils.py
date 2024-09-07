@@ -40,11 +40,3 @@ def nick(message):
 	if nickname is None:
 		nickname = message.user.global_name
 	return nickname
-
-
-def check_message_length(description):
-	footer_txt = Message.message('footer')['ok']
-	if len(description) + len(footer_txt) > 4096:
-		return False
-	else:
-		return True

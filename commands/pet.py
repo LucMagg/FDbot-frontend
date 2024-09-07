@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 from utils.message import Message
 
-from utils.waitMessage import WaitMessage
+from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars, rank_text, pluriel
 from utils.logger import Logger
@@ -14,7 +14,7 @@ from config import DB_PATH
 class Pet(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
-    self.wait_message = WaitMessage(self.bot)
+    self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'pet'), None)
     self.error_msg = next((m for m in bot.static_data.messages if m['name'] == 'error'), None)
 
@@ -27,9 +27,9 @@ class Pet(commands.Cog):
   @app_commands.command(name='pet')
   async def pet_app_command(self, interaction: discord.Interaction, pet: str):
     Logger.command_log('pet', interaction)
-    await self.wait_message.post(interaction)
+    await self.send_message.post(interaction)
     response = Pet.get_response(self, pet)
-    await self.wait_message.update(interaction, response)
+    await self.send_message.update(interaction, response)
     Logger.ok_log('pet')
 
   def get_response(self, pet):

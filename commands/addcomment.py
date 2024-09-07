@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import requests
 
-from utils.waitMessage import WaitMessage
+from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import nick
 from utils.logger import Logger
@@ -16,7 +16,7 @@ from commands.pet import Pet
 class Addcomment(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
-    self.wait_message = WaitMessage(self.bot)
+    self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'addcomment'), None)
     self.error_msg = next((m for m in bot.static_data.messages if m['name'] == 'error'), None)
 
@@ -30,9 +30,9 @@ class Addcomment(commands.Cog):
   @app_commands.command(name='addcomment')
   async def addcomment_app_command(self, interaction: discord.Interaction, héros_ou_pet: str, commentaire: str):
     Logger.command_log('addcomment', interaction)
-    await self.wait_message.post(interaction)
+    await self.send_message.post(interaction)
     response = Addcomment.get_response(self, héros_ou_pet, commentaire, nick(interaction))
-    await self.wait_message.update(interaction, response)
+    await self.send_message.update(interaction, response)
     Logger.ok_log('addcomment')
 
   def get_response(self, h_or_p, comment, author):
