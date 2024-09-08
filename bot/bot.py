@@ -42,7 +42,8 @@ class MyBot(commands.Bot):
       'commands.addcomment',
       'commands.talent',
       'commands.classe',
-      'commands.item'
+      'commands.item',
+      'commands.dhjk'
     ]
 
     # Chargement des extensions
