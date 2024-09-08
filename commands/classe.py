@@ -72,8 +72,6 @@ class Classe(commands.Cog):
       case 'Pets':
         to_return = '### Liste des pets de classe : ###\n'
 
-    print(to_return)
-
     star = 0
     for l in list:
       if star != l['stars']:
