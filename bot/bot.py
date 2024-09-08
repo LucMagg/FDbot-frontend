@@ -41,7 +41,8 @@ class MyBot(commands.Bot):
       'commands.pet',
       'commands.addcomment',
       'commands.talent',
-      'commands.classe'
+      'commands.classe',
+      'commands.item'
     ]
 
     # Chargement des extensions
