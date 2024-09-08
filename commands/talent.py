@@ -64,15 +64,12 @@ class Talent(commands.Cog):
     if isinstance(pets, list):
       to_return += Talent.print_sorted_list('Pets', talent['name'], pets)
 
-    print(len(to_return))
-
     return to_return
   
   def print_header(talent):
     to_return = f"# {talent['name']} #\n"
     if talent['description'] != '':
       to_return += f"{talent['description']}\n"
-    print(to_return)
     return to_return
 
   def print_sorted_list(whichone, talent_name, list):
