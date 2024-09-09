@@ -2,8 +2,8 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import requests
-from utils.message import Message
 
+from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars, rank_text, pluriel
@@ -17,7 +17,8 @@ class Talent(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'talent'), None)
-    self.error_msg = next((m for m in bot.static_data.messages if m['name'] == 'error'), None)
+    self.error_msg = Message(bot).message('error')
+    self.help_msg = Message(bot).help('talent')
 
     if self.command:
       self.talent_app_command.name = self.command['name']
@@ -34,6 +35,8 @@ class Talent(commands.Cog):
     Logger.ok_log('talent')
 
   def get_response(self, talent):
+    if str_to_slug(talent) == 'help':
+      return self.help_msg
     talent_item = Talent.get_talent(talent)
     if not 'error' in talent_item.keys():
       heroes = Talent.get_heroes_by_talent(talent_item['name'])

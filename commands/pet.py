@@ -3,8 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 import requests
 from datetime import datetime
-from utils.message import Message
 
+from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars, rank_text, pluriel
@@ -16,7 +16,8 @@ class Pet(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'pet'), None)
-    self.error_msg = next((m for m in bot.static_data.messages if m['name'] == 'error'), None)
+    self.error_msg = Message(bot).message('error')
+    self.help_msg = Message(bot).help('pet')
 
     if self.command:
       self.pet_app_command.name = self.command['name']
@@ -33,6 +34,8 @@ class Pet(commands.Cog):
     Logger.ok_log('pet')
 
   def get_response(self, pet):
+    if str_to_slug(pet) == 'help':
+      return self.help_msg
     pet_item = Pet.get_pet(pet)
     if not 'error' in pet_item.keys():
       response = {'title': '', 'description': Pet.description(self, pet_item), 'color': pet_item['color'], 'pic': pet_item['image_url']}

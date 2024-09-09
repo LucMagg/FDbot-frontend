@@ -3,8 +3,9 @@ from discord.ext import commands
 from discord import app_commands
 import requests
 
+from utils.message import Message
 from utils.sendMessage import SendMessage
-from utils.str_utils import slug_to_str
+from utils.str_utils import slug_to_str, str_to_slug
 from utils.misc_utils import stars, rank_text
 
 from utils.logger import Logger
@@ -16,7 +17,7 @@ class Classe(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'class'), None)
-    self.error_msg = next((m for m in bot.static_data.messages if m['name'] == 'error'), None)
+    self.error_msg = Message(bot).message('error')
 
     if self.command:
       self.classe_app_command.name = self.command['name']
@@ -33,6 +34,13 @@ class Classe(commands.Cog):
     Logger.ok_log('class')
 
   def get_response(self, classe):
+    if str_to_slug(classe) == 'help':
+      classes = Classe.get_all_classes()
+      if classes:
+        class_list = '\n'.join([f"* {c['heroclass']}" for c in classes])
+        help_msg = Message(self.bot).help('class', class_list)
+      return help_msg
+    
     heroes = Classe.get_heroes_by_class(classe)
     pets = Classe.get_pets_by_class(classe)
 
@@ -50,6 +58,10 @@ class Classe(commands.Cog):
   def get_pets_by_class(whichone):
     pets = requests.get(f'{DB_PATH}pet/class?class={slug_to_str(whichone)}')
     return pets.json()
+
+  def get_all_classes():
+    classes = requests.get(f"{DB_PATH}hero/class?class=all")
+    return classes.json()
   
   def description(self, classe, heroes, pets):
     to_return = Classe.print_header(classe)

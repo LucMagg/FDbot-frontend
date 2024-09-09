@@ -67,6 +67,8 @@ class MyBot(commands.Bot):
   async def on_message(self, message: discord.Message) -> None:
     if message.author == self.user:
       return
+    if message.author == 'kiki.the.brainless':
+      message.reply(content='CONTREPAF!!! :rofl:')
     await self.process_commands(message)
 
   async def on_command_error(self, ctx, error):

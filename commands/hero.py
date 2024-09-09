@@ -3,8 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 import requests
 from datetime import datetime
-from utils.message import Message
 
+from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars, rank_text, pluriel
@@ -18,7 +18,8 @@ class Hero(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'hero'), None)
-    self.error_msg = next((m for m in bot.static_data.messages if m['name'] == 'error'), None)
+    self.error_msg = Message(bot).message('error')
+    self.help_msg = Message(bot).help('hero')
 
     if self.command:
       self.hero_app_command.name = self.command['name']
@@ -47,6 +48,8 @@ class Hero(commands.Cog):
     return talent.json()
   
   def get_response(self, héros):
+    if str_to_slug(héros) == 'help':
+      return self.help_msg
     hero = Hero.get_hero(héros)
     if not 'error' in hero.keys():
       if hero['pet'] is not None:
@@ -60,7 +63,7 @@ class Hero(commands.Cog):
     return response
   
   def description(self, hero, pet):
-    return Hero.print_header(hero) + Hero.print_stats(hero) + Hero.print_lead(hero) + Hero.print_talents(hero) + Hero.print_gear(hero, self.bot.static_data.qualities) + Hero.print_pet(hero, pet) + Hero.print_comments(hero, Message(self.bot))
+    return Hero.print_header(hero) + Hero.print_stats(hero) + Hero.print_lead(hero) + Hero.print_talents(hero) + Hero.print_gear(hero, self.bot.static_data.qualities) + Hero.print_pet(hero, pet) + Hero.print_comments(hero, Message(self.bot).message('nocomment'))
   
   def print_header(hero):	
     return f"# {hero['name']}   {stars(hero['stars'])} #\n{hero['color']} {str.lower(hero['species'])} {str.lower(hero['heroclass'])}\n"
@@ -184,7 +187,7 @@ class Hero(commands.Cog):
     else:
       return ''
 
-  def print_comments(hero, message):
+  def print_comments(hero, nocomment):
     to_return = f"### Commentaire{pluriel(hero['comments'])} : ###\n"
     if len(hero['comments']) > 0:
       for comment in hero['comments']:
@@ -192,7 +195,6 @@ class Hero(commands.Cog):
         to_return += f"__{comment['author']} le {my_date}__\n"
         to_return += f"{comment['commentaire']}\n"
     else :
-      nocomment = message.message('nocomment')
       to_return += nocomment['description']
     return to_return
       

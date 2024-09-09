@@ -22,7 +22,7 @@ class SendMessage:
 
     if 'image' in new_message.keys():
       bot_response.set_image(url = new_message['image'])
-    else:
+    elif 'pic' in new_message.keys():
       if new_message['pic'] is not None:
         bot_response.set_thumbnail(url = new_message['pic'])
     bot_response.set_footer(text = footer_msg['ok'])

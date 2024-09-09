@@ -3,8 +3,9 @@ from discord.ext import commands
 from discord import app_commands
 import requests
 
+from utils.message import Message
 from utils.sendMessage import SendMessage
-from utils.str_utils import slug_to_str
+from utils.str_utils import slug_to_str, str_to_slug
 from utils.misc_utils import stars
 
 from utils.logger import Logger
@@ -16,7 +17,8 @@ class Item(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'item'), None)
-    self.error_msg = next((m for m in bot.static_data.messages if m['name'] == 'error'), None)
+    self.error_msg = Message(bot).message('error')
+    self.help_msg = Message(bot).help('item')
     self.qualities = bot.static_data.qualities
     self.dusts = bot.static_data.dusts
 
@@ -35,6 +37,8 @@ class Item(commands.Cog):
     Logger.ok_log('item')
 
   def get_response(self, item):
+    if str_to_slug(item) == 'help':
+      return self.help_msg
     heroes = Item.get_heroes_by_item(self, item)
     if isinstance(heroes[0], list):
       response = {'title': '', 'description': Item.description(self, item, heroes), 'color': 'default', 'pic': None}

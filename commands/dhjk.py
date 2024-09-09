@@ -25,7 +25,6 @@ class Dhjk(commands.Cog):
     Logger.command_log('dhjk', interaction)
     await self.send_message.post(interaction)
     response = Dhjk.get_response(self)
-    print(response)
     await self.send_message.update(interaction, response)
     Logger.ok_log('dhjk')
 
