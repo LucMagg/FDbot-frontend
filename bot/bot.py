@@ -1,5 +1,4 @@
 import discord
-from discord import app_commands
 from discord.ext import commands, tasks
 from itertools import cycle
 from config import PREFIX
@@ -67,8 +66,9 @@ class MyBot(commands.Bot):
   async def on_message(self, message: discord.Message) -> None:
     if message.author == self.user:
       return
-    if message.author == 'kiki.the.brainless':
-      message.reply(content='CONTREPAF!!! :rofl:')
+    if message.author.id == 617661648173268993:
+      await message.reply(content='CONTREPAF!!! :rofl:')
+      print(f"[{str_now()}] Contre-pafé :D")
     await self.process_commands(message)
 
   async def on_command_error(self, ctx, error):
