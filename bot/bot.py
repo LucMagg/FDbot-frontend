@@ -42,7 +42,8 @@ class MyBot(commands.Bot):
       'commands.talent',
       'commands.classe',
       'commands.item',
-      'commands.dhjk'
+      'commands.dhjk',
+      'commands.bothelp'
     ]
 
     # Chargement des extensions
@@ -66,7 +67,7 @@ class MyBot(commands.Bot):
   async def on_message(self, message: discord.Message) -> None:
     if message.author == self.user:
       return
-    if message.author.id == 617661648173268993:
+    if message.author.id == 617661648173268993 and 'paf' in str.lower(message.content):
       await message.reply(content='CONTREPAF!!! :rofl:')
       print(f"[{str_now()}] Contre-pafé :D")
     await self.process_commands(message)

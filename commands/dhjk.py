@@ -20,7 +20,7 @@ class Dhjk(commands.Cog):
       self.dhjk_app_command.description = self.command['description']
 
 
-  @app_commands.command(name='class')
+  @app_commands.command(name='dhjk')
   async def dhjk_app_command(self, interaction: discord.Interaction):
     Logger.command_log('dhjk', interaction)
     await self.send_message.post(interaction)
