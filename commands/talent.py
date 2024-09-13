@@ -6,7 +6,7 @@ import requests
 from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
-from utils.misc_utils import stars, rank_text, pluriel
+from utils.misc_utils import stars
 
 from utils.logger import Logger
 from config import DB_PATH

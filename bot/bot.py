@@ -44,7 +44,8 @@ class MyBot(commands.Bot):
       'commands.item',
       'commands.dhjk',
       'commands.bothelp',
-      'commands.botstats'
+      'commands.botstats',
+      'commands.petlist'
     ]
 
     # Chargement des extensions

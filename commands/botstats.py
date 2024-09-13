@@ -5,7 +5,6 @@ import requests
 from collections import Counter
 
 from utils.sendMessage import SendMessage
-from utils.message import Message
 from utils.misc_utils import stars
 from utils.logger import Logger
 from config import DB_PATH
@@ -98,7 +97,6 @@ class Botstats(commands.Cog):
       l_classes_print.append(f"{v} {k}")
     to_return += ', '.join(l_classes_print)
     to_return += ')\n'
-    print(to_return)
 
     return to_return
   
