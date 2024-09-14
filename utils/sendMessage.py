@@ -7,9 +7,9 @@ class SendMessage:
     self.bot = bot
     self.message = Message(bot)
 
-  async def post(self, interaction):
+  async def post(self, interaction, more_msg = ''):
     bot_msg = self.message.message('wait')
-    initial_response = discord.Embed(title = bot_msg['title'], description = bot_msg['description'], color = get_discord_color(bot_msg['color']))
+    initial_response = discord.Embed(title = bot_msg['title'], description = bot_msg['description'] + more_msg, color = get_discord_color(bot_msg['color']))
     await interaction.response.send_message(embed = initial_response)
 
   async def update(self, interaction, new_message):
