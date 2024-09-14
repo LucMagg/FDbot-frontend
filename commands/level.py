@@ -47,12 +47,14 @@ class Level(commands.Cog):
     Logger.ok_log('level')
 
   def get_level_response(self, level_name, level_cost):
+    print(level_name)
+    print([known_level.name for known_level in self.known_levels])
     if level_name in [known_level.name for known_level in self.known_levels]:
-      return {'title': f"Le niveau {level_name} existe déjà', 'description': 'Tout est prêt pour l'utilisation des commandes reward et reward-stat",
+      return {'title': f'Le niveau {level_name} existe déjà', 'description': "Tout est prêt pour l'utilisation des commandes reward et reward-stat",
               'color': 'blue'}
     level = LevelService.create_level(level_name, level_cost)
 
-    return {'title': f"Le niveau {level.get('name')} a été ajouté', 'description': 'Merci d'avoir ajouté ce niveau!",
+    return {'title': f'Le niveau {level.get('name')} a été ajouté', 'description': "Merci d'avoir ajouté ce niveau!",
             'color': 'blue'}
 
   @app_commands.autocomplete(level=level_autocompletion)
@@ -85,7 +87,7 @@ class Level(commands.Cog):
     quantities = [f"{r.get('quantity')} {r.get('type')}: {format(r.get('appearances') / len(rewards), ".2%")}\n" for r in rewards]
     quantities_str = '\n'.join([q for q in quantities])
 
-    return {'title': f"Récompense ajoutée au niveau {level.get('name')}', 'description': f'Merci d'avoir ajouter un récompense à ce niveau! \nStatistiques actuelles pour ce niveau:\n{quantities_str}",
+    return {'title': f'Récompense ajoutée au niveau {level.get('name')}', 'description': f"Merci d'avoir ajouter un récompense à ce niveau! \nStatistiques actuelles pour ce niveau:\n{quantities_str}",
             'color': 'blue'}
 
   def get_reward_stat_response(self, level_name):
