@@ -77,6 +77,6 @@ class MyBot(commands.Bot):
     await self.process_commands(message)
 
   async def on_command_error(self, ctx, error):
-      print(f'[{str_now()}] Erreur de commande: {str(error)}')
-      traceback.print_exception(type(error), error, error.__traceback__)
-      await ctx.send(f"Une erreur s'est produite lors de l'exécution de la commande: {str(error)}")
+    print(f'[{str_now()}] Erreur de commande: {str(error)}')
+    traceback.print_exception(type(error), error, error.__traceback__)
+    await ctx.send(f"Une erreur s'est produite lors de l'exécution de la commande: {str(error)}")

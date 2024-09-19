@@ -38,14 +38,20 @@ class Petlist(commands.Cog):
       return Message(self.bot).help('petlist')
     
     hero = Petlist.get_hero(héros)
-    if 'error' not in hero.keys():
-      pets = Petlist.get_pets_by_hero(hero['name'])
+    if 'error' in hero.keys():
+      return {'title': self.error_msg['title'],
+              'description': f"{self.error_msg['description']['petlist'][0]['text']} {hero['name']} {self.error_msg['description']['petlist'][1]['text']}",
+              'color': self.error_msg['color']}
+    
+    pets = Petlist.get_pets_by_hero(hero['name'])
+    if not isinstance(pets, list):
+      return {'title': self.error_msg['title'],
+              'description': f"{self.error_msg['description']['petlist'][2]['text']} {hero['name']} {self.error_msg['description']['petlist'][3]['text']}",
+              'color': self.error_msg['color']}
+    
+    description = f"{self.error_msg['description']['petlist'][0]['text']} {hero['name']} {self.error_msg['description']['petlist'][1]['text']}"
+    response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
 
-      if isinstance(pets, list):
-        response = {'title': '', 'description': Petlist.description(hero, pets), 'color': 'default', 'pic': hero['image_url']}
-      else:
-        description = f"{self.error_msg['description']['petlist'][0]['text']} {hero['name']} {self.error_msg['description']['petlist'][1]['text']}"
-        response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
     return response
   
   def get_hero(whichone):

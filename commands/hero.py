@@ -182,7 +182,8 @@ class Hero(commands.Cog):
       to_return += f"Talent gold seulement pour {hero['name']} : {gold_talent['name']}\n"
 
       talent = Hero.get_talent(gold_talent['name'])
-      to_return += f"-> {talent['description']} \n"
+      if talent:
+        to_return += f"-> {talent['description']} \n"
       return to_return
     else:
       return ''

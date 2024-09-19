@@ -44,11 +44,11 @@ class Classe(commands.Cog):
     heroes = Classe.get_heroes_by_class(classe)
     pets = Classe.get_pets_by_class(classe)
 
-    if isinstance(heroes, list) or isinstance(pets, list):
-      response = {'title': '', 'description': Classe.description(self, classe, heroes, pets), 'color': 'default', 'pic': None}
-    else:
-      description = f"{self.error_msg['description']['classe'][0]['text']} {classe} {self.error_msg['description']['classe'][1]['text']}"
-      response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
+    if not (isinstance(heroes, list) or isinstance(pets, list)):
+      description = f"{self.error_msg['description']['class'][0]['text']} {classe} {self.error_msg['description']['class'][1]['text']}"
+      return {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
+    
+    response = {'title': '', 'description': Classe.description(self, classe, heroes, pets), 'color': 'default', 'pic': None}  
     return response
   
   def get_heroes_by_class(whichone):

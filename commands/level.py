@@ -49,7 +49,7 @@ class Level(commands.Cog):
   def get_level_response(self, level_name, level_cost):
     level = LevelService.create_level(level_name, level_cost)
 
-    return {'title': f'Level {level.get('name')} added', 'description': 'Thanks for adding a new level !',
+    return {'title': f"Level {level.get('name')} added", 'description': 'Thanks for adding a new level !',
             'color': 'blue'}
 
   @app_commands.autocomplete(level=level_autocompletion)
@@ -79,19 +79,19 @@ class Level(commands.Cog):
   def get_reward_response(self, level_name, reward_type, reward_quantity):
     level = LevelService.add_reward(level_name, reward_type, reward_quantity)
     rewards = level.get('rewards')
-    quantities = [f"{r.get('quantity')} {r.get('type')}: {format(r.get('appearances') / len(rewards), ".2%")}\n" for r in rewards]
+    quantities = [f"{r.get('quantity')} {r.get('type')}: {format(r.get('appearances') / len(rewards), '.2%')}\n" for r in rewards]
     quantities_str = '\n'.join([q for q in quantities])
 
-    return {'title': f'Reward added for level {level.get('name')}', 'description': f'Thanks for adding a new reward for this level! \nCurrent stats for this level:\n{quantities_str}',
+    return {'title': f"Reward added for level {level.get('name')}", 'description': f"Thanks for adding a new reward for this level! \nCurrent stats for this level:\n{quantities_str}",
             'color': 'blue'}
 
   def get_reward_stat_response(self, level_name):
     level = LevelService.get_level(level_name)
     rewards = level.get('rewards')
-    quantities = [f"{r.get('quantity')} {r.get('type')}: {format(r.get('appearances') / len(rewards), ".2%")}\n" for r in rewards]
+    quantities = [f"{r.get('quantity')} {r.get('type')}: {format(r.get('appearances') / len(rewards), '.2%')}\n" for r in rewards]
     quantities_str = '\n'.join([q for q in quantities])
 
-    return {'title': f'Reward stats for level {level.get('name')}', 'description': f'Current stats for this level:\n{quantities_str}',
+    return {'title': f"Reward stats for level {level.get('name')}", 'description': f"Current stats for this level:\n{quantities_str}",
             'color': 'blue'}
 
   def get_known_levels(self):
