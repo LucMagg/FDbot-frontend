@@ -31,7 +31,7 @@ class Update(commands.Cog):
       #self.update_app_command._params['type'].choices = [Choice(name=c['name'], value=c['type']) for c in self.command['options'][0]['choices']]
 
   def get_known_types(self):
-    return [app_commands.Choice(name=t['name'], value=t['type']) for t in self.command['options'][0]['choices']]
+    return [app_commands.Choice(name=t['name'], value=t['value']) for t in self.command['options'][0]['choices']]
 
   async def type_autocompletion(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return [t for t in self.known_types if current.lower() in t.name.lower()]
