@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import requests
 from datetime import datetime
+import typing
 
 from utils.message import Message
 from utils.sendMessage import SendMessage
@@ -20,13 +21,24 @@ class Hero(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'hero'), None)
     self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('hero')
+    self.known_heroes = self.get_known_heroes()
 
     if self.command:
       self.hero_app_command.name = self.command['name']
       self.hero_app_command.description = self.command['description']
       self.hero_app_command._params['héros'].description = self.command['options'][0]['description']
+  
+  
+  def get_known_heroes(self):
+    heroes = requests.get(f'{DB_PATH}hero').json()
+    hero_choices = sorted([app_commands.Choice(name=h['name'], value=h['name_slug']) for h in heroes], key=lambda h:h.name)
+    return hero_choices
 
-
+  async def hero_autocompletion(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    choices = [h for h in self.known_heroes if current.lower() in h.name.lower()]
+    return choices[:25]
+  
+  @app_commands.autocomplete(héros=hero_autocompletion)
   @app_commands.command(name='hero')
   async def hero_app_command(self, interaction: discord.Interaction, héros: str):
     Logger.command_log('hero', interaction)

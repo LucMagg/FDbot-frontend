@@ -28,13 +28,14 @@ class Update(commands.Cog):
       self.update_app_command.description = self.command['description']
       self.update_app_command._params['type'].description = self.command['options'][0]['description']
       self.update_app_command._params['type'].required = self.command['options'][0]['required']
-      #self.update_app_command._params['type'].choices = [Choice(name=c['name'], value=c['type']) for c in self.command['options'][0]['choices']]
+
 
   def get_known_types(self):
     return [app_commands.Choice(name=t['name'], value=t['type']) for t in self.command['options'][0]['choices']]
 
   async def type_autocompletion(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return [t for t in self.known_types if current.lower() in t.name.lower()]
+
 
   @app_commands.command(name='update')
   @app_commands.autocomplete(type=type_autocompletion)
@@ -48,6 +49,7 @@ class Update(commands.Cog):
     response = Update.get_response(self, type)
     await self.send_message.update(interaction, response)
     Logger.ok_log('update')
+
 
   def get_response(self, type):
     if type == 'help':
@@ -66,6 +68,8 @@ class Update(commands.Cog):
       description = self.return_msg['description']['erreur']
           
     return {'title': self.return_msg['title'], 'description': description, 'color': 'default'}
-  
+
+
+
 async def setup(bot):
   await bot.add_cog(Update(bot))

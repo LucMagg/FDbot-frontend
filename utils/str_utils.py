@@ -7,44 +7,41 @@ def str_now():
 	return strftime('%Y-%m-%d %H:%M:%S', localtime())
 
 def str_to_slug(input_string: str|None) -> str|None:
-  if input_string is None:
+  if input_string is None or not isinstance(input_string, str):
     return None
-  else:
-    if type(input_string) is str:
-      slug = input_string.lower()
+  
+  if re.match(r'^[a-z0-9\-\:\&\\_]+$', input_string):
+    return input_string
 
-      special_chars = {':': r'\:', '\and': r'\and', '&': r'\and', '-': r'\-'}
-      for char, escaped in special_chars.items():
-          slug = slug.replace(char, escaped)
+  to_return = input_string.lower()
 
-      slug = slug.replace(' ', '-')
-      slug = re.sub(r'[^a-z0-9\-\:\&]', '', slug)
-      slug = re.sub(r'-+', '-', slug)
-      slug = slug.strip('-')
-    else:
-      slug = input_string
-    
-    return slug
+  special_chars = {':': r'\:', '\and': r'\and', '&': r'\and', '-': r'_'}
+  for char, escaped in special_chars.items():
+      to_return = to_return.replace(char, escaped)
+
+  to_return = to_return.replace(' ', '-')
+  to_return = re.sub(r'[^a-z0-9\-\:\&\\\_]', '', to_return)
+  to_return = re.sub(r'-+', '-', to_return)
+  to_return = to_return.strip('-')
+  return to_return
   
 def slug_to_str(slug: str|None) -> str|None:
-  if slug is None:
+  if slug is None or not isinstance(slug, str):
     return None
-  else:
-    if type(slug) is str:
-      special_chars = {r'\:': ':', r'\and': '&', r'\-': '-'}
-      for escaped, char in special_chars.items():
-        slug = slug.replace(escaped, char)
 
-      original_string = slug.replace('-', ' ')
-      
-      words = original_string.split()
-      capitalized_words = [word.capitalize() if word not in ['of', 'to'] else word for word in words]
-      original_string = ' '.join(capitalized_words)
+  def capitalize_words(text):
+    words = text.split()
+    return ' '.join(word.capitalize() if word.lower() not in ['of', 'to', 'and'] else word for word in words)
 
-    else:
-      original_string = slug
+  parts = slug.split('_')
+  capitalized_parts = [capitalize_words(part.replace('-', ' ')) for part in parts]
+  to_return = '_'.join(capitalized_parts)
 
-    return original_string
+  special_chars = {r'\:': ':', r'\and': '&', r'_': '-'}
+  for escaped, char in special_chars.items():
+    to_return = to_return.replace(escaped, char)
+    
+  return to_return
   
 def str_to_wiki_url(input_string: str|None) -> str|None:
   if input_string is None:

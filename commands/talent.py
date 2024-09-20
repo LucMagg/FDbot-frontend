@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import requests
+import typing
 
 from utils.message import Message
 from utils.sendMessage import SendMessage
@@ -19,6 +20,7 @@ class Talent(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'talent'), None)
     self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('talent')
+    self.known_talents = self.get_known_talents()
 
     if self.command:
       self.talent_app_command.name = self.command['name']
@@ -26,6 +28,17 @@ class Talent(commands.Cog):
       self.talent_app_command._params['talent'].description = self.command['options'][0]['description']
 
 
+  def get_known_talents(self):
+    talents = requests.get(f'{DB_PATH}talent').json()
+    talent_choices = sorted([app_commands.Choice(name=t['name'], value=t['name_slug']) for t in talents], key=lambda t:t.name)
+    print(talent_choices)
+    return talent_choices
+
+  async def talent_autocompletion(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    choices = [t for t in self.known_talents if current.lower() in t.name.lower()]
+    return choices[:25]
+
+  @app_commands.autocomplete(talent=talent_autocompletion)
   @app_commands.command(name='talent')
   async def talent_app_command(self, interaction: discord.Interaction, talent: str):
     Logger.command_log('talent', interaction)
@@ -35,12 +48,13 @@ class Talent(commands.Cog):
     Logger.ok_log('talent')
 
   def get_response(self, talent):
-    if str_to_slug(talent) == 'help':
+    print(talent)
+    if talent == 'help':
       return self.help_msg
     talent_item = Talent.get_talent(talent)
     if not 'error' in talent_item.keys():
-      heroes = Talent.get_heroes_by_talent(talent_item['name'])
-      pets = Talent.get_pets_by_talent(talent_item['name'])
+      heroes = Talent.get_heroes_by_talent(talent_item['name_slug'])
+      pets = Talent.get_pets_by_talent(talent_item['name_slug'])
       response = {'title': '', 'description': Talent.description(self, talent_item, heroes, pets), 'color': 'default', 'pic': talent_item['image_url']}
     else:
       description = f"{self.error_msg['description']['talent'][0]['text']} {talent} {self.error_msg['description']['talent'][1]['text']}"
@@ -48,15 +62,15 @@ class Talent(commands.Cog):
     return response
   
   def get_talent(whichone):
-    talent = requests.get(f'{DB_PATH}talent/{str_to_slug(whichone)}')
+    talent = requests.get(f'{DB_PATH}talent/{whichone}')
     return talent.json()
   
   def get_heroes_by_talent(whichone):
-    heroes = requests.get(f'{DB_PATH}hero/talent?talent={str_to_slug(whichone)}')
+    heroes = requests.get(f'{DB_PATH}hero/talent?talent={whichone}')
     return heroes.json()
   
   def get_pets_by_talent(whichone):
-    pets = requests.get(f'{DB_PATH}pet/talent?talent={str_to_slug(whichone)}')
+    pets = requests.get(f'{DB_PATH}pet/talent?talent={whichone}')
     return pets.json()
   
   def description(self, talent, heroes, pets):
@@ -71,7 +85,7 @@ class Talent(commands.Cog):
   
   def print_header(talent):
     to_return = f"# {talent['name']} #\n"
-    if talent['description'] != '':
+    if talent['description'] is not None:
       to_return += f"{talent['description']}\n"
     return to_return
 
