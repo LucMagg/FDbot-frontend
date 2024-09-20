@@ -5,6 +5,7 @@ from discord.app_commands import Choice
 from discord.ext import commands
 from discord import app_commands
 
+from service.command import CommandService
 from service.level import LevelService
 from utils.sendMessage import SendMessage
 
@@ -15,23 +16,20 @@ class Level(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.known_levels = self.get_known_levels()
+    self.level_command = next((c for c in bot.static_data.commands if c['name'] == 'level'), None)
+    self.reward_command = next((c for c in bot.static_data.commands if c['name'] == 'reward'), None)
+    self.reward_stat_command = next((c for c in bot.static_data.commands if c['name'] == 'reward-stat'), None)
 
-    self.level_app_command._params['name'].description = 'Nom du niveau'
-    self.level_app_command._params['cost'].description = 'Coût du niveau en énergies'
-
-    self.reward_app_command._params['level'].description = 'Nom du niveau'
-    self.reward_app_command._params['type'].description = 'Type de récompense'
-    self.reward_app_command._params['type'].choices = [Choice(name='gold', value=1), Choice(name='potions', value=2)]
-    self.reward_app_command._params['quantity'].description = 'Quantité reçue'
-
-    self.reward_stat_app_command._params['level'].description = 'Nom du niveau pour lequel les stats de récompenses seront affichées'
+    CommandService.init_command(self.level_app_command, self.level_command)
+    CommandService.init_command(self.reward_app_command, self.reward_command)
+    CommandService.init_command(self.reward_stat_app_command, self.reward_stat_command)
 
 
   async def level_autocompletion(self, interaction: discord.Interaction, current: str
                                  ) -> typing.List[app_commands.Choice[str]]:
     return [level for level in self.known_levels if current in level.name]
 
-  @app_commands.command(name='level', description = 'Ajouter un niveau pour récolter des données sur ses récompenses')
+  @app_commands.command(name='level')
   async def level_app_command(self, interaction: discord.Interaction, name: str, cost: int):
     Logger.command_log('level', interaction)
     author = str(interaction.user)
@@ -47,8 +45,6 @@ class Level(commands.Cog):
     Logger.ok_log('level')
 
   def get_level_response(self, level_name, level_cost):
-    print(level_name)
-    print([known_level.name for known_level in self.known_levels])
     if level_name in [known_level.name for known_level in self.known_levels]:
       return {'title': f'Le niveau {level_name} existe déjà', 'description': "Tout est prêt pour l'utilisation des commandes reward et reward-stat",
               'color': 'blue'}
@@ -58,7 +54,7 @@ class Level(commands.Cog):
             'color': 'blue'}
 
   @app_commands.autocomplete(level=level_autocompletion)
-  @app_commands.command(name='reward', description='Ajouter une récompense pour un niveau')
+  @app_commands.command(name='reward')
   async def reward_app_command(self, interaction: discord.Interaction, level: str, type: Choice[int], quantity: int):
     Logger.command_log('reward', interaction)
     await self.send_message.post(interaction)
@@ -67,11 +63,10 @@ class Level(commands.Cog):
     Logger.ok_log('reward')
 
   @app_commands.autocomplete(level=level_autocompletion)
-  @app_commands.command(name='reward-stat', description='Afficher les stats de récompense pour un niveau')
+  @app_commands.command(name='reward-stat')
   async def reward_stat_app_command(self, interaction: discord.Interaction, level: str):
     Logger.command_log('reward-stat', interaction)
     if level not in [level.name for level in self.known_levels]:
-      print("level doesn't exist")
       await self.send_message.error(interaction, "Ce niveau n'existe pas", "Veuillez choisir un niveau dans la liste ou contacter Prep ou Spirou.")
       Logger.ok_log('reward')
       return
