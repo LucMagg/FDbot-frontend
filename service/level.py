@@ -36,9 +36,9 @@ class LevelService:
   def get_rewards_str(rewards):
     total_reward_appearances = sum([reward.get('appearances') for reward  in rewards])
     quantities = [
-      f"{r.get('quantity')} {r.get('quality', '')} {r.get('type')}: {format(r.get('appearances') / total_reward_appearances, '.2%')}\n"
+      f"{r.get('quantity')} {r.get('quality', '')} {r.get('type')}: {format(r.get('appearances') / total_reward_appearances, '.2%')} ({r.get('appearances')})\n"
       for r in rewards]
-    return '\n'.join([q for q in quantities])
+    return f'{total_reward_appearances} récompenses recueillies:\n' + '\n'.join([q for q in quantities])
 
   @staticmethod
   def get_gear_qualities():
