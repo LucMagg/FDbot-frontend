@@ -118,7 +118,7 @@ class Level(commands.Cog):
     level = LevelService.add_reward(level_name, reward_type, reward_quantity)
     quantities_str = LevelService.get_rewards_str(level.get('rewards', []))
 
-    return {'title': f'Récompense ajoutée au niveau {level.get('name')}', 'description': f"Merci d'avoir ajouter un récompense à ce niveau! \nStatistiques actuelles pour ce niveau:\n{quantities_str}",
+    return {'title': f'Récompense ajoutée au niveau {level.get('name')}', 'description': f"Merci d'avoir ajouté une récompense à ce niveau! \nStatistiques actuelles pour ce niveau:\n{quantities_str}",
             'color': 'blue'}
 
   def get_reward_stat_response(self, level_name):
