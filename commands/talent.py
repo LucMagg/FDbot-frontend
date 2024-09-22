@@ -31,7 +31,6 @@ class Talent(commands.Cog):
   def get_known_talents(self):
     talents = requests.get(f'{DB_PATH}talent').json()
     talent_choices = sorted([app_commands.Choice(name=t['name'], value=t['name_slug']) for t in talents], key=lambda t:t.name)
-    print(talent_choices)
     return talent_choices
 
   async def talent_autocompletion(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:

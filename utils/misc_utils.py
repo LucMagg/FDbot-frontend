@@ -1,5 +1,5 @@
 import discord
-from utils.message import Message
+from typing import Union
 
 def get_discord_color(color: str):
 	"""renvoie la couleur Discord en fonction de color"""
@@ -30,7 +30,10 @@ def rank_text(number):
 	else:
 		return 'ème'
 	
-def pluriel(list):
+def pluriel(list: Union[list, int]) -> str:
+	if isinstance(list, int):
+		if list > 1:
+			return 's'	
 	if len(list) > 1:
 		return 's'
 	return ''
