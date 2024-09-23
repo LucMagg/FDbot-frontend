@@ -48,7 +48,7 @@ class SendMessage:
         bot_response.set_thumbnail(url=new_message['pic'])
     bot_response.set_footer(text=footer_msg['ok'])
 
-    await interaction.response.edit_message(embed=bot_response, view=None)
+    await interaction.response.edit_message(embed=bot_response, view=None, content=None)
 
   async def error(self, interaction, title, description):
     initial_response = discord.Embed(title=title, description=description, color=Color.from_rgb(255, 0, 0))
