@@ -85,7 +85,6 @@ class Level(commands.Cog):
 
   def get_potion_emoji(self, guild):
         potion_emoji = discord.utils.get(guild.emojis, name='potion')
-        print(str(potion_emoji))
         return str(potion_emoji) if potion_emoji else ''
 
   def get_rewards_str(self, rewards, guild):
@@ -154,7 +153,7 @@ class Level(commands.Cog):
     levels = Level.get_levels()
     levels_choices = [Choice(name=l.get('name'), value=l.get('name')) for l in levels]
 
-    return levels_choices
+    return levels_choices[:25]
   
 class TypeButton(Button):
   def __init__(self, guild, send_message, level_service: Level, level: str, quantity: int, icon: str, quality: str, reward_type: str):
