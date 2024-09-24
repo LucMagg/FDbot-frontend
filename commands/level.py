@@ -57,7 +57,7 @@ class Level(commands.Cog):
     if level_name in [known_level.name for known_level in self.known_levels]:
       return {'title': f'Le niveau {level_name} existe déjà', 'description': "Tout est prêt pour l'utilisation des commandes reward et reward-stat",
               'color': 'blue'}
-    level = Level.create_level(level_name, level_cost)
+    level = self.create_level(level_name, level_cost)
 
     return {'title': f'Le niveau {level.get('name')} a été ajouté', 'description': "Merci d'avoir ajouté ce niveau!",
             'color': 'blue'}
