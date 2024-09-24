@@ -3,7 +3,7 @@ from discord.ext import commands, tasks
 from itertools import cycle
 from config import PREFIX
 from utils.static_data import StaticData
-from utils.str_utils import str_now
+from utils.str_utils import str_now, str_to_slug
 import traceback
 
 
@@ -71,9 +71,16 @@ class MyBot(commands.Bot):
   async def on_message(self, message: discord.Message) -> None:
     if message.author == self.user:
       return
-    if message.author.id == 617661648173268993 and 'paf' in str.lower(message.content):
+    if message.author.id == 617661648173268993 and 'paf' in str_to_slug(message.content):
       await message.reply(content='CONTREPAF!!! :rofl:')
       print(f"[{str_now()}] Contre-pafé :D")
+
+    if message.author.id == 504814725020909578:
+      gif_url = 'https://tenor.com/fr/view/gloves-on-im-ready-lets-do-this-glove-doctor-gif-15313441'
+      await message.reply(content=f"CONTRE-DJACK!!! :fist:\n\n(<@701514411495653397> je t\'attends pour le double-tchitchi... :kissing_heart::rofl:){gif_url}")
+
+      print(f"[{str_now()}] Contre-djack :D")
+
     await self.process_commands(message)
 
   async def on_command_error(self, ctx, error):
