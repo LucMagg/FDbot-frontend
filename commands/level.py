@@ -36,7 +36,7 @@ class Level(commands.Cog):
 
   async def level_autocompletion(self, interaction: discord.Interaction, current: str
                                  ) -> typing.List[app_commands.Choice[str]]:
-    return [level for level in self.known_levels if current in level.name]
+    return [level for level in self.known_levels if current in level.name][:25]
 
   @app_commands.command(name='level')
   async def level_app_command(self, interaction: discord.Interaction, name: str, cost: int):
@@ -153,7 +153,7 @@ class Level(commands.Cog):
     levels = Level.get_levels()
     levels_choices = [Choice(name=l.get('name'), value=l.get('name')) for l in levels]
 
-    return levels_choices[:25]
+    return levels_choices
   
 class TypeButton(Button):
   def __init__(self, guild, send_message, level_service: Level, level: str, quantity: int, icon: str, quality: str, reward_type: str):
