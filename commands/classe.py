@@ -2,11 +2,13 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import requests
+import typing
 
 from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import slug_to_str, str_to_slug
 from utils.misc_utils import stars, rank_text
+from service.command import CommandService
 
 from utils.logger import Logger
 from config import DB_PATH
@@ -19,12 +21,13 @@ class Classe(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'class'), None)
     self.error_msg = Message(bot).message('error')
 
-    if self.command:
-      self.classe_app_command.name = self.command['name']
-      self.classe_app_command.description = self.command['description']
-      self.classe_app_command._params['classe'].description = self.command['options'][0]['description']
+    self.command_service = CommandService()
+    CommandService.init_command(self.classe_app_command, self.command)
 
+  async def classe_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    return await self.command_service.return_autocompletion(Classe.classes_names(), current)
 
+  @app_commands.autocomplete(classe=classe_autocomplete)
   @app_commands.command(name='class')
   async def classe_app_command(self, interaction: discord.Interaction, classe: str):
     Logger.command_log('class', interaction)
@@ -62,6 +65,10 @@ class Classe(commands.Cog):
   def get_all_classes():
     classes = requests.get(f"{DB_PATH}hero/class?class=all")
     return classes.json()
+  
+  def classes_names():
+    classes = Classe.get_all_classes()
+    return [{'name': c['heroclass']} for c in classes]
   
   def description(self, classe, heroes, pets):
     to_return = Classe.print_header(classe)
