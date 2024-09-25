@@ -2,8 +2,10 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import requests
+import typing
 from typing import Optional
 
+from service.command import CommandService
 from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
@@ -23,19 +25,19 @@ class Addcomment(commands.Cog):
     self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('addcomment')
 
-    if self.command:
-      self.addcomment_app_command.name = self.command['name']
-      self.addcomment_app_command.description = self.command['description']
-      self.addcomment_app_command._params['héros_ou_pet'].description = self.command['options'][0]['description']
-      self.addcomment_app_command._params['commentaire'].description = self.command['options'][1]['description']
-      self.addcomment_app_command._params['commentaire'].required = False
+    self.command_service = CommandService()
+    CommandService.init_command(self.addcomment_app_command, self.command)
+    self.dynamic_choices = self.command_service.set_choices(Addcomment.merged_lists())
 
+  async def héros_ou_pet_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    return await self.command_service.return_autocompletion(Addcomment.merged_lists(), current)
 
+  @app_commands.autocomplete(héros_ou_pet=héros_ou_pet_autocomplete)
   @app_commands.command(name='addcomment')
   async def addcomment_app_command(self, interaction: discord.Interaction, héros_ou_pet: str, commentaire: Optional[str] = None):
     Logger.command_log('addcomment', interaction)
     await self.send_message.post(interaction)
-    response = Addcomment.get_response(self, héros_ou_pet, commentaire, nick(interaction))
+    response = self.get_response(héros_ou_pet, commentaire, nick(interaction))
     await self.send_message.update(interaction, response)
     Logger.ok_log('addcomment')
 
@@ -59,18 +61,33 @@ class Addcomment(commands.Cog):
       return response
 
   def post_comment(h_or_p, comment, author):
-    comment = requests.post(f"{DB_PATH}comment?hero_or_pet={str_to_slug(h_or_p)}&comment={comment}&author={author}").json()
+    comment = requests.post(f"{DB_PATH}comment?hero_or_pet={h_or_p}&comment={comment}&author={author}").json()
     if 'error' not in comment.keys():
-      print('here')
-      updated = requests.get(f"{DB_PATH}hero/{str_to_slug(h_or_p)}").json()
+      updated = requests.get(f"{DB_PATH}hero/{h_or_p}").json()
       type = 'hero'
       if 'error'in updated.keys():
-        updated = requests.get(f"{DB_PATH}pet/{str_to_slug(h_or_p)}").json()
+        updated = requests.get(f"{DB_PATH}pet/{h_or_p}").json()
         type = 'pet'
     else:
       updated = comment
       type = 'error'
     return {"type": type, "updated": updated}
+  
+  def merged_lists():
+    heroes = Addcomment.get_heroes()
+    to_return = [{'name': h['name'], 'name_slug': h['name_slug']} for h in heroes]
+    pets = Addcomment.get_pets()
+    to_return.extend([{'name': p['name'], 'name_slug': p['name_slug']} for p in pets])
+    print(to_return)
+    return to_return
+  
+  def get_heroes():
+    heroes = requests.get(f'{DB_PATH}hero').json()
+    return heroes
+  
+  def get_pets():
+    pets = requests.get(f'{DB_PATH}pet').json()
+    return pets
   
 async def setup(bot):
   await bot.add_cog(Addcomment(bot))
