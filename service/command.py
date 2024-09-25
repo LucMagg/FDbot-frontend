@@ -6,14 +6,14 @@ from discord.app_commands import Choice
 class CommandService:
 
   @staticmethod
-  def init_command(command, command_data):
+  def init_command(command, command_data,no_choices=False):
     if command_data:
       command.name = command_data['name']
       command.description = command_data['description']
       for param in command_data['options']:
         command._params[param['name']].description = param['description']
         command._params[param['name']].required = param['required']
-        if 'choices' in param.keys():
+        if 'choices' in param.keys() and not no_choices:
           command._params[param['name']].choices = [Choice(name=p['name'], value=p['value']) for p in param['choices']]
 
   @staticmethod

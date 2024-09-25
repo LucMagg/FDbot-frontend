@@ -8,6 +8,7 @@ import typing
 from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
+from service.command import CommandService
 
 from utils.logger import Logger
 from config import DB_PATH
@@ -21,29 +22,24 @@ class Update(commands.Cog):
     self.error_msg = Message(bot).message('error')
     self.return_msg = Message(bot).message('update')
     self.help_msg = Message(bot).help('update')
-    self.known_types = self.get_known_types()
 
-    if self.command:
-      self.update_app_command.name = self.command['name']
-      self.update_app_command.description = self.command['description']
-      self.update_app_command._params['type'].description = self.command['options'][0]['description']
-      self.update_app_command._params['type'].required = self.command['options'][0]['required']
+    self.command_service = CommandService()
+    CommandService.init_command(self.update_app_command, self.command, no_choices=True)
+    self.choices = self.get_choices()
 
+  def get_choices(self):
+    return [app_commands.Choice(name=c['name'], value=c['value']) for c in self.command['options'][0]['choices']]
+  
+  async def type_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    return [c for c in self.choices if current.lower() in c.name.lower()]
 
-  def get_known_types(self):
-    return [app_commands.Choice(name=t['name'], value=t['value']) for t in self.command['options'][0]['choices']]
-
-  async def type_autocompletion(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return [t for t in self.known_types if current.lower() in t.name.lower()]
-
-
+  @app_commands.autocomplete(type=type_autocomplete)
   @app_commands.command(name='update')
-  @app_commands.autocomplete(type=type_autocompletion)
   async def update_app_command(self, interaction: discord.Interaction, type: str):
     Logger.command_log('update', interaction)
     await self.send_message.post(interaction, self.return_msg['description']['warning'])
     if not type:
-      type = Choice(name='Tout', value='all')
+      type = 'all'
     print(type)
     
     response = Update.get_response(self, type)
@@ -54,21 +50,22 @@ class Update(commands.Cog):
   def get_response(self, type):
     if type == 'help':
       return self.help_msg
-    if type == 'all':
+    """if type == 'all':
       update = requests.get(f'{DB_PATH}update').json()
     else:
-      update = requests.get(f'{DB_PATH}update?type={type}').json()
+      update = requests.get(f'{DB_PATH}update?type={type}').json()"""
+    update = {'message': 'ok'}
 
     if 'error' not in update.keys():
       if type == 'all':
         description = f"{self.return_msg['description']['all']}{self.return_msg['description']['thxmsg']}"
       else:
+        type = next((c['name'].lower() for c in self.command['options'][0]['choices'] if c['value'] == type), None)
         description = f"{self.return_msg['description']['part1']} {type} {self.return_msg['description']['part2']}{self.return_msg['description']['thxmsg']}"
     else:
       description = self.return_msg['description']['erreur']
           
     return {'title': self.return_msg['title'], 'description': description, 'color': 'default'}
-
 
 
 async def setup(bot):
