@@ -2,11 +2,13 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import requests
+import typing
 
 from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import slug_to_str, str_to_slug
 from utils.misc_utils import stars
+from service.command import CommandService
 
 from utils.logger import Logger
 from config import DB_PATH
@@ -19,12 +21,14 @@ class Petlist(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'petlist'), None)
     self.error_msg = Message(bot).message('error')
 
-    if self.command:
-      self.petlist_app_command.name = self.command['name']
-      self.petlist_app_command.description = self.command['description']
-      self.petlist_app_command._params['héros'].description = self.command['options'][0]['description']
+    self.command_service = CommandService()
+    CommandService.init_command(self.petlist_app_command, self.command)
+    self.choices = CommandService.set_choices(Petlist.get_heroes())
 
+  async def héros_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    return await self.command_service.return_autocompletion(self.choices, current)
 
+  @app_commands.autocomplete(héros=héros_autocomplete)
   @app_commands.command(name='petlist')
   async def petlist_app_command(self, interaction: discord.Interaction, héros: str):
     Logger.command_log('petlist', interaction)
@@ -49,13 +53,17 @@ class Petlist(commands.Cog):
               'description': f"{self.error_msg['description']['petlist'][2]['text']} {hero['name']} {self.error_msg['description']['petlist'][3]['text']}",
               'color': self.error_msg['color']}
     
-    description = f"{self.error_msg['description']['petlist'][0]['text']} {hero['name']} {self.error_msg['description']['petlist'][1]['text']}"
-    response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
+    description = Petlist.description(hero, pets)
+    response = {'title': '', 'description': description, 'color': hero['color'], 'pic': hero['image_url']}
 
     return response
   
+  def get_heroes():
+    heroes = requests.get(f'{DB_PATH}hero').json()
+    return [{'name': h['name'], 'name_slug': h['name_slug']} for h in heroes]
+  
   def get_hero(whichone):
-    hero = requests.get(f'{DB_PATH}hero/{slug_to_str(whichone)}')
+    hero = requests.get(f'{DB_PATH}hero/{whichone}')
     return hero.json()
   
   def get_pets_by_hero(whichone):
