@@ -3,7 +3,9 @@ from discord.ext import commands
 from discord import app_commands
 import requests
 from datetime import datetime
+import typing
 
+from service.command import CommandService
 from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
@@ -18,13 +20,14 @@ class Pet(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'pet'), None)
     self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('pet')
+    self.command_service = CommandService()
+    CommandService.init_command(self.pet_app_command, self.command)
+    self.choices = CommandService.set_choices(Pet.get_pets())
 
-    if self.command:
-      self.pet_app_command.name = self.command['name']
-      self.pet_app_command.description = self.command['description']
-      self.pet_app_command._params['pet'].description = self.command['options'][0]['description']
+  async def pet_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    return await self.command_service.return_autocompletion(self.choices, current)
 
-
+  @app_commands.autocomplete(pet=pet_autocomplete)
   @app_commands.command(name='pet')
   async def pet_app_command(self, interaction: discord.Interaction, pet: str):
     Logger.command_log('pet', interaction)
@@ -43,6 +46,10 @@ class Pet(commands.Cog):
       description = f"{self.error_msg['description']['pet'][0]['text']} {pet} {self.error_msg['description']['pet'][1]['text']}"
       response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
     return response
+  
+  def get_pets():
+    pets = requests.get(f'{DB_PATH}pet').json()
+    return [{'name': p['name'], 'name_slug': p['name_slug']} for p in pets]
 
   def get_pet(whichone):
     pet = requests.get(f'{DB_PATH}pet/{str_to_slug(whichone)}')
