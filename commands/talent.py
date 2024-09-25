@@ -8,6 +8,7 @@ from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars
+from service.command import CommandService
 
 from utils.logger import Logger
 from config import DB_PATH
@@ -20,24 +21,15 @@ class Talent(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'talent'), None)
     self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('talent')
-    self.known_talents = self.get_known_talents()
 
-    if self.command:
-      self.talent_app_command.name = self.command['name']
-      self.talent_app_command.description = self.command['description']
-      self.talent_app_command._params['talent'].description = self.command['options'][0]['description']
+    self.command_service = CommandService()
+    CommandService.init_command(self.talent_app_command, self.command)
+    self.choices = CommandService.set_choices(Talent.get_talents())
 
+  async def talent_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    return await self.command_service.return_autocompletion(self.choices, current)
 
-  def get_known_talents(self):
-    talents = requests.get(f'{DB_PATH}talent').json()
-    talent_choices = sorted([app_commands.Choice(name=t['name'], value=t['name_slug']) for t in talents], key=lambda t:t.name)
-    return talent_choices
-
-  async def talent_autocompletion(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    choices = [t for t in self.known_talents if current.lower() in t.name.lower()]
-    return choices[:25]
-
-  @app_commands.autocomplete(talent=talent_autocompletion)
+  @app_commands.autocomplete(talent=talent_autocomplete)
   @app_commands.command(name='talent')
   async def talent_app_command(self, interaction: discord.Interaction, talent: str):
     Logger.command_log('talent', interaction)
@@ -59,6 +51,10 @@ class Talent(commands.Cog):
       description = f"{self.error_msg['description']['talent'][0]['text']} {talent} {self.error_msg['description']['talent'][1]['text']}"
       response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
     return response
+  
+  def get_talents():
+    talents = requests.get(f'{DB_PATH}talent').json()
+    return [{'name': t['name'], 'name_slug': t['name_slug']} for t in talents]
   
   def get_talent(whichone):
     talent = requests.get(f'{DB_PATH}talent/{whichone}')
