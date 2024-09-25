@@ -9,6 +9,7 @@ from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars, rank_text, pluriel
+from service.command import CommandService
 
 from utils.logger import Logger
 from config import DB_PATH
@@ -21,24 +22,14 @@ class Hero(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'hero'), None)
     self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('hero')
-    self.known_heroes = self.get_known_heroes()
+  
+    self.command_service = CommandService()
+    CommandService.init_command(self.hero_app_command, self.command)
 
-    if self.command:
-      self.hero_app_command.name = self.command['name']
-      self.hero_app_command.description = self.command['description']
-      self.hero_app_command._params['héros'].description = self.command['options'][0]['description']
-  
-  
-  def get_known_heroes(self):
-    heroes = requests.get(f'{DB_PATH}hero').json()
-    hero_choices = sorted([app_commands.Choice(name=h['name'], value=h['name_slug']) for h in heroes], key=lambda h:h.name)
-    return hero_choices
+  async def héros_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    return await self.command_service.return_autocompletion(Hero.get_heroes(), current)
 
-  async def hero_autocompletion(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    choices = [h for h in self.known_heroes if current.lower() in h.name.lower()]
-    return choices[:25]
-  
-  @app_commands.autocomplete(héros=hero_autocompletion)
+  @app_commands.autocomplete(héros=héros_autocomplete)
   @app_commands.command(name='hero')
   async def hero_app_command(self, interaction: discord.Interaction, héros: str):
     Logger.command_log('hero', interaction)
@@ -46,6 +37,10 @@ class Hero(commands.Cog):
     response = Hero.get_response(self, héros)
     await self.send_message.update(interaction, response)
     Logger.ok_log('hero')
+
+  def get_heroes():
+    heroes = requests.get(f'{DB_PATH}hero').json()
+    return [{'name': h['name'], 'name_slug': h['name_slug']} for h in heroes]
 
   def get_hero(whichone):
     hero = requests.get(f'{DB_PATH}hero/{str_to_slug(whichone)}')

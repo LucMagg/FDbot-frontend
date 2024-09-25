@@ -27,7 +27,6 @@ class Addcomment(commands.Cog):
 
     self.command_service = CommandService()
     CommandService.init_command(self.addcomment_app_command, self.command)
-    self.dynamic_choices = self.command_service.set_choices(Addcomment.merged_lists())
 
   async def héros_ou_pet_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await self.command_service.return_autocompletion(Addcomment.merged_lists(), current)
@@ -78,7 +77,6 @@ class Addcomment(commands.Cog):
     to_return = [{'name': h['name'], 'name_slug': h['name_slug']} for h in heroes]
     pets = Addcomment.get_pets()
     to_return.extend([{'name': p['name'], 'name_slug': p['name_slug']} for p in pets])
-    print(to_return)
     return to_return
   
   def get_heroes():
