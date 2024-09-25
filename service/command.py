@@ -21,7 +21,6 @@ class CommandService:
     choices = sorted([app_commands.Choice(name=c['name'], value=c['name_slug'] if 'name_slug' in c.keys() else c['name']) for c in collection], key=lambda c:c.name)
     return choices
 
-  async def return_autocompletion(self, collection: list, current: str) -> typing.List[app_commands.Choice[str]]:
-    choices = self.set_choices(collection)
+  async def return_autocompletion(self, choices: list, current: str) -> typing.List[app_commands.Choice[str]]:
     first_25_choices = [c for c in choices if current.lower() in c.name.lower()][:25]
     return first_25_choices

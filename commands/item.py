@@ -2,7 +2,9 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import requests
+import typing
 
+from service.command import CommandService
 from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import slug_to_str, str_to_slug
@@ -21,13 +23,15 @@ class Item(commands.Cog):
     self.help_msg = Message(bot).help('item')
     self.qualities = bot.static_data.qualities
     self.dusts = bot.static_data.dusts
-
-    if self.command:
-      self.item_app_command.name = self.command['name']
-      self.item_app_command.description = self.command['description']
-      self.item_app_command._params['item'].description = self.command['options'][0]['description']
+    self.command_service = CommandService()
+    CommandService.init_command(self.item_app_command, self.command)
+    self.choices = CommandService.set_choices(Item.get_items())
 
 
+  async def item_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    return await self.command_service.return_autocompletion(self.choices, current)
+
+  @app_commands.autocomplete(item=item_autocomplete)
   @app_commands.command(name='item')
   async def item_app_command(self, interaction: discord.Interaction, item: str):
     Logger.command_log('item', interaction)
@@ -97,6 +101,10 @@ class Item(commands.Cog):
     to_return += f"* :moneybag: {quality['recycling']['gold']}\n"
     to_return += f"* {dust['icon']} {quality['recycling']['dust']['quantity']} {quality['recycling']['dust']['name']} dusts"
     return to_return
+  
+  def get_items():
+    gear = requests.get(f"{DB_PATH}gear/all").json()
+    return [{"name": g} for g in gear]
   
 
 async def setup(bot):

@@ -25,9 +25,10 @@ class Hero(commands.Cog):
   
     self.command_service = CommandService()
     CommandService.init_command(self.hero_app_command, self.command)
+    self.choices = CommandService.set_choices(Hero.get_heroes())
 
   async def héros_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return await self.command_service.return_autocompletion(Hero.get_heroes(), current)
+    return await self.command_service.return_autocompletion(self.choices, current)
 
   @app_commands.autocomplete(héros=héros_autocomplete)
   @app_commands.command(name='hero')
