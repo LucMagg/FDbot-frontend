@@ -50,11 +50,10 @@ class Update(commands.Cog):
   def get_response(self, type):
     if type == 'help':
       return self.help_msg
-    """if type == 'all':
+    if type == 'all':
       update = requests.get(f'{DB_PATH}update').json()
     else:
-      update = requests.get(f'{DB_PATH}update?type={type}').json()"""
-    update = {'message': 'ok'}
+      update = requests.get(f'{DB_PATH}update?type={type}').json()
 
     if 'error' not in update.keys():
       if type == 'all':
