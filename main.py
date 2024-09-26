@@ -5,7 +5,6 @@ import discord
 
 async def main():
   bot = MyBot()
-  await bot.setup_hook()
 
   try:
     await bot.start(BOT_KEY)
