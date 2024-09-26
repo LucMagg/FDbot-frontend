@@ -2,13 +2,13 @@ import discord
 from discord.ext import commands, tasks
 from itertools import cycle
 from config import PREFIX
+from utils.levelData import LevelData
 from utils.static_data import StaticData
 from utils.str_utils import str_now, str_to_slug
 import traceback
 
 
-status = cycle(['tester la v2',
-                ])
+status = cycle(['tester la v2'])
 
 class MyBot(commands.Bot):
   def __init__(self):
@@ -19,6 +19,7 @@ class MyBot(commands.Bot):
     
     self.static_data = StaticData()
     self.synced = False
+    self.level_data = LevelData()
 
   async def on_ready(self):
     await self.wait_until_ready()
@@ -34,6 +35,8 @@ class MyBot(commands.Bot):
     print(f'[{str_now()}] Initialisation du bot...')
     self.static_data.load_all_data()
     print(f'[{str_now()}] Toutes les données statiques sont chargées')
+    self.level_data.load_levels()
+    print(f'[{str_now()}] Toutes les données levels sont chargées')
 
     extensions = [
       'commands.hero',
@@ -47,7 +50,9 @@ class MyBot(commands.Bot):
       'commands.botstats',
       'commands.petlist',
       'commands.update',
-      'commands.level'
+      'commands.level',
+      'commands.rewardstat',
+      'commands.reward',
     ]
 
     # Chargement des extensions
