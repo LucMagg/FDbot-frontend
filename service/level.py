@@ -11,11 +11,8 @@ class LevelService:
 
   @staticmethod
   def get_reward_response(emojis, level_name, reward_type, reward_quantity, gear_qualities, dust_qualities, reward_quality: Optional[str] = ''):
-    print('getting reward response')
     level = LevelService.add_reward(level_name, reward_type, reward_quantity, reward_quality)
-    print(level)
     quantities_str = LevelService.get_rewards_str(level.get('rewards', []), emojis, gear_qualities, dust_qualities)
-    print(quantities_str)
     return {'title': f'Récompense ajoutée au niveau {level.get('name')}',
             'description': f"Merci d'avoir ajouté une récompense à ce niveau! \nStatistiques actuelles pour ce niveau:\n{quantities_str}",
             'color': 'blue'}
@@ -32,7 +29,6 @@ class LevelService:
 
   @staticmethod
   def get_rewards_str(rewards, emojis, gear_qualities, dust_qualities):
-    print('getting rewards str')
     total_reward_appearances = sum([reward.get('appearances') for reward in rewards])
     quantities = []
     for r in rewards:
@@ -55,6 +51,5 @@ class LevelService:
 
   @staticmethod
   def get_potion_emoji(emojis):
-    print("getting potions emoji")
     potion_emoji = discord.utils.get(emojis, name='potion')
     return str(potion_emoji) if potion_emoji else ''
