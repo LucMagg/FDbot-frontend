@@ -47,7 +47,7 @@ class Reward(commands.Cog):
       await interaction.response.send_message(content="Choississez la qualité de l'objet", view=view)
     else:
       await self.send_message.post(interaction)
-      response = LevelService.get_reward_response(interaction.guild.emojis, level, type.name, quantity, self.gear_qualities, self.dust_qualities)
+      response = LevelService.get_reward_response('add', interaction.guild.emojis, level, type.name, quantity, self.gear_qualities, self.dust_qualities)
       await self.send_message.update(interaction, response)
       Logger.ok_log('reward')
 
@@ -73,7 +73,7 @@ class RewardButton(Button):
 
   async def callback(self, interaction: discord.Interaction):
     try:
-      response = LevelService.get_reward_response(self.reward_button_data.emojis, self.level_name, self.reward_type, self.reward_button_data.quantity,
+      response = LevelService.get_reward_response('add', self.reward_button_data.emojis, self.level_name, self.reward_type, self.reward_button_data.quantity,
                                                   self.reward_button_data.gear_qualities, self.reward_button_data.dust_qualities, self.quality)
       await self.send_message.update_remove_view(interaction, response)
     except Exception as e:
