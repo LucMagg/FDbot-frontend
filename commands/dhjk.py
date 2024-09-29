@@ -5,6 +5,7 @@ import random
 
 from utils.sendMessage import SendMessage
 from utils.misc_utils import stars
+from service.command import CommandService
 
 from utils.logger import Logger
 
@@ -15,9 +16,8 @@ class Dhjk(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'dhjk'), None)
     self.messages = next((m for m in bot.static_data.messages if m['name'] == 'dhjk'), None)
 
-    if self.command:
-      self.dhjk_app_command.name = self.command['name']
-      self.dhjk_app_command.description = self.command['description']
+    self.command_service = CommandService()
+    CommandService.init_command(self.dhjk_app_command, self.command)
 
 
   @app_commands.command(name='dhjk')
