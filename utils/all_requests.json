@@ -1,0 +1,187 @@
+[
+  {
+    "command": "command",
+    "name": "getAllCommands",
+    "url": "command",
+    "type": "get"
+  },
+  {
+    "command": "addcomment",
+    "name": "addComment",
+    "url": "comment?hero_or_pet=[[param0]]&comment=[[param1]]&author=[[param2]]",
+    "type": "post",
+    "param0": "str",
+    "param1": "default",
+    "param2": "default"
+  },
+  {
+    "name": "getAllDusts",
+    "url": "dust",
+    "type": "get"
+  },
+  {
+    "name": "getAllUniqueGear",
+    "url": "gear",
+    "type": "get"
+  },
+  {
+    "name": "getAllExistingGear",
+    "url": "gear/all",
+    "type": "get"
+  },
+  {
+    "name": "getUniqueGearByPosition",
+    "url": "gear?position=[[param0]]",
+    "type": "get",
+    "param0": "str"
+  },
+  {
+    "name": "getUniqueGearByType",
+    "url": "gear?type=[[param0]]",
+    "type": "get",
+    "param0": "str"
+  },
+  {
+    "name": "getUniqueGearByTypeAndPosition",
+    "url": "gear?type=[[param0]]&position=[[param1]]",
+    "type": "get",
+    "param0": "str",
+    "param1": "str"
+  },
+  {
+    "name": "getAllHeroes",
+    "url": "hero",
+    "type": "get"
+  },
+  {
+    "command": "hero",
+    "name": "getHeroByName",
+    "url": "hero/[[param0]]",
+    "type": "get",
+    "param0": "slug"
+  },
+  {
+    "command": "pet",
+    "name": "getHeroesByPet",
+    "url": "hero/pet?pet=[[param0]]",
+    "type": "get",
+    "param0": "str"
+  },
+  {
+    "command": "class",
+    "name": "getHeroesByClass",
+    "url": "hero/class?class=[[param0]]",
+    "type": "get",
+    "param0": "str"
+  },
+  {
+    "name": "getAllClasses",
+    "url": "hero/class?class=all",
+    "type": "get"
+  },
+  {
+    "name": "getHeroesByTalent",
+    "url": "hero/talent?talent=[[param0]]",
+    "type": "get",
+    "param0": "slug"
+  },
+  {
+    "command": "item",
+    "name": "getHeroesByGearName",
+    "url": "hero/gear?gear_name=[[param0]]",
+    "type": "get",
+    "param0": "str"
+  },
+  {
+    "command": "item",
+    "name": "getHeroesByGearNameAndQuality",
+    "url": "hero/gear?&gear_quality=[[param0]]&gear_name=[[param1]]",
+    "type": "get",
+    "param0": "str",
+    "param1": "str"
+  },
+  {
+    "name": "addLevel",
+    "url": "levels",
+    "type": "post",
+    "param": "json"
+  },
+  {
+    "name": "getLevels",
+    "url": "levels",
+    "type": "get"
+  },
+  {
+    "name": "getLevelByName",
+    "url": "levels/[[param0]]",
+    "type": "get",
+    "param0": "str"
+  },
+  {
+    "name": "getAllMessages",
+    "url": "message",
+    "type": "get"
+  },
+  {
+    "name": "getAllPets",
+    "url": "pet",
+    "type": "get"
+  },
+  {
+    "name": "getPetByName",
+    "url": "pet/[[param0]]",
+    "type": "get",
+    "param0": "slug"
+  },
+  {
+    "name": "getPetsByTalent",
+    "url": "pet/talent?talent=[[param0]]",
+    "type": "get",
+    "param0": "slug"
+  },
+  {
+    "name": "getPetsByClass",
+    "url": "pet/class?class=[[param0]]",
+    "type": "get",
+    "param0": "slug"
+  },
+  {
+    "name": "getPetsByHeroname",
+    "url": "pet/hero?hero=[[param0]]",
+    "type": "get",
+    "param0": "str"
+  },
+  {
+    "name": "getAllQualities",
+    "url": "quality",
+    "type": "get"
+  },
+  {
+    "name": "getQualityByName",
+    "url": "quality/[[param0]]",
+    "type": "get",
+    "param0": "str"
+  },
+  {
+    "name": "getAllTalents",
+    "url": "talent",
+    "type": "get"
+  },
+  {
+    "name": "getTalentByName",
+    "url": "talent/[[param0]]",
+    "type": "get",
+    "param0": "slug"
+  },
+  {
+    "name": "getAllUpdates",
+    "url": "update",
+    "type": "get"
+  },
+  {
+    "name": "getOneUpdate",
+    "url": "update?type=[[param0]]",
+    "type": "get",
+    "param0": "slug"
+  }  
+]

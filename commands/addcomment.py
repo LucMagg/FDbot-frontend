@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import requests
 import typing
 from typing import Optional
 
@@ -11,7 +10,6 @@ from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import nick
 from utils.logger import Logger
-from config import DB_PATH
 
 from commands.hero import Hero
 from commands.pet import Pet
@@ -27,7 +25,7 @@ class Addcomment(commands.Cog):
 
     self.command_service = CommandService()
     CommandService.init_command(self.addcomment_app_command, self.command)
-    self.choices = CommandService.set_choices(Addcomment.merged_lists())
+    self.choices = None
 
   async def héros_ou_pet_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await self.command_service.return_autocompletion(self.choices, current)
@@ -37,15 +35,15 @@ class Addcomment(commands.Cog):
   async def addcomment_app_command(self, interaction: discord.Interaction, héros_ou_pet: str, commentaire: Optional[str] = None):
     Logger.command_log('addcomment', interaction)
     await self.send_message.post(interaction)
-    response = self.get_response(héros_ou_pet, commentaire, nick(interaction))
+    response = await self.get_response(héros_ou_pet, commentaire, nick(interaction), interaction)
     await self.send_message.update(interaction, response)
     Logger.ok_log('addcomment')
 
-  def get_response(self, h_or_p, comment, author):
+  async def get_response(self, h_or_p, comment, author, interaction):
     if str_to_slug(h_or_p) == 'help':
       return self.help_msg
     if comment is not None:
-      comment = Addcomment.post_comment(h_or_p, comment, author)
+      comment = await self.post_comment(h_or_p, comment, author, interaction)
       match comment['type']:
         case 'hero':
           response = Hero.get_response(self, comment['updated']['name'])
@@ -60,33 +58,34 @@ class Addcomment(commands.Cog):
       response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
       return response
 
-  def post_comment(h_or_p, comment, author):
-    comment = requests.post(f"{DB_PATH}comment?hero_or_pet={h_or_p}&comment={comment}&author={author}").json()
-    if 'error' not in comment.keys():
-      updated = requests.get(f"{DB_PATH}hero/{h_or_p}").json()
-      type = 'hero'
-      if 'error'in updated.keys():
-        updated = requests.get(f"{DB_PATH}pet/{h_or_p}").json()
-        type = 'pet'
-    else:
-      updated = comment
-      type = 'error'
-    return {"type": type, "updated": updated}
+  async def post_comment(self, h_or_p, comment, author, interaction):
+    comment = await self.bot.back_requests.call('addComment', False, [h_or_p, comment, author], interaction)
+    if not comment:
+      return {'type': 'error', 'updated': None}
+    
+    updated = await self.bot.back_requests.call('getHeroByName', False, [h_or_p], interaction)
+    if updated:
+      return {'type': 'hero', 'updated': updated}
+    
+    updated = await self.bot.back_requests.call('getPetByName', False, [h_or_p], interaction)
+    if updated:
+      return {"type": 'pet', "updated": updated}
   
-  def merged_lists():
-    heroes = Addcomment.get_heroes()
+  async def init_choices(self):
+    heroes = await self.bot.back_requests.call('getAllHeroes', False)
+    if not heroes:
+      print('fail :(')
+      return [{'name': 'Échec du chargement des héros'}]
     to_return = [{'name': h['name'], 'name_slug': h['name_slug']} for h in heroes]
-    pets = Addcomment.get_pets()
+    pets = await self.bot.back_requests.call('getAllPets', False)
+    if not pets:
+      return to_return
     to_return.extend([{'name': p['name'], 'name_slug': p['name_slug']} for p in pets])
     return to_return
   
-  def get_heroes():
-    heroes = requests.get(f'{DB_PATH}hero').json()
-    return heroes
-  
-  def get_pets():
-    pets = requests.get(f'{DB_PATH}pet').json()
-    return pets
+  async def setup(self):
+    choices = await self.init_choices()
+    self.choices = CommandService.set_choices(choices)
   
 async def setup(bot):
   await bot.add_cog(Addcomment(bot))

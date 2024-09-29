@@ -5,10 +5,11 @@ from config import PREFIX
 from utils.levelData import LevelData
 from utils.static_data import StaticData
 from utils.str_utils import str_now, str_to_slug
+from service.back_requests import BackRequests
 import traceback
 
 
-status = cycle(['tester la v2'])
+status = cycle(['faire plaisir à Spirou'])
 
 class MyBot(commands.Bot):
   def __init__(self):
@@ -20,6 +21,7 @@ class MyBot(commands.Bot):
     self.static_data = StaticData()
     self.synced = False
     self.level_data = LevelData()
+    self.back_requests = None
 
   async def on_ready(self):
     await self.wait_until_ready()
@@ -37,37 +39,48 @@ class MyBot(commands.Bot):
     print(f'[{str_now()}] Toutes les données statiques sont chargées')
     self.level_data.load_levels()
     print(f'[{str_now()}] Toutes les données levels sont chargées')
+    self.back_requests = BackRequests(self)
+    print(f'[{str_now()}] Initialisation du dialogue avec le back')
 
     extensions = [
-      'commands.hero',
-      'commands.pet',
-      'commands.addcomment',
-      'commands.talent',
-      'commands.classe',
-      'commands.item',
-      'commands.dhjk',
-      'commands.bothelp',
-      'commands.botstats',
-      'commands.petlist',
-      'commands.update',
-      'commands.level',
-      'commands.rewardstat',
-      'commands.reward',
+      {'name': 'commands.hero', 'has_setup': False},
+      {'name': 'commands.pet', 'has_setup': False},
+      {'name': 'commands.addcomment', 'has_setup': True},
+      {'name': 'commands.talent', 'has_setup': False},
+      {'name': 'commands.classe', 'has_setup': False},
+      {'name': 'commands.item', 'has_setup': True},
+      {'name': 'commands.dhjk', 'has_setup': False},
+      {'name': 'commands.bothelp', 'has_setup': False},
+      {'name': 'commands.botstats', 'has_setup': False},
+      {'name': 'commands.petlist', 'has_setup': False},
+      {'name': 'commands.update', 'has_setup': False},
+      {'name': 'commands.level', 'has_setup': False},
+      {'name': 'commands.rewardstat', 'has_setup': False},
+      {'name': 'commands.reward', 'has_setup': False},
     ]
 
     # Chargement des extensions
     for extension in extensions:
       try:
-        if extension not in self.extensions:
-          await self.load_extension(extension)
-          print(f'[{str_now()}] Extension {extension} chargée')
+        if extension.get('name') not in self.extensions:
+          await self.load_extension(extension.get('name'))
+          if extension.get('has_setup'):
+            await self.setup_extension(extension)
+          print(f'[{str_now()}] Extension {extension.get('name')} chargée')
         else:
-          print(f'[{str_now()}] Extension {extension} déjà chargée')
+          print(f'[{str_now()}] Extension {extension.get('name')} déjà chargée')
       except Exception as e:
-        print(f'[{str_now()}] Erreur lors du chargement de l\'extension {extension}: {str(e)}')
+        print(f'[{str_now()}] Erreur lors du chargement de l\'extension {extension.get('name')}: {str(e)}')
 
     print(f'[{str_now()}] Toutes les extensions sont chargées')
     
+  async def setup_extension(self, extension):
+    cog_name = extension.get('name').split('.')[1].capitalize()
+    cog = self.get_cog(cog_name)
+    if cog and hasattr(cog, 'setup'):
+      await cog.setup()
+    else:
+      print(f"Aucun setup trouvé pour la commande {cog_name}")
 
   @tasks.loop(seconds=30)
   async def status_loop(self):
