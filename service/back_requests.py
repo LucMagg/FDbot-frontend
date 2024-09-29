@@ -51,7 +51,6 @@ class BackRequests:
 
     except RequestException as e:
       print(f"Une erreur s'est produite lors de la requête : {e}")
-      # Gérer l'erreur ici, par exemple en informant l'utilisateur
       if interaction:
           error_response = {'title': 'Erreur', 'description': f'Une erreur s\'est produite : {str(e)}', 'color': 'red'}
           await self.send_message.update(interaction, error_response)
@@ -83,9 +82,7 @@ class BackRequests:
       case 200 | 201:
         return True
       case 404:
-        print('error!')
         if handle_errors:
-          print('je gère :)')
           param = ' '.join(params)
           whichone = my_request.get('command')
           print(self.error_msg.get('description').get(whichone)[0].get('text'))
