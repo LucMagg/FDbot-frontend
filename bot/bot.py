@@ -43,44 +43,41 @@ class MyBot(commands.Bot):
     print(f'[{str_now()}] Initialisation du dialogue avec le back')
 
     extensions = [
-      {'name': 'commands.hero', 'has_setup': False},
-      {'name': 'commands.pet', 'has_setup': False},
-      {'name': 'commands.addcomment', 'has_setup': True},
-      {'name': 'commands.talent', 'has_setup': False},
-      {'name': 'commands.classe', 'has_setup': False},
-      {'name': 'commands.item', 'has_setup': True},
-      {'name': 'commands.dhjk', 'has_setup': False},
-      {'name': 'commands.bothelp', 'has_setup': False},
-      {'name': 'commands.botstats', 'has_setup': False},
-      {'name': 'commands.petlist', 'has_setup': False},
-      {'name': 'commands.update', 'has_setup': False},
-      {'name': 'commands.level', 'has_setup': False},
-      {'name': 'commands.rewardstat', 'has_setup': False},
-      {'name': 'commands.reward', 'has_setup': False},
+      'commands.hero',
+      'commands.pet',
+      'commands.addcomment',
+      'commands.talent',
+      'commands.classe',
+      'commands.item',
+      'commands.dhjk',
+      'commands.bothelp',
+      'commands.botstats',
+      'commands.petlist',
+      'commands.update',
+      'commands.level',
+      'commands.rewardstat',
+      'commands.reward',
     ]
 
     # Chargement des extensions
     for extension in extensions:
       try:
-        if extension.get('name') not in self.extensions:
-          await self.load_extension(extension.get('name'))
-          if extension.get('has_setup'):
-            await self.setup_extension(extension)
-          print(f'[{str_now()}] Extension {extension.get('name')} chargée')
+        if extension not in self.extensions:
+          await self.load_extension(extension)
+          await self.setup_extension(extension)
+          print(f'[{str_now()}] Extension {extension} chargée')
         else:
-          print(f'[{str_now()}] Extension {extension.get('name')} déjà chargée')
+          print(f'[{str_now()}] Extension {extension} déjà chargée')
       except Exception as e:
-        print(f'[{str_now()}] Erreur lors du chargement de l\'extension {extension.get('name')}: {str(e)}')
+        print(f'[{str_now()}] Erreur lors du chargement de l\'extension {extension}: {str(e)}')
 
     print(f'[{str_now()}] Toutes les extensions sont chargées')
     
   async def setup_extension(self, extension):
-    cog_name = extension.get('name').split('.')[1].capitalize()
+    cog_name = extension.split('.')[1].capitalize()
     cog = self.get_cog(cog_name)
     if cog and hasattr(cog, 'setup'):
       await cog.setup()
-    else:
-      print(f"Aucun setup trouvé pour la commande {cog_name}")
 
   @tasks.loop(seconds=30)
   async def status_loop(self):
@@ -93,11 +90,11 @@ class MyBot(commands.Bot):
       await message.reply(content='CONTREPAF!!! :rofl:')
       print(f"[{str_now()}] Contre-pafé :D")
 
-    if message.author.id == 504814725020909578:
+    """if message.author.id == 504814725020909578:
       gif_url = 'https://tenor.com/fr/view/gloves-on-im-ready-lets-do-this-glove-doctor-gif-15313441'
       await message.reply(content=f"CONTRE-DJACK!!! :fist:\n\n(<@701514411495653397> je t\'attends pour le double-tchitchi... :kissing_heart::rofl:){gif_url}")
 
-      print(f"[{str_now()}] Contre-djack :D")
+      print(f"[{str_now()}] Contre-djack :D")"""
 
     await self.process_commands(message)
 

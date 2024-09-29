@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import requests
 import typing
 
 from utils.message import Message
@@ -11,7 +10,6 @@ from utils.misc_utils import stars, rank_text
 from service.command import CommandService
 
 from utils.logger import Logger
-from config import DB_PATH
 
 
 class Classe(commands.Cog):
@@ -19,56 +17,38 @@ class Classe(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'class'), None)
-    self.error_msg = Message(bot).message('error')
 
     self.command_service = CommandService()
     CommandService.init_command(self.classe_app_command, self.command)
+    self.choices = None
 
   async def classe_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return await self.command_service.return_autocompletion(Classe.classes_names(), current)
+    return await self.command_service.return_autocompletion(self.choices, current)
 
   @app_commands.autocomplete(classe=classe_autocomplete)
   @app_commands.command(name='class')
   async def classe_app_command(self, interaction: discord.Interaction, classe: str):
     Logger.command_log('class', interaction)
     await self.send_message.post(interaction)
-    response = Classe.get_response(self, classe)
-    await self.send_message.update(interaction, response)
+    response = await self.get_response(classe, interaction)
+    if response:
+      await self.send_message.update(interaction, response)
     Logger.ok_log('class')
 
-  def get_response(self, classe):
+  async def get_response(self, classe, interaction):
     if str_to_slug(classe) == 'help':
-      classes = Classe.get_all_classes()
-      if classes:
-        class_list = '\n'.join([f"* {c['heroclass']}" for c in classes])
-        help_msg = Message(self.bot).help('class', class_list)
+      class_list = '\n'.join([f"* {c.name}" for c in self.choices])
+      help_msg = Message(self.bot).help('class', class_list)
       return help_msg
     
-    heroes = Classe.get_heroes_by_class(classe)
-    pets = Classe.get_pets_by_class(classe)
-
-    if not (isinstance(heroes, list) or isinstance(pets, list)):
-      description = f"{self.error_msg['description']['class'][0]['text']} {classe} {self.error_msg['description']['class'][1]['text']}"
-      return {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
+    pets = await self.bot.back_requests.call('getPetsByClass', False, [classe])
+    heroes = await self.bot.back_requests.call('getHeroesByClass', True, [classe], interaction)
     
-    response = {'title': '', 'description': Classe.description(self, classe, heroes, pets), 'color': 'default', 'pic': None}  
+    if not heroes:
+      return
+    
+    response = {'title': '', 'description': self.description(classe, heroes, pets), 'color': 'default', 'pic': None}  
     return response
-  
-  def get_heroes_by_class(whichone):
-    heroes = requests.get(f'{DB_PATH}hero/class?class={slug_to_str(whichone)}')
-    return heroes.json()
-  
-  def get_pets_by_class(whichone):
-    pets = requests.get(f'{DB_PATH}pet/class?class={slug_to_str(whichone)}')
-    return pets.json()
-
-  def get_all_classes():
-    classes = requests.get(f"{DB_PATH}hero/class?class=all")
-    return classes.json()
-  
-  def classes_names():
-    classes = Classe.get_all_classes()
-    return [{'name': c['heroclass']} for c in classes]
   
   def description(self, classe, heroes, pets):
     to_return = Classe.print_header(classe)
@@ -109,6 +89,10 @@ class Classe(commands.Cog):
             to_return += '\n'
 
     return to_return
+  
+  async def setup(self):
+    choices = await self.bot.back_requests.call('getAllClasses', False)
+    self.choices = CommandService.set_choices([{'name': c['heroclass']} for c in choices]) 
   
 
 async def setup(bot):
