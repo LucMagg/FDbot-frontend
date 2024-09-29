@@ -107,7 +107,7 @@
     "param": "json"
   },
   {
-    "name": "getLevels",
+    "name": "getAllLevels",
     "url": "levels",
     "type": "get"
   },
@@ -168,6 +168,7 @@
     "type": "get"
   },
   {
+    "command": "talent",
     "name": "getTalentByName",
     "url": "talent/[[param0]]",
     "type": "get",

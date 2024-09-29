@@ -17,7 +17,6 @@ class Item(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'item'), None)
-    self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('item')
     self.qualities = bot.static_data.qualities
     self.dusts = bot.static_data.dusts

@@ -1,52 +1,37 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import requests
 from collections import Counter
 
+from service.command import CommandService
 from utils.sendMessage import SendMessage
 from utils.misc_utils import stars
 from utils.logger import Logger
-from config import DB_PATH
 
 class Botstats(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'botstats'), None)
-
-    if self.command:
-      self.botstats_app_command.name = self.command['name']
-      self.botstats_app_command.description = self.command['description']
+    self.command_service = CommandService()
+    CommandService.init_command(self.botstats_app_command, self.command)
 
 
   @app_commands.command(name='botstats')
   async def botstats_app_command(self, interaction: discord.Interaction):
     Logger.command_log('botstats', interaction)
     await self.send_message.post(interaction)
-    response = Botstats.get_response()
+    response = await self.get_response()
     await self.send_message.update(interaction, response)
     Logger.ok_log('botstats')
 
-  def get_response():
-    talents = Botstats.get_talents()
-    heroes = Botstats.get_heroes()
-    pets = Botstats.get_pets()
+  async def get_response(self):
+    talents = await self.bot.back_requests.call('getAllTalents', False)
+    heroes = await self.bot.back_requests.call('getAllHeroes', False)
+    pets = await self.bot.back_requests.call('getAllPets', False)
 
     response = {'title': '', 'description': Botstats.description(talents, heroes, pets), 'color': 'default'}
     return response
-  
-  def get_talents():
-    talent = requests.get(f'{DB_PATH}talent')
-    return talent.json()
-  
-  def get_heroes():
-    heroes = requests.get(f'{DB_PATH}hero')
-    return heroes.json()
-  
-  def get_pets():
-    pets = requests.get(f'{DB_PATH}pet')
-    return pets.json()
   
   def description(talents, heroes, pets):
     description = '# Stats du bot #\n'
