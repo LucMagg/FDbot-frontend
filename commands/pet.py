@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import requests
 from datetime import datetime
 import typing
 
@@ -9,20 +8,19 @@ from service.command import CommandService
 from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
-from utils.misc_utils import stars, rank_text, pluriel
+from utils.misc_utils import stars, pluriel
 from utils.logger import Logger
-from config import DB_PATH
 
 class Pet(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'pet'), None)
-    self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('pet')
+
     self.command_service = CommandService()
     CommandService.init_command(self.pet_app_command, self.command)
-    self.choices = CommandService.set_choices(Pet.get_pets())
+    self.choices = None
 
   async def pet_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await self.command_service.return_autocompletion(self.choices, current)
@@ -32,49 +30,32 @@ class Pet(commands.Cog):
   async def pet_app_command(self, interaction: discord.Interaction, pet: str):
     Logger.command_log('pet', interaction)
     await self.send_message.post(interaction)
-    response = Pet.get_response(self, pet)
+    response = await self.get_response(pet, interaction)
     await self.send_message.update(interaction, response)
     Logger.ok_log('pet')
 
-  def get_response(self, pet):
+  async def get_response(self, pet, interaction):
     if str_to_slug(pet) == 'help':
       return self.help_msg
-    pet_item = Pet.get_pet(pet)
-    if not 'error' in pet_item.keys():
-      response = {'title': '', 'description': Pet.description(self, pet_item), 'color': pet_item['color'], 'pic': pet_item['image_url']}
-    else:
-      description = f"{self.error_msg['description']['pet'][0]['text']} {pet} {self.error_msg['description']['pet'][1]['text']}"
-      response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
-    return response
-  
-  def get_pets():
-    pets = requests.get(f'{DB_PATH}pet').json()
-    return [{'name': p['name'], 'name_slug': p['name_slug']} for p in pets]
+    
+    pet_item = await self.bot.back_requests.call('getPetByName', True, [pet], interaction)
+    if not pet_item:
+      return
 
-  def get_pet(whichone):
-    pet = requests.get(f'{DB_PATH}pet/{str_to_slug(whichone)}')
-    return pet.json()
-  
-  def get_heroes_by_pet(pet_name):
-    heroes = requests.get(f'{DB_PATH}hero/pet?pet={str_to_slug(pet_name)}')
-    return heroes.json()
-  
-  def get_talent(whichone):
-    talent = requests.get(f'{DB_PATH}talent/{str_to_slug(whichone)}')
-    return talent.json()
+    return {'title': '', 'description': await self.description(pet_item), 'color': pet_item['color'], 'pic': pet_item['image_url']}
    
-  def description(self, pet):
-    return Pet.print_header(pet) + Pet.print_stats(pet) + Pet.print_signature(pet) + Pet.print_full_talent(pet) + Pet.print_talents(pet) + Pet.print_comments(pet, Message(self.bot))
+  async def description(self, pet):
+    return self.print_header(pet) + self.print_stats(pet) + self.print_signature(pet) + await self.print_full_talent(pet) + await self.print_talents(pet) + self.print_comments(pet, Message(self.bot))
   
-  def print_header(pet):
+  def print_header(self, pet):
     return f"# {pet['name']}   {stars(pet['stars'])} #\n{pet['color']} pet pour {str.lower(pet['petclass'])}\n"
   
-  def print_stats(pet):
+  def print_stats(self, pet):
     to_return = '### Attributs max : ###\n'
     to_return += f"+ {pet['attack']}% attaque/défense\n"
     return to_return
   
-  def print_signature(pet):
+  def print_signature(self, pet):
     to_return = '### Héros signature : ###\n'
     to_return += pet['signature']
     if pet['signature_bis'] is not None:
@@ -82,8 +63,8 @@ class Pet(commands.Cog):
     to_return += '\n'
     return to_return
   
-  def print_full_talent(pet):
-    heroes = Pet.get_heroes_by_pet(pet['name'])
+  async def print_full_talent(self, pet):
+    heroes = await self.bot.back_requests.call('getHeroesByPet', False, [pet.get('name')])
     if heroes:
       heroes = [h['name'] for h in heroes if h['name'] != pet['signature']]
       if len(heroes) > 0:
@@ -93,7 +74,7 @@ class Pet(commands.Cog):
         return to_return
     return ''
   
-  def print_talents(pet):
+  async def print_talents(self, pet):
     merge_talents = []
     for i in range(1, 11):
       for t in pet['talents']:
@@ -115,12 +96,12 @@ class Pet(commands.Cog):
     gold_talent = next((t for t in pet['talents'] if t['position'] == 'gold'), None)
     to_return += f"__**Gold :**__\n{gold_talent['name']}\n"
 
-    talent = Pet.get_talent(gold_talent['name'])
+    talent = await self.bot.back_requests.call('getTalentByName', False, [gold_talent['name']])
     to_return += f"-> {talent['description']}\n"
     to_return += f"__**Mana Cost :**__\n25 (base) - {25 - pet['manacost'] - manacost_merge} (gold) - {manacost_merge} (merge) = **{pet['manacost']}**\n"
     return to_return
 
-  def print_comments(pet, message):
+  def print_comments(self, pet, message):
     to_return = f"### Commentaire{pluriel(pet['comments'])} : ###\n"
     if len(pet['comments']) > 0:
       for comment in pet['comments']:
@@ -131,6 +112,10 @@ class Pet(commands.Cog):
       nocomment = message.message('nocomment')
       to_return += nocomment['description']
     return to_return
+  
+  async def setup(self):
+    choices = await self.bot.back_requests.call('getAllPets', False)
+    self.choices = CommandService.set_choices(choices) 
 
 async def setup(bot):
   await bot.add_cog(Pet(bot))

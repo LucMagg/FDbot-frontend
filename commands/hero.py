@@ -18,7 +18,6 @@ class Hero(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'hero'), None)
-    self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('hero')
   
     self.command_service = CommandService()
