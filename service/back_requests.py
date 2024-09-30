@@ -85,7 +85,6 @@ class BackRequests:
         if handle_errors:
           param = ' '.join(params)
           whichone = my_request.get('command')
-          print(self.error_msg.get('description').get(whichone)[0].get('text'))
           description = f"{self.error_msg.get('description').get(whichone)[0].get('text')} {param} {self.error_msg.get('description').get(whichone)[1].get('text')}"
           response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
           await self.send_message.update(interaction, response)
@@ -94,4 +93,6 @@ class BackRequests:
         if interaction:
           response = {'title': 'Erreur', 'description': 'La partie backend ne répond plus <@553925318683918336> :cry:', 'color': 'red'}
           await self.send_message.update(interaction, response)
+        else:
+          print(f"Erreur du back : {response.json()}")
         return False

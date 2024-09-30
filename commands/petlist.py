@@ -1,17 +1,15 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import requests
 import typing
 
 from utils.message import Message
 from utils.sendMessage import SendMessage
-from utils.str_utils import slug_to_str, str_to_slug
+from utils.str_utils import str_to_slug
 from utils.misc_utils import stars
 from service.command import CommandService
 
 from utils.logger import Logger
-from config import DB_PATH
 
 
 class Petlist(commands.Cog):
@@ -20,10 +18,11 @@ class Petlist(commands.Cog):
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'petlist'), None)
     self.error_msg = Message(bot).message('error')
+    self.help_msg = Message(bot).help('petlist')
 
     self.command_service = CommandService()
     CommandService.init_command(self.petlist_app_command, self.command)
-    self.choices = CommandService.set_choices(Petlist.get_heroes())
+    self.choices = None
 
   async def héros_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await self.command_service.return_autocompletion(self.choices, current)
@@ -33,44 +32,27 @@ class Petlist(commands.Cog):
   async def petlist_app_command(self, interaction: discord.Interaction, héros: str):
     Logger.command_log('petlist', interaction)
     await self.send_message.post(interaction)
-    response = Petlist.get_response(self, héros)
+    response = await self.get_response(héros, interaction)
     await self.send_message.update(interaction, response)
     Logger.ok_log('petlist')
 
-  def get_response(self, héros):
+  async def get_response(self, héros, interaction):
     if str_to_slug(héros) == 'help':
-      return Message(self.bot).help('petlist')
+      return self.help_msg
     
-    hero = Petlist.get_hero(héros)
-    if 'error' in hero.keys():
-      return {'title': self.error_msg['title'],
-              'description': f"{self.error_msg['description']['petlist'][0]['text']} {hero['name']} {self.error_msg['description']['petlist'][1]['text']}",
-              'color': self.error_msg['color']}
+    hero = await self.bot.back_requests.call('getHeroByName', True, [héros], interaction)
+    if not hero:
+      return
     
-    pets = Petlist.get_pets_by_hero(hero['name'])
-    if not isinstance(pets, list):
+    pets = await self.bot.back_requests.call('getPetsByHeroname', False, [hero['name']])
+    if not pets:
       return {'title': self.error_msg['title'],
               'description': f"{self.error_msg['description']['petlist'][2]['text']} {hero['name']} {self.error_msg['description']['petlist'][3]['text']}",
               'color': self.error_msg['color']}
     
-    description = Petlist.description(hero, pets)
-    response = {'title': '', 'description': description, 'color': hero['color'], 'pic': hero['image_url']}
-
-    return response
-  
-  def get_heroes():
-    heroes = requests.get(f'{DB_PATH}hero').json()
-    return [{'name': h['name'], 'name_slug': h['name_slug']} for h in heroes]
-  
-  def get_hero(whichone):
-    hero = requests.get(f'{DB_PATH}hero/{whichone}')
-    return hero.json()
-  
-  def get_pets_by_hero(whichone):
-    pets = requests.get(f'{DB_PATH}pet/hero?hero={whichone}')
-    return pets.json()
-  
-  def description(hero, pets):
+    return {'title': '', 'description': self.description(hero, pets), 'color': hero['color'], 'pic': hero['image_url']}
+   
+  def description(self, hero, pets):
     to_return = f"# Liste des pets équipables par {hero['name']} #\n"
     to_return += Petlist.print_sorted_list(hero, pets)
     return to_return
@@ -99,6 +81,10 @@ class Petlist(commands.Cog):
       to_return += '\n'
 
     return to_return
+  
+  async def setup(self):
+    choices = await self.bot.back_requests.call('getAllHeroes', False)
+    self.choices = CommandService.set_choices(choices) 
   
 
 async def setup(bot):
