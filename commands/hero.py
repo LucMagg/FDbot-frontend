@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import requests
 from datetime import datetime
 import typing
 
@@ -12,7 +11,6 @@ from utils.misc_utils import stars, rank_text, pluriel
 from service.command import CommandService
 
 from utils.logger import Logger
-from config import DB_PATH
 
 
 class Hero(commands.Cog):
@@ -25,7 +23,7 @@ class Hero(commands.Cog):
   
     self.command_service = CommandService()
     CommandService.init_command(self.hero_app_command, self.command)
-    self.choices = CommandService.set_choices(Hero.get_heroes())
+    self.choices = None
 
   async def héros_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await self.command_service.return_autocompletion(self.choices, current)
@@ -35,48 +33,32 @@ class Hero(commands.Cog):
   async def hero_app_command(self, interaction: discord.Interaction, héros: str):
     Logger.command_log('hero', interaction)
     await self.send_message.post(interaction)
-    response = Hero.get_response(self, héros)
+    response = await self.get_response(héros, interaction)
     await self.send_message.update(interaction, response)
     Logger.ok_log('hero')
-
-  def get_heroes():
-    heroes = requests.get(f'{DB_PATH}hero').json()
-    return [{'name': h['name'], 'name_slug': h['name_slug']} for h in heroes]
-
-  def get_hero(whichone):
-    hero = requests.get(f'{DB_PATH}hero/{str_to_slug(whichone)}')
-    return hero.json()
   
-  def get_pet(whichone):
-    pet = requests.get(f'{DB_PATH}pet/{str_to_slug(whichone)}')
-    return pet.json()
-  
-  def get_talent(whichone):
-    talent = requests.get(f'{DB_PATH}talent/{str_to_slug(whichone)}')
-    return talent.json()
-  
-  def get_response(self, héros):
+  async def get_response(self, héros, interaction):
     if str_to_slug(héros) == 'help':
       return self.help_msg
-    hero = Hero.get_hero(héros)
-    if not 'error' in hero.keys():
-      if hero['pet'] is not None:
-        pet = Hero.get_pet(hero['pet'])
-      else:
-        pet = None
-      response = {'title': '', 'description': Hero.description(self, hero, pet), 'color': hero['color'], 'pic': hero['image_url']}
+    
+    hero = await self.bot.back_requests.call('getHeroByName', True, [héros], interaction)
+    if not hero:
+      return
+    
+    if hero['pet'] is not None:
+      pet = await self.bot.back_requests.call('getPetByName', False, [hero.get('pet')], interaction)
     else:
-      description = f"{self.error_msg['description']['hero'][0]['text']} {héros} {self.error_msg['description']['hero'][1]['text']}"
-      response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
-    return response
+      pet = False
+
+    return {'title': '', 'description': await self.description(hero, pet), 'color': hero['color'], 'pic': hero['image_url']}
   
-  def description(self, hero, pet):
-    return Hero.print_header(hero) + Hero.print_stats(hero) + Hero.print_lead(hero) + Hero.print_talents(hero) + Hero.print_gear(hero, self.bot.static_data.qualities) + Hero.print_pet(hero, pet) + Hero.print_comments(hero, Message(self.bot).message('nocomment'))
+  async def description(self, hero, pet):
+    return self.print_header(hero) + self.print_stats(hero) + self.print_lead(hero) + self.print_talents(hero) + self.print_gear(hero) + await self.print_pet(hero, pet) + self.print_comments(hero, Message(self.bot).message('nocomment'))
   
-  def print_header(hero):	
+  def print_header(self, hero):	
     return f"# {hero['name']}   {stars(hero['stars'])} #\n{hero['color']} {str.lower(hero['species'])} {str.lower(hero['heroclass'])}\n"
 
-  def print_stats(hero):
+  def print_stats(self, hero):
     to_return = f"### Attributs max (A{hero['ascend']} - lvl {hero['lvl_max']}) : ###\n"
     to_return += '__**Attaque**__ : \n'
     to_return += f"**Total : {hero['att_max']}**\n"
@@ -97,7 +79,7 @@ class Hero(commands.Cog):
     
     return to_return
 
-  def print_lead(hero):
+  def print_lead(self, hero):
     to_return = '### Bonus de lead : ###\n'
     for l in ['lead_color', 'lead_species']:
       lead = hero[l]
@@ -128,7 +110,7 @@ class Hero(commands.Cog):
 
     return to_return
 
-  def print_talents(hero):
+  def print_talents(self, hero):
     base_talents = []
     ascend_talents = []
     merge_talents = []
@@ -155,7 +137,7 @@ class Hero(commands.Cog):
       to_return += f"{', '.join(h for h in hero['unique_talents'] if h)}\n"
     return to_return
 
-  def print_gear(hero, qualities):
+  def print_gear(self, hero):
     to_return = '### Équipements : ###\n'
     for item in [{'to_find': 'A0', 'text': 'Base'}, 
                           {'to_find' : 'A1', 'text': '1ère ascension '},
@@ -170,7 +152,7 @@ class Hero(commands.Cog):
       for pos in ['Amulet', 'Weapon', 'Ring', 'Head', 'Off-Hand', 'Body']:
         gear = next((g for g in hero['gear'] if g['ascend'] == to_find and g['position'] == pos), None)
         if gear:
-          quality = next((q for q in qualities if q['name'] == gear['quality']), None)
+          quality = next((q for q in self.bot.static_data.qualities if q['name'] == gear['quality']), None)
           if quality:
             gear_text += f"{quality['icon']} {gear['quality']} {gear['name']}\n"
             price += quality['price']
@@ -178,8 +160,8 @@ class Hero(commands.Cog):
       to_return += f"{price} :gem:)\n{gear_text}\n"
     return to_return
   
-  def print_pet(hero, pet):
-    if pet is not None:
+  async def print_pet(self, hero, pet):
+    if pet:
       to_return = f"### Pet signature : {pet['name']} ###\n"
       to_return += f"Bonus max d'attaque/défense : {pet['attack']}%\n"
 
@@ -189,14 +171,14 @@ class Hero(commands.Cog):
       gold_talent = next((t for t in pet['talents'] if t['position'] == 'gold'), None)
       to_return += f"Talent gold seulement pour {hero['name']} : {gold_talent['name']}\n"
 
-      talent = Hero.get_talent(gold_talent['name'])
+      talent = await self.bot.back_requests.call('getTalentByName', False, [gold_talent['name']])
       if talent:
         to_return += f"-> {talent['description']} \n"
       return to_return
     else:
       return ''
 
-  def print_comments(hero, nocomment):
+  def print_comments(self, hero, nocomment):
     to_return = f"### Commentaire{pluriel(hero['comments'])} : ###\n"
     if len(hero['comments']) > 0:
       for comment in hero['comments']:
@@ -206,6 +188,10 @@ class Hero(commands.Cog):
     else :
       to_return += nocomment['description']
     return to_return
+  
+  async def setup(self):
+    choices = await self.bot.back_requests.call('getAllHeroes', False)
+    self.choices = CommandService.set_choices(choices) 
       
     
 async def setup(bot):
