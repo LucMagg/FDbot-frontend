@@ -28,19 +28,23 @@ def str_to_slug(input_string: str|None) -> str|None:
 def slug_to_str(slug: str|None) -> str|None:
   if slug is None or not isinstance(slug, str):
     return None
+  
+  if re.match(r'^[a-z\\:]+(?:[-_][a-z\\:]+)*$', slug):
+    return slug
 
   def capitalize_words(text):
     words = text.split()
-    return ' '.join(word.capitalize() if word.lower() not in ['of', 'to', 'and'] else word for word in words)
+    return ' '.join(word.capitalize() if word.lower() not in ['of', 'Of', 'to', 'and'] else word for word in words)
 
   parts = slug.split('_')
   capitalized_parts = [capitalize_words(part.replace('-', ' ')) for part in parts]
   to_return = '_'.join(capitalized_parts)
 
-  special_chars = {r'\:': ':', r'\and': '&', r'_': '-'}
+  special_chars = {r'\:': ':', r'\and': '&', '_': '-'}
   for escaped, char in special_chars.items():
     to_return = to_return.replace(escaped, char)
-    
+  print(to_return)
+  
   return to_return
   
 def str_to_wiki_url(input_string: str|None) -> str|None:

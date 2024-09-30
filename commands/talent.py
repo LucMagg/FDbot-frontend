@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import requests
 import typing
 
 from utils.message import Message
@@ -11,7 +10,6 @@ from utils.misc_utils import stars
 from service.command import CommandService
 
 from utils.logger import Logger
-from config import DB_PATH
 
 
 class Talent(commands.Cog):
@@ -19,12 +17,11 @@ class Talent(commands.Cog):
     self.bot = bot
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'talent'), None)
-    self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('talent')
 
     self.command_service = CommandService()
     CommandService.init_command(self.talent_app_command, self.command)
-    self.choices = CommandService.set_choices(Talent.get_talents())
+    self.choices = None
 
   async def talent_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await self.command_service.return_autocompletion(self.choices, current)
@@ -34,57 +31,41 @@ class Talent(commands.Cog):
   async def talent_app_command(self, interaction: discord.Interaction, talent: str):
     Logger.command_log('talent', interaction)
     await self.send_message.post(interaction)
-    response = Talent.get_response(self, talent)
+    response = await self.get_response(talent, interaction)
     await self.send_message.update(interaction, response)
     Logger.ok_log('talent')
 
-  def get_response(self, talent):
+  async def get_response(self, talent, interaction):
     print(talent)
-    if talent == 'help':
+    if str_to_slug(talent) == 'help':
       return self.help_msg
-    talent_item = Talent.get_talent(talent)
-    if not 'error' in talent_item.keys():
-      heroes = Talent.get_heroes_by_talent(talent_item['name_slug'])
-      pets = Talent.get_pets_by_talent(talent_item['name_slug'])
-      response = {'title': '', 'description': Talent.description(self, talent_item, heroes, pets), 'color': 'default', 'pic': talent_item['image_url']}
-    else:
-      description = f"{self.error_msg['description']['talent'][0]['text']} {talent} {self.error_msg['description']['talent'][1]['text']}"
-      response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color'], 'pic': None}
-    return response
-  
-  def get_talents():
-    talents = requests.get(f'{DB_PATH}talent').json()
-    return [{'name': t['name'], 'name_slug': t['name_slug']} for t in talents]
-  
-  def get_talent(whichone):
-    talent = requests.get(f'{DB_PATH}talent/{whichone}')
-    return talent.json()
-  
-  def get_heroes_by_talent(whichone):
-    heroes = requests.get(f'{DB_PATH}hero/talent?talent={whichone}')
-    return heroes.json()
-  
-  def get_pets_by_talent(whichone):
-    pets = requests.get(f'{DB_PATH}pet/talent?talent={whichone}')
-    return pets.json()
+    
+    talent_item = await self.bot.back_requests.call('getTalentByName', True, [talent], interaction)
+    if not talent_item:
+      return
+    
+    heroes = await self.bot.back_requests.call('getHeroesByTalent', False, [talent_item.get('name')])
+    pets = await self.bot.back_requests.call('getPetsByTalent', False, [talent_item.get('name')])
+
+    return {'title': '', 'description': self.description(talent_item, heroes, pets), 'color': 'default', 'pic': talent_item['image_url']}
   
   def description(self, talent, heroes, pets):
-    to_return = Talent.print_header(talent)
+    to_return = self.print_header(talent)
 
-    if isinstance(heroes, list):
-      to_return += Talent.print_sorted_list('Héros', talent['name'], heroes)
-    if isinstance(pets, list):
-      to_return += Talent.print_sorted_list('Pets', talent['name'], pets)
+    if heroes:
+      to_return += self.print_sorted_list('Héros', talent['name'], heroes)
+    if pets:
+      to_return += self.print_sorted_list('Pets', talent['name'], pets)
 
     return to_return
   
-  def print_header(talent):
+  def print_header(self, talent):
     to_return = f"# {talent['name']} #\n"
     if talent['description'] is not None:
       to_return += f"{talent['description']}\n"
     return to_return
 
-  def print_sorted_list(whichone, talent_name, list):
+  def print_sorted_list(self, whichone, talent_name, list):
     list = sorted(list, key = lambda l: (l['stars'], l['name']))
     to_return = f"### {whichone} ayant {talent_name} :###\n"
 
@@ -104,6 +85,10 @@ class Talent(commands.Cog):
           l_class = 'petclass'
       to_return += f"{l['name']} ({l['color']} {str.lower(l[l_class])}) {multiple_talents} : {talents}\n"
     return to_return
+  
+  async def setup(self):
+    choices = await self.bot.back_requests.call('getAllTalents', False)
+    self.choices = CommandService.set_choices(choices) 
   
 
 async def setup(bot):
