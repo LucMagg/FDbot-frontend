@@ -9,11 +9,12 @@ from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars, pluriel
-from utils.logger import Logger
+
 
 class Pet(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'pet'), None)
     self.help_msg = Message(bot).help('pet')
@@ -28,11 +29,12 @@ class Pet(commands.Cog):
   @app_commands.autocomplete(pet=pet_autocomplete)
   @app_commands.command(name='pet')
   async def pet_app_command(self, interaction: discord.Interaction, pet: str):
-    Logger.command_log('pet', interaction)
+    self.logger.command_log('pet', interaction)
+    self.logger.log_only('debug', f"arg : {pet}")
     await self.send_message.post(interaction)
     response = await self.get_response(pet, interaction)
     await self.send_message.update(interaction, response)
-    Logger.ok_log('pet')
+    self.logger.ok_log('pet')
 
   async def get_response(self, pet, interaction):
     if str_to_slug(pet) == 'help':

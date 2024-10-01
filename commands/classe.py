@@ -9,12 +9,11 @@ from utils.str_utils import slug_to_str, str_to_slug
 from utils.misc_utils import stars, rank_text
 from service.command import CommandService
 
-from utils.logger import Logger
-
 
 class Classe(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'class'), None)
 
@@ -28,12 +27,13 @@ class Classe(commands.Cog):
   @app_commands.autocomplete(classe=classe_autocomplete)
   @app_commands.command(name='class')
   async def classe_app_command(self, interaction: discord.Interaction, classe: str):
-    Logger.command_log('class', interaction)
+    self.logger.command_log('class', interaction)
+    self.logger.log_only('debug', f"arg : {classe}")
     await self.send_message.post(interaction)
     response = await self.get_response(classe, interaction)
     if response:
       await self.send_message.update(interaction, response)
-    Logger.ok_log('class')
+    self.logger.ok_log('class')
 
   async def get_response(self, classe, interaction):
     if str_to_slug(classe) == 'help':

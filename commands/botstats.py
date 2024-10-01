@@ -6,11 +6,12 @@ from collections import Counter
 from service.command import CommandService
 from utils.sendMessage import SendMessage
 from utils.misc_utils import stars
-from utils.logger import Logger
+
 
 class Botstats(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'botstats'), None)
     self.command_service = CommandService()
@@ -19,11 +20,11 @@ class Botstats(commands.Cog):
 
   @app_commands.command(name='botstats')
   async def botstats_app_command(self, interaction: discord.Interaction):
-    Logger.command_log('botstats', interaction)
+    self.logger.command_log('botstats', interaction)
     await self.send_message.post(interaction)
     response = await self.get_response()
     await self.send_message.update(interaction, response)
-    Logger.ok_log('botstats')
+    self.logger.ok_log('botstats')
 
   async def get_response(self):
     talents = await self.bot.back_requests.call('getAllTalents', False)

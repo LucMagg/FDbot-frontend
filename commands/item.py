@@ -9,12 +9,12 @@ from utils.sendMessage import SendMessage
 from utils.str_utils import slug_to_str, str_to_slug
 from utils.misc_utils import stars
 
-from utils.logger import Logger
 
 
 class Item(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'item'), None)
     self.help_msg = Message(bot).help('item')
@@ -31,12 +31,13 @@ class Item(commands.Cog):
   @app_commands.autocomplete(item=item_autocomplete)
   @app_commands.command(name='item')
   async def item_app_command(self, interaction: discord.Interaction, item: str):
-    Logger.command_log('item', interaction)
+    self.logger.command_log('item', interaction)
+    self.logger.log_only('debug', f"arg : {item}")
     await self.send_message.post(interaction)
     response = await self.get_response(item, interaction)
     if response:
       await self.send_message.update(interaction, response)
-    Logger.ok_log('item')
+    self.logger.ok_log('item')
 
   async def get_response(self, item, interaction):
     if str_to_slug(item) == 'help':

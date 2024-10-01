@@ -1,5 +1,4 @@
 import typing
-import requests
 import discord
 
 from discord.ext import commands
@@ -8,13 +7,11 @@ from discord import app_commands
 from service.command import CommandService
 from service.level import LevelService
 from utils.sendMessage import SendMessage
-from utils.logger import Logger
-from utils.misc_utils import pluriel
-from config import DB_PATH
 
 class RewardStat(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.level_data = bot.level_data
     self.reward_stat_command = next((c for c in bot.static_data.commands if c['name'] == 'reward-stat'), None)
@@ -30,16 +27,16 @@ class RewardStat(commands.Cog):
   @app_commands.autocomplete(level=level_autocompletion)
   @app_commands.command(name='reward-stat')
   async def reward_stat_app_command(self, interaction: discord.Interaction, level: str):
-    Logger.command_log('reward-stat', interaction)
+    self.logger.command_log('reward-stat', interaction)
     if level not in [level.name for level in self.level_data.known_levels]:
       await self.send_message.error(interaction, "Ce niveau n'existe pas", "Veuillez choisir un niveau dans la liste ou contacter Prep ou Spirou.")
-      Logger.ok_log('reward-stat')
+      self.logger.ok_log('reward-stat')
       return
 
     await self.send_message.post(interaction)
     response = LevelService.get_reward_response('show', interaction.guild.emojis, level, '', 0, self.gear_qualities, self.dust_qualities)
     await self.send_message.update(interaction, response)
-    Logger.ok_log('reward-stat')
+    self.logger.ok_log('reward-stat')
 
 async def setup(bot):
   await bot.add_cog(RewardStat(bot))

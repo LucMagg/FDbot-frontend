@@ -12,34 +12,38 @@ from utils.message import Message
 class BackRequests:
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.error_msg = Message(bot).message('error')
 
 
-  @staticmethod
   @lru_cache(maxsize=None)
-  def load_requests():
+  def load_requests(self):
     json_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'utils', 'all_requests.json')
-    with open(json_file, 'r', encoding='utf-8') as file:
-      json_data = json.load(file)
-    return json_data
+    try:
+      with open(json_file, 'r', encoding='utf-8') as file:
+        json_data = json.load(file)
+      return json_data
+    except Exception as e:
+      self.logger.log_only('error', f'Problème de chargement du all_requests.json : {e}')
   
   async def call(self, whichone, handle_errors, params=None, interaction=None):
-    all_requests = BackRequests.load_requests()
+    all_requests = self.load_requests()
     my_request = next((r for r in all_requests if r.get('name') == whichone), None)
 
     if my_request is None:
-      print(f"Erreur! Il n'existe aucune requête {whichone}")
+      self.logger.error_log(f"Erreur! Il n'existe aucune requête {whichone}")
       return None
     
     url = self.build_url(my_request, params)
+    self.logger.log_only('debug', f"requête : {my_request.get('name')} | url construite : {url.get('url')}")
     try:
       match my_request.get('type'):
         case 'get':
           response = requests.get(url.get('url'))
         case 'post':
           if url.get('has_json_in_params'):
-            response = requests.post(url.get('url'), json=params)
+            response = requests.post(url.get('url'), json=params[0])
           else:
             response = requests.post(url.get('url'))
 
@@ -50,7 +54,7 @@ class BackRequests:
       return False
 
     except RequestException as e:
-      print(f"Une erreur s'est produite lors de la requête : {e}")
+      self.logger.error_log(f"Une erreur s'est produite lors de la requête : {e}")
       if interaction:
           error_response = {'title': 'Erreur', 'description': f'Une erreur s\'est produite : {str(e)}', 'color': 'red'}
           await self.send_message.update(interaction, error_response)
@@ -59,7 +63,6 @@ class BackRequests:
   def build_url(self, my_request, params):
     to_return = my_request.get('url')
     nb_params = to_return.count('[[param')
-    has_json_in_params = False
     
     for i in range(0, nb_params):
       match my_request.get(f"param{i}"):
@@ -69,19 +72,23 @@ class BackRequests:
           to_replace = str_to_slug(params[i])
         case "default":
           to_replace = params[i]
-        case "json":
-          has_json_in_params = True
-          break
       to_return = to_return.replace(f"[[param{i}]]", to_replace)
-
     to_return = f"{DB_PATH}{to_return}"
+      
+    has_json_in_params = False
+    if "param0" in my_request.keys():
+      if my_request.get('param0') == 'json':
+        has_json_in_params = True
+        
     return {'url': to_return, 'has_json_in_params': has_json_in_params}
   
   async def error_handler(self, my_request, response, handle_errors, params, interaction):
     match response.status_code:
       case 200 | 201:
+        self.logger.log_only('debug', f"Réponse du back-end : {response.status_code}")
         return True
       case 404:
+        self.logger.log_only('debug', f"Réponse du back-end : {response.status_code}")
         if handle_errors:
           param = ' '.join(params)
           whichone = my_request.get('command')
@@ -90,6 +97,7 @@ class BackRequests:
           await self.send_message.update(interaction, response)
         return False
       case 500:
+        self.logger.log_only('error', f"Réponse du back-end : {response.status_code}")
         if interaction:
           response = {'title': 'Erreur', 'description': 'La partie backend ne répond plus <@553925318683918336> :cry:', 'color': 'red'}
           await self.send_message.update(interaction, response)

@@ -1,10 +1,11 @@
 import discord
 from discord.ext import commands, tasks
 from itertools import cycle
-from config import PREFIX
+from config import PREFIX, LOG_FILE
 from utils.levelData import LevelData
 from utils.static_data import StaticData
-from utils.str_utils import str_now, str_to_slug
+from utils.str_utils import str_to_slug
+from utils.logger import Logger
 from service.back_requests import BackRequests
 import traceback
 
@@ -22,6 +23,7 @@ class MyBot(commands.Bot):
     self.synced = False
     self.level_data = LevelData()
     self.back_requests = None
+    self.logger = Logger(log_file=f'logs/{LOG_FILE}')
 
   async def on_ready(self):
     await self.wait_until_ready()
@@ -29,18 +31,18 @@ class MyBot(commands.Bot):
       await self.tree.sync()
       self.synced = True
     self.status_loop.start()
-    print(f'[{str_now()}] Bot loggé sous {self.user}')
-    print(f'[{str_now()}] Commandes slash synchronisées')
+    self.logger.bot_log(f'Bot loggé sous {self.user}')
+    self.logger.bot_log('Commandes slash synchronisées')
 
 
   async def setup_hook(self):
-    print(f'[{str_now()}] Initialisation du bot...')
+    self.logger.bot_log('Initialisation du bot...')
     self.static_data.load_all_data()
-    print(f'[{str_now()}] Toutes les données statiques sont chargées')
+    self.logger.bot_log('Toutes les données statiques sont chargées')
     self.level_data.load_levels()
-    print(f'[{str_now()}] Toutes les données levels sont chargées')
+    self.logger.bot_log('Toutes les données levels sont chargées')
     self.back_requests = BackRequests(self)
-    print(f'[{str_now()}] Initialisation du dialogue avec le back')
+    self.logger.bot_log('Initialisation du dialogue avec le back')
 
     extensions = [
       'commands.hero',
@@ -65,13 +67,13 @@ class MyBot(commands.Bot):
         if extension not in self.extensions:
           await self.load_extension(extension)
           await self.setup_extension(extension)
-          print(f'[{str_now()}] Extension {extension} chargée')
+          self.logger.bot_log(f'Extension {extension} chargée')
         else:
-          print(f'[{str_now()}] Extension {extension} déjà chargée')
+          self.logger.bot_log(f'Extension {extension} déjà chargée')
       except Exception as e:
-        print(f'[{str_now()}] Erreur lors du chargement de l\'extension {extension}: {str(e)}')
+        self.logger.error_log(f'Erreur lors du chargement de l\'extension {extension}: {str(e)}')
 
-    print(f'[{str_now()}] Toutes les extensions sont chargées')
+    self.logger.bot_log(f'Toutes les extensions sont chargées')
     
   async def setup_extension(self, extension):
     cog_name = extension.split('.')[1].capitalize()
@@ -88,7 +90,7 @@ class MyBot(commands.Bot):
       return
     if message.author.id == 617661648173268993 and 'paf' in str_to_slug(message.content):
       await message.reply(content='CONTREPAF!!! :rofl:')
-      print(f"[{str_now()}] Contre-pafé :D")
+      self.logger.bot_log('Contre-pafé :D')
 
     """if message.author.id == 504814725020909578:
       gif_url = 'https://tenor.com/fr/view/gloves-on-im-ready-lets-do-this-glove-doctor-gif-15313441'
@@ -99,6 +101,6 @@ class MyBot(commands.Bot):
     await self.process_commands(message)
 
   async def on_command_error(self, ctx, error):
-    print(f'[{str_now()}] Erreur de commande: {str(error)}')
+    self.logger.error_log(f'Erreur de commande: {str(error)}')
     traceback.print_exception(type(error), error, error.__traceback__)
     await ctx.send(f"Une erreur s'est produite lors de l'exécution de la commande: {str(error)}")

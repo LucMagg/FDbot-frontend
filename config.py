@@ -8,3 +8,5 @@ PREFIX = '/'
 DISCORD_API = os.getenv('DISCORD_API_URL')
 
 DB_PATH = f"http://{os.getenv('BACK_HOST')}:{os.getenv('BACK_PORT')}/"
+
+LOG_FILE = os.getenv('LOG_FILE')

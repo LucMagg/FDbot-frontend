@@ -1,22 +1,20 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from discord.app_commands import Choice
 import requests
 import typing
 
 from utils.message import Message
 from utils.sendMessage import SendMessage
-from utils.str_utils import str_to_slug
 from service.command import CommandService
 
-from utils.logger import Logger
 from config import DB_PATH
 
 
 class Update(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'update'), None)
     self.error_msg = Message(bot).message('error')
@@ -36,15 +34,15 @@ class Update(commands.Cog):
   @app_commands.autocomplete(type=type_autocomplete)
   @app_commands.command(name='update')
   async def update_app_command(self, interaction: discord.Interaction, type: str):
-    Logger.command_log('update', interaction)
+    self.logger.command_log('update', interaction)
+    self.logger.log_only('debug', f"arg : {type}")
     await self.send_message.post(interaction, self.return_msg['description']['warning'])
     if not type:
       type = 'all'
-    print(type)
     
     response = Update.get_response(self, type)
     await self.send_message.update(interaction, response)
-    Logger.ok_log('update')
+    self.logger.ok_log('update')
 
 
   def get_response(self, type):

@@ -104,7 +104,7 @@
     "name": "addLevel",
     "url": "levels",
     "type": "post",
-    "param": "json"
+    "param0": "json"
   },
   {
     "name": "getAllLevels",

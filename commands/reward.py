@@ -1,7 +1,6 @@
 import typing
 import discord
 import emoji
-import requests
 
 from typing import Optional
 from discord.app_commands import Choice
@@ -10,16 +9,14 @@ from discord.ext import commands
 from discord import app_commands
 from discord.ui import Button
 
-from config import DB_PATH
 from service.command import CommandService
 from service.level import LevelService
-from utils.logger import Logger
-from utils.misc_utils import pluriel
 from utils.sendMessage import SendMessage
 
 class Reward(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.level_data = bot.level_data
     self.reward_command = next((c for c in bot.static_data.commands if c['name'] == 'reward'), None)
@@ -36,7 +33,7 @@ class Reward(commands.Cog):
   @app_commands.autocomplete(level=level_autocompletion)
   @app_commands.command(name='reward')
   async def reward_app_command(self, interaction: discord.Interaction, level: str, type: Choice[int], quantity: int):
-    Logger.command_log('reward', interaction)
+    self.logger.command_log('reward', interaction)
     reward_button_data = RewardButtonData(level, interaction.guild.emojis, self.gear_qualities, self.dust_qualities, quantity, type.name)
 
     if type.name == 'dust':
@@ -49,7 +46,7 @@ class Reward(commands.Cog):
       await self.send_message.post(interaction)
       response = LevelService.get_reward_response('add', interaction.guild.emojis, level, type.name, quantity, self.gear_qualities, self.dust_qualities)
       await self.send_message.update(interaction, response)
-      Logger.ok_log('reward')
+      self.logger.ok_log('reward')
 
 
 class RewardButtonData:
@@ -78,7 +75,7 @@ class RewardButton(Button):
       await self.send_message.update_remove_view(interaction, response)
     except Exception as e:
       print(f"Error in callback: {e}")
-    Logger.ok_log('reward')
+    self.logger.ok_log('reward')
 
 class RewardQualitySelectionView(discord.ui.View):
   def __init__(self, send_message, reward_button_data: RewardButtonData, qualities):

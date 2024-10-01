@@ -9,7 +9,6 @@ from utils.message import Message
 from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug
 from utils.misc_utils import nick
-from utils.logger import Logger
 
 from commands.hero import Hero
 from commands.pet import Pet
@@ -18,6 +17,7 @@ from commands.pet import Pet
 class Addcomment(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'addcomment'), None)
     self.error_msg = Message(bot).message('error')
@@ -33,11 +33,12 @@ class Addcomment(commands.Cog):
   @app_commands.autocomplete(héros_ou_pet=héros_ou_pet_autocomplete)
   @app_commands.command(name='addcomment')
   async def addcomment_app_command(self, interaction: discord.Interaction, héros_ou_pet: str, commentaire: Optional[str] = None):
-    Logger.command_log('addcomment', interaction)
+    self.logger.command_log('addcomment', interaction)
+    self.logger.log_only('debug', f"arg : {héros_ou_pet} | commentaire : {commentaire}")
     await self.send_message.post(interaction)
     response = await self.get_response(héros_ou_pet, commentaire, nick(interaction), interaction)
     await self.send_message.update(interaction, response)
-    Logger.ok_log('addcomment')
+    self.logger.ok_log('addcomment')
 
   async def get_response(self, h_or_p, comment, author, interaction):
     if str_to_slug(h_or_p) == 'help':
@@ -50,10 +51,12 @@ class Addcomment(commands.Cog):
         case 'pet':
           response = Pet.get_response(self, comment['updated']['name'])
         case 'error':
+          self.logger.log_only('debug', f"arg non trouvé dans la BDD : {h_or_p}")
           description = f"{self.error_msg['description']['addcomment'][0]['text']} {h_or_p} {self.error_msg['description']['addcomment'][1]['text']}"
           response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
       return response
     else:
+      self.logger.log_only('debug', "commentaire vide")
       description = f"{self.error_msg['description']['addcomment'][2]['text']}"
       response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
       return response
@@ -74,7 +77,6 @@ class Addcomment(commands.Cog):
   async def init_choices(self):
     heroes = await self.bot.back_requests.call('getAllHeroes', False)
     if not heroes:
-      print('fail :(')
       return [{'name': 'Échec du chargement des héros'}]
     to_return = [{'name': h['name'], 'name_slug': h['name_slug']} for h in heroes]
     pets = await self.bot.back_requests.call('getAllPets', False)

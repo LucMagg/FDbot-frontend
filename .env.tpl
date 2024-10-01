@@ -3,3 +3,5 @@ DISCORD_API_URL = 'https://discord.com/api/v10/applications/1119731541485035581/
 
 BACK_HOST = 'your_backend_url_or_IP'
 PORT = 0 # a number between 1024 and 49151
+
+LOG_FILE = 'name_of_the_log_file.log'

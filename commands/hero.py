@@ -10,12 +10,11 @@ from utils.str_utils import str_to_slug
 from utils.misc_utils import stars, rank_text, pluriel
 from service.command import CommandService
 
-from utils.logger import Logger
-
 
 class Hero(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'hero'), None)
     self.help_msg = Message(bot).help('hero')
@@ -30,11 +29,12 @@ class Hero(commands.Cog):
   @app_commands.autocomplete(héros=héros_autocomplete)
   @app_commands.command(name='hero')
   async def hero_app_command(self, interaction: discord.Interaction, héros: str):
-    Logger.command_log('hero', interaction)
+    self.logger.command_log('hero', interaction)
+    self.logger.log_only('debug', f"arg : {héros}")
     await self.send_message.post(interaction)
     response = await self.get_response(héros, interaction)
     await self.send_message.update(interaction, response)
-    Logger.ok_log('hero')
+    self.logger.ok_log('hero')
   
   async def get_response(self, héros, interaction):
     if str_to_slug(héros) == 'help':
