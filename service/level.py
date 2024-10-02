@@ -9,36 +9,36 @@ from collections import defaultdict
 
 
 class LevelService:
+  def __init__(self, bot):
+    self.bot = bot
+    self.gear_qualities = [g for g in bot.static_data.qualities if g['type'] == 'gear']
+    self.dust_qualities = bot.static_data.dusts
 
-  @staticmethod
-  def get_reward_response(response_type, emojis, level_name, reward_type, reward_quantity, gear_qualities, dust_qualities, reward_quality: Optional[str] = ''):
+  async def get_reward_response(self, response_type, emojis, level_name, reward_type, reward_quantity, reward_quality: Optional[str] = ''):
     match response_type:
       case 'add':
-        level = LevelService.add_reward(level_name, reward_type, reward_quantity, reward_quality)
-        title = f'Récompense ajoutée au niveau {level.get('name')}'
-        description = 'Merci d\'avoir ajouté une récompense à ce niveau !\n'
-      case 'show':
-        level = LevelService.get_level(level_name)
-        title = f'Statistiques pour le niveau {level.get('name')}'
-        description = ''
-    
-    quantities_str = LevelService.get_rewards_str(level.get('rewards', []), emojis, gear_qualities, dust_qualities)
-    description += f"Statistiques actuelles pour ce niveau sur {quantities_str}"    
-    
-    return {'title': title, 'description': description, 'color': 'blue'}
+        level = await self.add_reward(level_name, reward_type, reward_quantity, reward_quality)
+        description = f'# {level.get('name')} #\n'
+        description += 'Merci d\'avoir ajouté une récompense à ce niveau ! :kissing_heart:\n\n'
 
-  @staticmethod
-  def add_reward(level_name, reward_type, reward_quantity, reward_quality: str):
+      case 'show':
+        level = await self.bot.back_requests.call('getLevelByName', False, [level_name])
+        description = f'# {level.get('name')} #\n'
+    
+    quantities_str = self.get_rewards_str(level.get('rewards', []), emojis)
+    description += f"### Statistiques actuelles sur {quantities_str}"    
+    
+    return {'title': '', 'description': description, 'color': 'blue'}
+
+  async def add_reward(self, level_name, reward_type, reward_quantity, reward_quality: str):
     data = {
       "type": reward_type,
       "quantity": reward_quantity,
       "quality": reward_quality
     }
+    return await self.bot.back_requests.call('addReward', False, [level_name, data])
 
-    return requests.post(f"{DB_PATH}levels/{level_name}/reward", json=data).json()
-
-  @staticmethod
-  def get_rewards_str(rewards, emojis, gear_qualities, dust_qualities):  
+  def get_rewards_str(self, rewards, emojis):  
     has_quality = False
     for r in rewards:
       if 'quality' in r.keys():
@@ -80,13 +80,13 @@ class LevelService:
           icon = ':moneybag:'
           multilines = False
         case 'potions':
-          icon = LevelService.get_potion_emoji(emojis)
+          icon = self.get_potion_emoji(emojis)
           multilines = False
         case 'gear':
-          icon = next((g.get('icon') for g in gear_qualities if g.get('name') == r.get('quality')), None)
+          icon = next((g.get('icon') for g in self.gear_qualities if g.get('name') == r.get('quality')), None)
           multilines = False # à remplacer par True quand on gèrera les types d'item dans les rewards :D
         case 'dust':
-          icon = next((d.get('icon') for d in dust_qualities if d.get('name') == r.get('quality')), None)
+          icon = next((d.get('icon') for d in self.dust_qualities if d.get('name') == r.get('quality')), None)
           multilines = False
           if len(r.get('rewards')) > 1:
             multilines = True
@@ -94,7 +94,7 @@ class LevelService:
       if multilines:
         to_append = f"{icon} {r.get('quality', '')} {r.get('type')} : {format(r.get('total_appearances') / total_appearances, '.2%')} ({r.get('total_appearances')}), soit :\n"
         for l in r['rewards']:
-          to_append += f"* {l.get('quantity')} {r.get('type')}s {format(l.get('appearances') / r.get('total_appearances'), '.2%')} ({l.get('appearances')})\n"
+          to_append += f"\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• {l.get('quantity')} {r.get('type')}s {format(l.get('appearances') / r.get('total_appearances'), '.2%')} ({l.get('appearances')})\n"
       else:
         quantity = ' '
         if r.get('rewards')[0].get('quantity') > 1:
@@ -102,13 +102,8 @@ class LevelService:
         to_append = f"{icon}{quantity}{r.get('quality', '')} {r.get('type')} : {format(r.get('total_appearances') / total_appearances, '.2%')} ({r.get('total_appearances')})\n"
       lines.append(to_append)
    
-    return f'{total_appearances} récompense{pluriel(total_appearances)} recueillie{pluriel(total_appearances)} :\n' + '\n'.join([l for l in lines])
+    return f'{total_appearances} récompense{pluriel(total_appearances)} recueillie{pluriel(total_appearances)} : ###\n {'\n'.join([l for l in lines])}'
 
-  @staticmethod
-  def get_potion_emoji(emojis):
+  def get_potion_emoji(self, emojis):
     potion_emoji = discord.utils.get(emojis, name='potion')
     return str(potion_emoji) if potion_emoji else ''
-  
-  @staticmethod
-  def get_level(level_name):
-    return requests.get(f"{DB_PATH}levels/{level_name}").json()

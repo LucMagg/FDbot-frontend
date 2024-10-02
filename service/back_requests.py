@@ -42,8 +42,8 @@ class BackRequests:
         case 'get':
           response = requests.get(url.get('url'))
         case 'post':
-          if url.get('has_json_in_params'):
-            response = requests.post(url.get('url'), json=params[0])
+          if url.get('has_json_in_params') is not None:
+            response = requests.post(url.get('url'), json=params[url.get('has_json_in_params')])
           else:
             response = requests.post(url.get('url'))
 
@@ -62,24 +62,24 @@ class BackRequests:
 
   def build_url(self, my_request, params):
     to_return = my_request.get('url')
-    nb_params = to_return.count('[[param')
+    nb_params = len([key for key in my_request if key.startswith('param')])
     
+    has_json_in_params = None
     for i in range(0, nb_params):
+      to_replace = False
       match my_request.get(f"param{i}"):
         case "str":
           to_replace = slug_to_str(params[i])
         case "slug":
           to_replace = str_to_slug(params[i])
+        case "json":
+          has_json_in_params = i
         case "default":
           to_replace = params[i]
-      to_return = to_return.replace(f"[[param{i}]]", to_replace)
+      if to_replace:
+        to_return = to_return.replace(f"[[param{i}]]", to_replace)
     to_return = f"{DB_PATH}{to_return}"
-      
-    has_json_in_params = False
-    if "param0" in my_request.keys():
-      if my_request.get('param0') == 'json':
-        has_json_in_params = True
-        
+    
     return {'url': to_return, 'has_json_in_params': has_json_in_params}
   
   async def error_handler(self, my_request, response, handle_errors, params, interaction):
@@ -102,5 +102,5 @@ class BackRequests:
           response = {'title': 'Erreur', 'description': 'La partie backend ne répond plus <@553925318683918336> :cry:', 'color': 'red'}
           await self.send_message.update(interaction, response)
         else:
-          print(f"Erreur du back : {response.json()}")
+          self.logger.error_log(f"Erreur du back : {response.json()}")
         return False

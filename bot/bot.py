@@ -1,13 +1,15 @@
 import discord
+import traceback
 from discord.ext import commands, tasks
 from itertools import cycle
 from config import PREFIX, LOG_FILE
-from utils.levelData import LevelData
+
 from utils.static_data import StaticData
 from utils.str_utils import str_to_slug
 from utils.logger import Logger
+
 from service.back_requests import BackRequests
-import traceback
+from service.level import LevelService
 
 
 status = cycle(['faire plaisir à Spirou'])
@@ -21,7 +23,6 @@ class MyBot(commands.Bot):
     
     self.static_data = StaticData()
     self.synced = False
-    self.level_data = LevelData()
     self.back_requests = None
     self.logger = Logger(log_file=f'logs/{LOG_FILE}')
 
@@ -39,12 +40,17 @@ class MyBot(commands.Bot):
     self.logger.bot_log('Initialisation du bot...')
     self.static_data.load_all_data()
     self.logger.bot_log('Toutes les données statiques sont chargées')
-    self.level_data.load_levels()
-    self.logger.bot_log('Toutes les données levels sont chargées')
+    await self.load_services()   
+    await self.load_all_commands()
+
+  async def load_services(self):
     self.back_requests = BackRequests(self)
     self.logger.bot_log('Initialisation du dialogue avec le back')
+    self.level_service = LevelService(self)
+    self.logger.bot_log('Initialisation du service Level')
 
-    extensions = [
+  async def load_all_commands(self):
+    commands = [
       'commands.hero',
       'commands.pet',
       'commands.addcomment',
@@ -61,22 +67,21 @@ class MyBot(commands.Bot):
       'commands.reward',
     ]
 
-    # Chargement des extensions
-    for extension in extensions:
+    for command in commands:
       try:
-        if extension not in self.extensions:
-          await self.load_extension(extension)
-          await self.setup_extension(extension)
-          self.logger.bot_log(f'Extension {extension} chargée')
+        if command not in self.commands:
+          await self.load_extension(command)
+          await self.setup_command(command)
+          self.logger.bot_log(f'Commande {command} chargée')
         else:
-          self.logger.bot_log(f'Extension {extension} déjà chargée')
+          self.logger.bot_log(f'Commande {command} déjà chargée')
       except Exception as e:
-        self.logger.error_log(f'Erreur lors du chargement de l\'extension {extension}: {str(e)}')
+        self.logger.error_log(f'Erreur lors du chargement de la commande {command}: {str(e)}')
 
-    self.logger.bot_log(f'Toutes les extensions sont chargées')
+    self.logger.bot_log(f'Toutes les commandes sont chargées')
     
-  async def setup_extension(self, extension):
-    cog_name = extension.split('.')[1].capitalize()
+  async def setup_command(self, command):
+    cog_name = command.split('.')[1].capitalize()
     cog = self.get_cog(cog_name)
     if cog and hasattr(cog, 'setup'):
       await cog.setup()

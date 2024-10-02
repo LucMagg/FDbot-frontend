@@ -118,6 +118,13 @@
     "param0": "str"
   },
   {
+    "name": "addReward",
+    "url": "levels/[[param0]]/reward",
+    "type": "post",
+    "param0": "str",
+    "param1": "json"
+  },
+  {
     "name": "getAllMessages",
     "url": "message",
     "type": "get"

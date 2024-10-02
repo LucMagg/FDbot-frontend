@@ -40,17 +40,15 @@ class Level(commands.Cog):
     await self.send_message.post(interaction)
     response = await self.get_level_response(name, cost)
     await self.send_message.update(interaction, response)
-    await self.bot.setup_extension('commands.level')
+    await self.commands_to_update(['level', 'reward', 'rewardstat'])
     self.logger.ok_log('level')
 
   async def get_level_response(self, level_name, level_cost):
     if level_name in [c.name for c in self.choices]:
       self.logger.log_only('debug', f"level déjà existant")
-      return {'title': f'Le niveau {level_name} existe déjà', 'description': "Tout est prêt pour l'utilisation des commandes reward et reward-stat",
-              'color': 'blue'}
+      return {'title': '', 'description': f"# Le niveau {level_name} existe déjà #\nTout est prêt pour l'utilisation des commandes reward et reward-stat :wink:", 'color': 'blue'}
     level = await self.create_level(level_name, level_cost)
-    return {'title': f'Le niveau {level.get('name')} a été ajouté', 'description': "Merci d'avoir ajouté ce niveau!",
-            'color': 'blue'}
+    return {'title': '', 'description': f"# Le niveau {level.get('name')} a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
 
   async def create_level(self, name, cost):
     data = {
@@ -58,6 +56,10 @@ class Level(commands.Cog):
       "cost": cost
     }
     return await self.bot.back_requests.call('addLevel', False, [data])
+  
+  async def commands_to_update(self, command_list):
+    for command in command_list:
+      await self.bot.setup_command(f"commands.{command}")
   
   async def setup(self):
     choices = await self.bot.back_requests.call('getAllLevels', False)
