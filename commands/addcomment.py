@@ -75,19 +75,27 @@ class Addcomment(commands.Cog):
     if updated:
       return {"type": 'pet', "updated": updated}
   
-  async def init_choices(self):
-    heroes = await self.bot.back_requests.call('getAllHeroes', False)
-    if not heroes:
-      return [{'name': 'Échec du chargement des héros'}]
+  async def init_choices(self, param_list):
+    if param_list is None:
+      heroes = await self.bot.back_requests.call('getAllHeroes', False)
+      if not heroes:
+        return [{'name': 'Échec du chargement des héros'}]
+    else:
+      heroes = param_list[0]
     to_return = [{'name': h['name'], 'name_slug': h['name_slug']} for h in heroes]
-    pets = await self.bot.back_requests.call('getAllPets', False)
-    if not pets:
-      return to_return
+
+    if param_list is None:
+      pets = await self.bot.back_requests.call('getAllPets', False)
+      if not pets:
+        return to_return
+    else:
+      pets = param_list[1]  
     to_return.extend([{'name': p['name'], 'name_slug': p['name_slug']} for p in pets])
+    
     return to_return
   
-  async def setup(self):
-    choices = await self.init_choices()
+  async def setup(self, param_list):
+    choices = await self.init_choices(param_list)
     self.choices = CommandService.set_choices(choices)
   
 async def setup(bot):

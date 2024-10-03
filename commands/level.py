@@ -58,11 +58,19 @@ class Level(commands.Cog):
     return await self.bot.back_requests.call('addLevel', False, [data])
   
   async def commands_to_update(self, command_list):
+    levels = await self.bot.back_requests.call('getAllLevels', False)
     for command in command_list:
-      await self.bot.setup_command(f"commands.{command}")
-  
-  async def setup(self):
-    choices = await self.bot.back_requests.call('getAllLevels', False)
+      command_location = f"commands.{command}"
+      if levels:
+        await self.bot.setup_command(command_location, levels)
+      else:
+        await self.bot.setup_command(command_location)
+      
+  async def setup(self, param_list):
+    if param_list is None:
+      choices = await self.bot.back_requests.call('getAllLevels', False)
+    else:
+      choices = param_list
     self.choices = CommandService.set_choices([{'name': c.get('name')} for c in choices]) 
 
 async def setup(bot):

@@ -83,8 +83,11 @@ class Reward(commands.Cog):
       await self.send_message.update(interaction, response)
       self.logger.ok_log('reward')
 
-  async def setup(self):
-    choices = await self.bot.back_requests.call('getAllLevels', False)
+  async def setup(self, param_list):
+    if param_list is None:
+      choices = await self.bot.back_requests.call('getAllLevels', False)
+    else:
+      choices = param_list
     self.choices = CommandService.set_choices([{'name': c.get('name')} for c in choices]) 
 
 async def setup(bot):

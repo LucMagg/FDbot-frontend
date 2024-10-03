@@ -80,11 +80,11 @@ class MyBot(commands.Bot):
 
     self.logger.bot_log(f'Toutes les commandes sont chargées')
     
-  async def setup_command(self, command):
+  async def setup_command(self, command, param_list=None):
     cog_name = command.split('.')[1].capitalize()
     cog = self.get_cog(cog_name)
     if cog and hasattr(cog, 'setup'):
-      await cog.setup()
+      await cog.setup(param_list)
 
   @tasks.loop(seconds=30)
   async def status_loop(self):

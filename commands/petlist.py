@@ -82,8 +82,11 @@ class Petlist(commands.Cog):
 
     return to_return
   
-  async def setup(self):
-    choices = await self.bot.back_requests.call('getAllHeroes', False)
+  async def setup(self, param_list):
+    if param_list is None:
+      choices = await self.bot.back_requests.call('getAllHeroes', False)
+    else:
+      choices = param_list
     self.choices = CommandService.set_choices(choices) 
   
 
