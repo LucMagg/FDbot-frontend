@@ -54,9 +54,9 @@ class BackRequests:
       return False
 
     except RequestException as e:
-      self.logger.error_log(f"Une erreur s'est produite lors de la requête : {e}")
+      self.logger.error_log(f"Une erreur s'est produite lors de la requête : {str(e)}")
       if interaction:
-          error_response = {'title': 'Erreur', 'description': f'Une erreur s\'est produite : {str(e)}', 'color': 'red'}
+          error_response = {'title': 'Erreur', 'description': 'Une erreur s\'est produite sur la partie backend <@553925318683918336> :cry:', 'color': 'red'}
           await self.send_message.update(interaction, error_response)
       return False
 
