@@ -40,28 +40,34 @@ class Update(commands.Cog):
     if not type:
       type = 'all'
     
-    response = Update.get_response(self, type)
+    response = await self.get_response(type, interaction)
     await self.send_message.update(interaction, response)
     self.logger.ok_log('update')
 
 
-  def get_response(self, type):
+  async def get_response(self, type, interaction):
     if type == 'help':
       return self.help_msg
-    if type == 'all':
-      update = requests.get(f'{DB_PATH}update').json()
+    
+    """if type == 'all':
+      update = await self.bot.back_requests('getAllUpdates', False)
     else:
-      update = requests.get(f'{DB_PATH}update?type={type}').json()
+      update = await self.bot.back_requests('getOneUpdate', False, [type])
 
-    if 'error' not in update.keys():
-      if type == 'all':
-        description = f"{self.return_msg['description']['all']}{self.return_msg['description']['thxmsg']}"
-      else:
-        type = next((c['name'].lower() for c in self.command['options'][0]['choices'] if c['value'] == type), None)
-        description = f"{self.return_msg['description']['part1']} {type} {self.return_msg['description']['part2']}{self.return_msg['description']['thxmsg']}"
+    if not update:
+      return {'title': self.return_msg['title'], 'description': self.return_msg['description']['erreur'], 'color': 'default'}"""
+    
+    if type == 'all':
+      description = f"{self.return_msg['description']['all']}{self.return_msg['description']['thxmsg']}"
+      types_to_update = ['hero', 'pet', 'talent']
     else:
-      description = self.return_msg['description']['erreur']
-          
+      type_name = next((c['name'].lower() for c in self.command['options'][0]['choices'] if c['value'] == type), None)
+      description = f"{self.return_msg['description']['part1']} {type_name} {self.return_msg['description']['part2']}{self.return_msg['description']['thxmsg']}"
+      types_to_update = [type]
+
+    print(types_to_update)
+      
+    await self.bot.update_service.command_setup_updater(types_to_update, True)    
     return {'title': self.return_msg['title'], 'description': description, 'color': 'default'}
 
 

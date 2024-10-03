@@ -43,7 +43,6 @@ def slug_to_str(slug: str|None) -> str|None:
   special_chars = {r'\:': ':', r'\and': '&', '_': '-'}
   for escaped, char in special_chars.items():
     to_return = to_return.replace(escaped, char)
-  print(to_return)
   
   return to_return
   

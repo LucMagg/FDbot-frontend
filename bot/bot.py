@@ -10,6 +10,7 @@ from utils.logger import Logger
 
 from service.back_requests import BackRequests
 from service.level import LevelService
+from service.update import UpdateService
 
 
 status = cycle(['faire plaisir à Spirou'])
@@ -48,6 +49,8 @@ class MyBot(commands.Bot):
     self.logger.bot_log('Initialisation du dialogue avec le back')
     self.level_service = LevelService(self)
     self.logger.bot_log('Initialisation du service Level')
+    self.update_service = UpdateService(self)
+    self.logger.bot_log('Initialisation du service Update')
 
   async def load_all_commands(self):
     commands = [
@@ -85,6 +88,7 @@ class MyBot(commands.Bot):
     cog = self.get_cog(cog_name)
     if cog and hasattr(cog, 'setup'):
       await cog.setup(param_list)
+      self.logger.log_only('debug', f'Setup de la commande {command} ok')
 
   @tasks.loop(seconds=30)
   async def status_loop(self):

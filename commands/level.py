@@ -39,8 +39,8 @@ class Level(commands.Cog):
 
     await self.send_message.post(interaction)
     response = await self.get_level_response(name, cost)
+    await self.bot.update_service.command_setup_updater(['level'], False)
     await self.send_message.update(interaction, response)
-    await self.commands_to_update(['level', 'reward', 'rewardstat'])
     self.logger.ok_log('level')
 
   async def get_level_response(self, level_name, level_cost):
@@ -56,15 +56,6 @@ class Level(commands.Cog):
       "cost": cost
     }
     return await self.bot.back_requests.call('addLevel', False, [data])
-  
-  async def commands_to_update(self, command_list):
-    levels = await self.bot.back_requests.call('getAllLevels', False)
-    for command in command_list:
-      command_location = f"commands.{command}"
-      if levels:
-        await self.bot.setup_command(command_location, levels)
-      else:
-        await self.bot.setup_command(command_location)
       
   async def setup(self, param_list):
     if param_list is None:
