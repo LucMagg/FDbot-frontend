@@ -44,7 +44,7 @@ class Reward(commands.Cog):
 
     async def callback(self, interaction: discord.Interaction):
       try:
-        response = await self.outer.bot.level_service.get_reward_response('add', self.button_data.emojis, self.level_name, self.reward_type, self.button_data.quantity, self.quality)
+        response = await self.outer.bot.level_service.add_reward(self.button_data.emojis, self.level_name, self.reward_type, self.button_data.quantity, self.quality)
         await self.outer.send_message.update_remove_view(interaction, response)
       except Exception as e:
         self.outer.logger.error_log(f"Error in callback: {e}")
@@ -79,7 +79,7 @@ class Reward(commands.Cog):
 
     else:
       await self.send_message.post(interaction)
-      response = await self.bot.level_service.get_reward_response('add', interaction.guild.emojis, level, type.name, quantity)
+      response = await self.bot.level_service.add_reward(interaction.guild.emojis, level, type.name, quantity)
       await self.send_message.update(interaction, response)
       self.logger.ok_log('reward')
 

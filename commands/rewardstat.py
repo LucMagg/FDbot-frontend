@@ -33,7 +33,7 @@ class Rewardstat(commands.Cog):
       return
 
     await self.send_message.post(interaction)
-    response = await self.bot.level_service.get_reward_response('show', interaction.guild.emojis, level, '', 0)
+    response = await self.bot.level_service.display_rewards(interaction.guild.emojis, level)
     await self.send_message.update(interaction, response)
     self.logger.ok_log('reward-stat')
 
