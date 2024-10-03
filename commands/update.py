@@ -1,14 +1,11 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import requests
 import typing
 
 from utils.message import Message
 from utils.sendMessage import SendMessage
 from service.command import CommandService
-
-from config import DB_PATH
 
 
 class Update(commands.Cog):
@@ -49,13 +46,13 @@ class Update(commands.Cog):
     if type == 'help':
       return self.help_msg
     
-    """if type == 'all':
+    if type == 'all':
       update = await self.bot.back_requests('getAllUpdates', False)
     else:
       update = await self.bot.back_requests('getOneUpdate', False, [type])
 
     if not update:
-      return {'title': self.return_msg['title'], 'description': self.return_msg['description']['erreur'], 'color': 'default'}"""
+      return {'title': self.return_msg['title'], 'description': self.return_msg['description']['erreur'], 'color': 'default'}
     
     if type == 'all':
       description = f"{self.return_msg['description']['all']}{self.return_msg['description']['thxmsg']}"
@@ -64,8 +61,6 @@ class Update(commands.Cog):
       type_name = next((c['name'].lower() for c in self.command['options'][0]['choices'] if c['value'] == type), None)
       description = f"{self.return_msg['description']['part1']} {type_name} {self.return_msg['description']['part2']}{self.return_msg['description']['thxmsg']}"
       types_to_update = [type]
-
-    print(types_to_update)
       
     await self.bot.update_service.command_setup_updater(types_to_update, True)    
     return {'title': self.return_msg['title'], 'description': description, 'color': 'default'}

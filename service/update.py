@@ -5,9 +5,7 @@ class UpdateService:
     self.commands = bot.static_data.commands
 
   async def command_setup_updater(self, command_types: list, update_all_commands: bool):
-    print('here')
     list_of_commands_to_update = [c for c in self.commands if self.check_setup_type(c.get('setup_type', ''), command_types)]
-    print(f'list of commands : {list_of_commands_to_update}')
 
     heroes = None
     if any(l for l in list_of_commands_to_update if self.check_setup_type(l.get('setup_type', ''), ['hero'])) or update_all_commands:
@@ -24,7 +22,6 @@ class UpdateService:
     for c in self.commands:
       if self.check_setup_type(c.get('setup_type', ''), command_types) or (c.get('to_update') and update_all_commands):
         command_location = f"commands.{c.get('name')}" 
-        print(command_location)
         match c.get('setup_type', ''):
           case 'hero':
             await self.bot.setup_command(command_location, heroes)

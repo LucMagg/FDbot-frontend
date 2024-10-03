@@ -1,5 +1,4 @@
 import typing
-import requests
 
 import discord
 from discord.ext import commands
@@ -8,7 +7,6 @@ from discord import app_commands
 from service.command import CommandService
 from utils.sendMessage import SendMessage
 
-from config import DB_PATH
 
 class Level(commands.Cog):
   def __init__(self, bot):
