@@ -44,12 +44,14 @@ class Addcomment(commands.Cog):
     if str_to_slug(h_or_p) == 'help':
       return self.help_msg
     if comment is not None:
-      comment = await self.post_comment(h_or_p, comment, author, interaction)
-      match comment['type']:
+      comment_result = await self.post_comment(h_or_p, comment, author, interaction)
+      match comment_result['type']:
         case 'hero':
-          response = Hero.get_response(self, comment['updated']['name'])
+          hero_cog = Hero(self.bot)
+          response = await hero_cog.get_response(comment_result['updated'].get('name'), interaction)
         case 'pet':
-          response = Pet.get_response(self, comment['updated']['name'])
+          pet_cog = Pet(self.bot)
+          response = await pet_cog.get_response(comment_result['updated'].get('name'), interaction)
         case 'error':
           self.logger.log_only('debug', f"arg non trouvé dans la BDD : {h_or_p}")
           description = f"{self.error_msg['description']['addcomment'][0]['text']} {h_or_p} {self.error_msg['description']['addcomment'][1]['text']}"
@@ -58,8 +60,7 @@ class Addcomment(commands.Cog):
     else:
       self.logger.log_only('debug', "commentaire vide")
       description = f"{self.error_msg['description']['addcomment'][2]['text']}"
-      response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
-      return response
+      return {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
 
   async def post_comment(self, h_or_p, comment, author, interaction):
     comment = await self.bot.back_requests.call('addComment', False, [h_or_p, comment, author], interaction)

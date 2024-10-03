@@ -36,7 +36,7 @@ class Hero(commands.Cog):
     await self.send_message.update(interaction, response)
     self.logger.ok_log('hero')
   
-  async def get_response(self, héros, interaction):
+  async def get_response(self, héros, interaction=None):
     if str_to_slug(héros) == 'help':
       return self.help_msg
     
