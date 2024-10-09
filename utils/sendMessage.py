@@ -12,6 +12,7 @@ class SendMessage:
     bot_msg = self.message.message('wait')
     initial_response = discord.Embed(title = bot_msg['title'], description = bot_msg['description'] + more_msg, color = get_discord_color(bot_msg['color']))
     await interaction.response.send_message(embed = initial_response)
+    return interaction
 
 
   async def update(self, interaction, new_message):

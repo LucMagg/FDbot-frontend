@@ -171,6 +171,11 @@
     "param0": "str"
   },
   {
+    "name": "getAllRewardTypes",
+    "url": "rewardtype",
+    "type": "get"
+  },
+  {
     "name": "getAllTalents",
     "url": "talent",
     "type": "get"

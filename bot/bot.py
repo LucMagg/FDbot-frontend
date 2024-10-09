@@ -66,8 +66,8 @@ class MyBot(commands.Bot):
       'commands.petlist',
       'commands.update',
       'commands.level',
-      'commands.rewardstat',
-      'commands.reward',
+      #'commands.rewardstat',
+      #'commands.reward',
     ]
 
     for command in commands:
