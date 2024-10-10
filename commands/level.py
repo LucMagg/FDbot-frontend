@@ -85,15 +85,18 @@ class Level(commands.Cog):
         self.remove_item(submit_button)
         print('bouton submit supprimé')
 
-    def remove_both_button(self, submit_button, next_button):
+    def remove_both_buttons(self, submit_button, next_button):
       if submit_button:
         self.remove_item(submit_button)
         print('bouton submit supprimé')
-      if next_button:
+      elif next_button:
         self.remove_item(next_button)
         print('bouton next supprimé')  
+      else:
+        print('rien à supprimer')
   
     async def manage_validate_buttons(self, interaction):
+      print('check des boutons de validation')
       submit_button = self.return_validate_buttons('submit')
       next_button = self.return_validate_buttons('next')
 
@@ -103,7 +106,7 @@ class Level(commands.Cog):
         else:
           self.add_next(submit_button, next_button)
       else:
-        self.remove_both(submit_button, next_button)
+        self.remove_both_buttons(submit_button, next_button)
 
       await interaction.response.edit_message(view=self)
 
@@ -126,20 +129,18 @@ class Level(commands.Cog):
       self.is_selected = not self.is_selected
       self.style = discord.ButtonStyle.primary if self.is_selected else discord.ButtonStyle.secondary
       
-      print('check si la reward est dans les éléments sélectionnés')
       to_check = {'name': self.label, 'icon': self.icon, 'grade': self.grade}
       found_reward = next((r for r in self.selectable_choices if r.get('name') == self.label), None)
       if 'choices' in found_reward.keys():
         to_check['remaining_choices'] = len(found_reward.get('choices'))
       else:
         to_check['remaining_choices'] = 0
+      print(f'check si la reward est dans les éléments sélectionnés : {to_check}')
 
       if self.is_selected:
-        if to_check not in self.outer.current_rewards:
-          self.outer.current_rewards.append(to_check)
+        self.outer.current_rewards.append(to_check)
       else:
-        if to_check in self.outer.current_rewards:
-          self.outer.current_rewards.remove(to_check)
+        self.outer.current_rewards.remove(to_check)
 
       await self.outer.ChoiceView.manage_validate_buttons(self.outer.view, interaction)
 
@@ -153,80 +154,83 @@ class Level(commands.Cog):
 
     async def callback(self, interaction: discord.Interaction):
       if self.label == 'submit':
-        self.append_current_choices()
-        """#TODO : créer le level :)"""
-        print(f'CHOIX TERMINES !\n{self.outer.global_selected_rewards}')
-        response = {'title': '', 'description': f"# Le niveau level.get('name') a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
-        await self.outer.send_message.update_remove_view(interaction, response)
+        await self.submit_new_level(interaction)
       else:
-        self.append_current_choices()
-        next_view_choices = self.select_next_view()
-        print(f'nouveaux choix : {next_view_choices}')
-        next_choices_content = f'\n### Choix des {next_view_choices.get('name')} pour le type de reward {self.outer.current_reward_name} : ###'
-        print(next_choices_content)
+        await self.display_next_view(interaction)
 
-        button_data = self.outer.ButtonData(selectable_choices=next_view_choices.get('choices'))
-        print(button_data.selectable_choices)
-        
-        self.outer.view = self.outer.ChoiceView(outer=self.outer, button_data=button_data)
-        try:
-          await interaction.response.edit_message(content=next_choices_content, embed=None, view=self.outer.view)
-        except Exception as e:
-          print(f"Erreur lors de la mise à jour de la vue : {e}")
+    async def display_next_view(self, interaction):
+      self.append_current_choices()
+      next_view_choices = self.select_next_view()
+      next_choices_content = f'\n### Choix des {next_view_choices.get('name')} pour le type de reward {self.outer.current_reward_name} : ###'
+      
+      self.outer.view = self.outer.ChoiceView(outer=self.outer, button_data=self.outer.ButtonData(selectable_choices=next_view_choices.get('choices')))
+      await interaction.response.edit_message(content=next_choices_content, embed=None, view=self.outer.view)
     
+    def append_main_view_choices(self):
+      print('append check vue globale')
+      for crw in self.outer.current_rewards:
+        remaining = crw.get('remaining_choices')
+        if remaining > 0:
+          crw['choices'] = []
+          if remaining > 1:
+            gr = next((r for r in self.outer.reward_types if r.get('name') == crw.get('name')), None)
+            if gr is not None:
+              for cr in gr.get('choices'):
+                crw['choices'].append({'name': cr.get('name'), 'grade': cr.get('grade'), 'choices': []})
+        self.outer.global_selected_rewards.append(crw)
+
+    def append_with_no_choices_left(self, item):
+      del item['remaining_choices']
+      for cr in self.outer.current_rewards:
+        del cr['remaining_choices']
+        item.get('choices').append(cr)
+      return item
+    
+    def append_with_choices_left(self, item):
+      print(f'remains : {item['remaining_choices']}')
+      gr = next((r for r in self.outer.reward_types if r.get('name') == self.outer.current_reward_name), None)
+      gr_choices = gr['choices']
+      choices_iter = len(gr_choices) - item['remaining_choices']
+      item['choices'][choices_iter] = {'name': gr_choices[choices_iter].get('name'), 'icon': gr_choices[choices_iter].get('icon'), 'grade': gr_choices[choices_iter].get('grade'), 'choices': []}
+      for cr in self.outer.current_rewards:
+        del cr['remaining_choices']
+        item['choices'][choices_iter]['choices'].append(cr)
+      item['remaining_choices'] -= 1
+      if item['remaining_choices'] == 0:
+        del item['remaining_choices']
+    
+    def append_child_view_choices(self):
+      print(f'append check vue enfant : {self.outer.current_reward_name}')
+      
+      gsrw = next((r for r in self.outer.global_selected_rewards if r.get('name') == self.outer.current_reward_name), None)
+      if gsrw.get('remaining_choices') == 1 and len(gsrw.get('choices')) == 0:
+        gsrw = self.append_with_no_choices_left(gsrw)
+      else:
+        gsrw = self.append_with_choices_left(gsrw)
+
     def append_current_choices(self):
       if self.outer.current_reward_name == '':
-        print('append check vue globale')
-        for cw in self.outer.current_rewards:
-          to_append = {'name': cw.get('name'), 'icon': cw.get('icon'), 'grade': cw.get('grade')}
-          if cw.get('remaining_choices') > 0:
-            to_append['choices'] = []
-            to_append['remaining_choices'] = cw.get('remaining_choices')
-            if cw.get('remaining_choices') > 1:
-              gr = next((r for r in self.outer.reward_types if r.get('name') == cw.get('name')), None)
-              if gr is not None:
-                for cr in gr.get('choices'):
-                  print(cr)
-                  to_append['choices'].append({'name': cr.get('name'), 'grade': cr.get('grade'), 'choices': []})
-              else:
-                print('erreur :(')
-              
-          self.outer.global_selected_rewards.append(to_append)
+        self.append_main_view_choices()
       else:
-        print(f'append check vue enfant : {self.outer.current_reward_name}')
-        gsrw = next((r for r in self.outer.global_selected_rewards if r.get('name') == self.outer.current_reward_name), None)
-        if gsrw is not None:
-          if gsrw.get('remaining_choices') == 1 and len(gsrw.get('choices')) == 0:
-            del gsrw['remaining_choices']
-            for cr in self.outer.current_rewards:
-              del cr['remaining_choices']
-              gsrw.get('choices').append(cr)
-          else:
-            print(f'remains : {gsrw['remaining_choices']}')
-            gr = next((r for r in self.outer.reward_types if r.get('name') == self.outer.current_reward_name), None)
-            gr_choices = gr['choices']
-            choices_iter = len(gr_choices) - gsrw['remaining_choices']
-            gsrw['choices'][choices_iter] = {'name': gr_choices[choices_iter].get('name'), 'icon': gr_choices[choices_iter].get('icon'), 'grade': gr_choices[choices_iter].get('grade'), 'choices': []}
-            for cr in self.outer.current_rewards:
-              del cr['remaining_choices']
-              gsrw['choices'][choices_iter]['choices'].append(cr)
-            gsrw['remaining_choices'] -= 1
-            if gsrw['remaining_choices'] == 0:
-              del gsrw['remaining_choices']
-
+        self.append_child_view_choices()
       print(f'Choix sauvegardés : {self.outer.global_selected_rewards}')
 
     def select_next_view(self):
-      for gsrw in self.outer.global_selected_rewards:
-        if 'remaining_choices' in gsrw.keys():
-          if gsrw.get('remaining_choices') == 0:
-            del gsrw['remaining_choices']
-          else:
-            for r in self.outer.reward_types:
-              if r.get('name') == gsrw.get('name'):
-                self.outer.current_reward_name = r.get('name')
-                print(f'Nouvelle vue : {self.outer.current_reward_name}')
-                return r.get('choices')[len(r.get('choices')) - gsrw.get('remaining_choices')]
+      for gsrw in [s for s in self.outer.global_selected_rewards if 'remaining_choices' in s.keys()]:
+        if gsrw.get('remaining_choices') == 0:
+          del gsrw['remaining_choices']
+        else:
+          next_view = next((s for s in self.outer.reward_types if s.get('name') == gsrw.get('name')), None)
+          self.outer.current_reward_name = next_view.get('name')
+          print(f'Nouvelle vue : {self.outer.current_reward_name}')
+          return next_view.get('choices')[len(next_view.get('choices')) - gsrw.get('remaining_choices')]
+        
+    async def submit_new_level(self, interaction):
+      self.append_current_choices()
+      """#TODO : créer le level :)"""
+      print(f'CHOIX TERMINES !\n{self.outer.global_selected_rewards}')
+      response = {'title': '', 'description': f"# Le niveau level.get('name') a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
+      await self.outer.send_message.update_remove_view(interaction, response)
      
 
   class ButtonData:
@@ -249,7 +253,6 @@ class Level(commands.Cog):
       return
 
     await self.send_message.post(interaction)
-    print('pouet')
     response = await self.get_level_response(interaction, name, standard_energy_cost, coop_energy_cost)
     #await self.bot.update_service.command_setup_updater(['level'], False)
     #await self.send_message.update(interaction, response)
@@ -260,18 +263,17 @@ class Level(commands.Cog):
       self.logger.log_only('debug', f"level déjà existant")
       return {'title': '', 'description': f"# Le niveau {level_name} existe déjà #\nTout est prêt pour l'utilisation des commandes reward et reward-stat :wink:", 'color': 'blue'}"""
 
-
-    print('here')
+    await self.build_initial_view(interaction)
+    
+    #level = await self.create_level(level_name, standard_energy_cost, coop_energy_cost)
+    return {'title': '', 'description': f"# Le niveau level.get('name') a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
+  
+  async def build_initial_view(self, interaction):
     self.current_rewards = []
     self.global_selected_rewards = []
     self.current_reward_name = ''
-    button_data = self.ButtonData(selectable_choices=self.reward_types)
-    self.view = self.ChoiceView(self, button_data)
-    print(f'there : {self.view}')
+    self.view = self.ChoiceView(self, button_data=self.ButtonData(selectable_choices=self.reward_types))
     await interaction.edit_original_response(content="\n ### Choississez le(s) type(s) de reward ###", embed=None, view=self.view)
-
-    #level = await self.create_level(level_name, standard_energy_cost, coop_energy_cost)
-    return {'title': '', 'description': f"# Le niveau level.get('name') a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
 
   async def create_level(self, name, standard_energy_cost, coop_energy_cost):
     data = {
