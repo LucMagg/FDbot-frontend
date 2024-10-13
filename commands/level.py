@@ -4,7 +4,9 @@ from typing import Optional
 import discord
 from discord.ext import commands
 from discord import app_commands
-from discord.ui import Button, Select
+from discord.ui import Button
+import emoji
+import re
 
 from service.command import CommandService
 from utils.sendMessage import SendMessage
@@ -29,29 +31,25 @@ class Level(commands.Cog):
 
   class ChoiceView(discord.ui.View):
     def __init__(self, outer, button_data: 'Level.ButtonData'):
-      print('Création de la vue')
       super().__init__(timeout=180)
       self.outer = outer
       self.button_data = button_data
       self.selectable_choices = button_data.selectable_choices
       
       for choice in self.selectable_choices:
-        icon = choice.get('icon')
+        icon = choice.get('icon') if self.outer.current_reward_name != '' else ''
         label = choice.get('name')
         grade = choice.get('grade', 0)
         is_selected = choice.get('name') in self.selectable_choices
         self.add_item(self.outer.ChoiceButton(outer=self.outer, icon=icon, label=label, button_data=button_data, grade=grade, is_selected=is_selected))
 
       self.outer.current_rewards = []
-      print(f'current rewards: {self.outer.current_rewards}')
-      print('vue créée')
     
     def check_choice(self, list_to_check) -> bool:
       for to_check in list_to_check:
         if 'remaining_choices' in to_check.keys():
           remaining = to_check.get('remaining_choices')
           if (remaining == 1 and self.outer.current_reward_name != to_check.get('name')) or remaining > 1:
-            print(f'encore des choix dans {to_check.get('name')}')
             return False
       return True
     
@@ -72,31 +70,22 @@ class Level(commands.Cog):
     def add_submit(self, submit_button, next_button):
       if not submit_button:
         self.add_item(self.outer.ValidateButton(outer=self.outer, button_data=self.button_data, label='submit'))
-        print('bouton submit ajouté')
       if next_button:
         self.remove_item(next_button)
-        print('bouton next supprimé')
     
     def add_next(self, submit_button, next_button):
       if not next_button:
         self.add_item(self.outer.ValidateButton(outer=self.outer, button_data=self.button_data, label='next'))
-        print('bouton next ajouté')
       if submit_button:
         self.remove_item(submit_button)
-        print('bouton submit supprimé')
 
     def remove_both_buttons(self, submit_button, next_button):
       if submit_button:
         self.remove_item(submit_button)
-        print('bouton submit supprimé')
       elif next_button:
         self.remove_item(next_button)
-        print('bouton next supprimé')  
-      else:
-        print('rien à supprimer')
   
     async def manage_validate_buttons(self, interaction):
-      print('check des boutons de validation')
       submit_button = self.return_validate_buttons('submit')
       next_button = self.return_validate_buttons('next')
 
@@ -113,9 +102,11 @@ class Level(commands.Cog):
       
   class ChoiceButton(Button):
     def __init__(self, outer, icon: str, label: str, button_data:'Level.ButtonData', grade: int = None ,is_selected: bool = False):
-      print(f'build choice button : {label}')
       style = discord.ButtonStyle.primary if is_selected else discord.ButtonStyle.secondary
       super().__init__(label=label, style=style, custom_id=label)
+      emoji = self.get_emoji_from_icon(icon)
+      if emoji is not None:
+        super().__init__(emoji=emoji)
       
       self.outer = outer
       self.icon = icon
@@ -135,7 +126,6 @@ class Level(commands.Cog):
         to_check['remaining_choices'] = len(found_reward.get('choices'))
       else:
         to_check['remaining_choices'] = 0
-      print(f'check si la reward est dans les éléments sélectionnés : {to_check}')
 
       if self.is_selected:
         self.outer.current_rewards.append(to_check)
@@ -143,6 +133,14 @@ class Level(commands.Cog):
         self.outer.current_rewards.remove(to_check)
 
       await self.outer.ChoiceView.manage_validate_buttons(self.outer.view, interaction)
+
+    def get_emoji_from_icon(self, icon):
+      if 'customIcon' in icon or icon == '':
+        return None
+      unicode_match = re.match(r'\\U([0-9a-fA-F]{8})', icon)
+      if unicode_match:
+        return chr(int(unicode_match.group(1), 16))
+      return emoji.emojize(icon)
 
   class ValidateButton(Button):
     def __init__(self, outer, button_data:'Level.ButtonData', label):
@@ -167,7 +165,6 @@ class Level(commands.Cog):
       await interaction.response.edit_message(content=next_choices_content, embed=None, view=self.outer.view)
     
     def append_main_view_choices(self):
-      print('append check vue globale')
       for crw in self.outer.current_rewards:
         remaining = crw.get('remaining_choices')
         if remaining > 0:
@@ -187,7 +184,6 @@ class Level(commands.Cog):
       return item
     
     def append_with_choices_left(self, item):
-      print(f'remains : {item['remaining_choices']}')
       gr = next((r for r in self.outer.reward_types if r.get('name') == self.outer.current_reward_name), None)
       gr_choices = gr['choices']
       choices_iter = len(gr_choices) - item['remaining_choices']
@@ -199,9 +195,7 @@ class Level(commands.Cog):
       if item['remaining_choices'] == 0:
         del item['remaining_choices']
     
-    def append_child_view_choices(self):
-      print(f'append check vue enfant : {self.outer.current_reward_name}')
-      
+    def append_child_view_choices(self):     
       gsrw = next((r for r in self.outer.global_selected_rewards if r.get('name') == self.outer.current_reward_name), None)
       if gsrw.get('remaining_choices') == 1 and len(gsrw.get('choices')) == 0:
         gsrw = self.append_with_no_choices_left(gsrw)
@@ -213,7 +207,6 @@ class Level(commands.Cog):
         self.append_main_view_choices()
       else:
         self.append_child_view_choices()
-      print(f'Choix sauvegardés : {self.outer.global_selected_rewards}')
 
     def select_next_view(self):
       for gsrw in [s for s in self.outer.global_selected_rewards if 'remaining_choices' in s.keys()]:
@@ -222,12 +215,10 @@ class Level(commands.Cog):
         else:
           next_view = next((s for s in self.outer.reward_types if s.get('name') == gsrw.get('name')), None)
           self.outer.current_reward_name = next_view.get('name')
-          print(f'Nouvelle vue : {self.outer.current_reward_name}')
           return next_view.get('choices')[len(next_view.get('choices')) - gsrw.get('remaining_choices')]
         
     async def submit_new_level(self, interaction):
       self.append_current_choices()
-      print(f'CHOIX TERMINES !\n{self.outer.global_selected_rewards}')
       await self.outer.create_level()
       response = {'title': '', 'description': f"# Le niveau {self.outer.name} a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
       await self.outer.send_message.update_remove_view(interaction, response)
@@ -242,7 +233,7 @@ class Level(commands.Cog):
 
   @app_commands.autocomplete(name=level_autocomplete)
   @app_commands.command(name='level')
-  async def level_app_command(self, interaction: discord.Interaction, name: str, standard_energy_cost: int, coop_energy_cost: int):
+  async def level_app_command(self, interaction: discord.Interaction, name: str, standard_energy_cost: int = None, coop_energy_cost: int = None):
     self.logger.command_log('level', interaction)
     self.logger.log_only('debug', f"name : {name} | standard_energy_cost : {standard_energy_cost} | coop_energy_cost : {coop_energy_cost}")
     author = str(interaction.user)
@@ -257,15 +248,20 @@ class Level(commands.Cog):
     self.name = name
     self.standard_energy_cost = standard_energy_cost
     self.coop_energy_cost = coop_energy_cost
+    self.interaction = interaction
 
     await self.get_level_response(interaction)
 
   async def get_level_response(self, interaction):
-    print('pouet-here')
     if self.name in [c.name for c in self.levelname_choices]:
-      print('déjà existant')
       self.logger.log_only('debug', f"level déjà existant")
       response = {'title': '', 'description': f"# Le niveau {self.name} existe déjà #\nTout est prêt pour l'utilisation des commandes reward et reward-stat :wink:", 'color': 'blue'}
+      await self.send_message.update(interaction, response)
+      return
+    
+    if self.standard_energy_cost is None and self.coop_energy_cost is None:
+      self.logger.log_only('debug', f"paramètres manquants")
+      response = {'title': '', 'description': f"# Erreur #\nUn level doit avoir au moins un coût en énergie (standard ou coop)", 'color': 'red'}
       await self.send_message.update(interaction, response)
       return
 
@@ -289,10 +285,7 @@ class Level(commands.Cog):
       item_choices = []
       for i in range(len(items)):
         item_choices.append({'name': items[i].get('name'), 'icon': '', 'grade': i})
-      gear_choices = [gear.get('choices')[1], {'name': 'Item', 'icon': '', 'grade': 3, 'choices': item_choices}]
-
-      gear['choices'] = gear_choices
-      print(self.global_selected_rewards)
+      gear['choices'] = [gear.get('choices')[1], {'name': 'Item', 'icon': '', 'grade': 3, 'choices': item_choices}]
       
     data = {
       "name": self.name,
