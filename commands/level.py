@@ -40,8 +40,9 @@ class Level(commands.Cog):
         icon = choice.get('icon') if self.outer.current_reward_name != '' else ''
         label = choice.get('name')
         grade = choice.get('grade', 0)
+        has_quantity = choice.get('has_quantity', None)
         is_selected = choice.get('name') in self.selectable_choices
-        self.add_item(self.outer.ChoiceButton(outer=self.outer, icon=icon, label=label, button_data=button_data, grade=grade, is_selected=is_selected))
+        self.add_item(self.outer.ChoiceButton(outer=self.outer, icon=icon, label=label, button_data=button_data, grade=grade, has_quantity=has_quantity, is_selected=is_selected))
 
       self.outer.current_rewards = []
     
@@ -101,7 +102,7 @@ class Level(commands.Cog):
 
       
   class ChoiceButton(Button):
-    def __init__(self, outer, icon: str, label: str, button_data:'Level.ButtonData', grade: int = None ,is_selected: bool = False):
+    def __init__(self, outer, icon: str, label: str, button_data:'Level.ButtonData', grade: int = None, has_quantity: bool = None, is_selected: bool = False):
       style = discord.ButtonStyle.primary if is_selected else discord.ButtonStyle.secondary
       super().__init__(label=label, style=style, custom_id=label)
       emoji = self.get_emoji_from_icon(icon)
@@ -109,6 +110,7 @@ class Level(commands.Cog):
         super().__init__(emoji=emoji)
       
       self.outer = outer
+      self.has_quantity = has_quantity
       self.icon = icon
       self.grade = grade
       self.selectable_choices = button_data.selectable_choices
@@ -120,7 +122,7 @@ class Level(commands.Cog):
       self.is_selected = not self.is_selected
       self.style = discord.ButtonStyle.primary if self.is_selected else discord.ButtonStyle.secondary
       
-      to_check = {'name': self.label, 'icon': self.icon, 'grade': self.grade}
+      to_check = {'name': self.label, 'icon': self.icon, 'grade': self.grade, 'has_quantity': self.has_quantity}
       found_reward = next((r for r in self.selectable_choices if r.get('name') == self.label), None)
       if 'choices' in found_reward.keys():
         to_check['remaining_choices'] = len(found_reward.get('choices'))
@@ -222,6 +224,7 @@ class Level(commands.Cog):
       await self.outer.create_level()
       response = {'title': '', 'description': f"# Le niveau {self.outer.name} a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
       await self.outer.send_message.update_remove_view(interaction, response)
+      self.logger.ok_log('level')
      
 
   class ButtonData:
