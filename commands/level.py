@@ -227,9 +227,9 @@ class Level(commands.Cog):
         
     async def submit_new_level(self, interaction):
       self.append_current_choices()
-      """#TODO : créer le level :)"""
       print(f'CHOIX TERMINES !\n{self.outer.global_selected_rewards}')
-      response = {'title': '', 'description': f"# Le niveau level.get('name') a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
+      await self.outer.create_level()
+      response = {'title': '', 'description': f"# Le niveau {self.outer.name} a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
       await self.outer.send_message.update_remove_view(interaction, response)
      
 
@@ -237,10 +237,10 @@ class Level(commands.Cog):
     def __init__(self, selectable_choices):
       self.selectable_choices = selectable_choices
 
-  """async def level_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return await self.command_service.return_autocompletion(self.level_choices, current)
+  async def level_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+    return await self.command_service.return_autocompletion(self.levelname_choices, current)
 
-  @app_commands.autocomplete(name=level_autocomplete)"""
+  @app_commands.autocomplete(name=level_autocomplete)
   @app_commands.command(name='level')
   async def level_app_command(self, interaction: discord.Interaction, name: str, standard_energy_cost: int, coop_energy_cost: int):
     self.logger.command_log('level', interaction)
@@ -251,22 +251,25 @@ class Level(commands.Cog):
       self.logger.log_only('debug', f"user {author} non autorisé")
       self.logger.ok_log('level')
       return
-
+    
     await self.send_message.post(interaction)
-    response = await self.get_level_response(interaction, name, standard_energy_cost, coop_energy_cost)
-    #await self.bot.update_service.command_setup_updater(['level'], False)
-    #await self.send_message.update(interaction, response)
-    self.logger.ok_log('level')
+    
+    self.name = name
+    self.standard_energy_cost = standard_energy_cost
+    self.coop_energy_cost = coop_energy_cost
 
-  async def get_level_response(self, interaction, level_name, standard_energy_cost, coop_energy_cost):
-    """if level_name in [c.name for c in self.choices]:
+    await self.get_level_response(interaction)
+
+  async def get_level_response(self, interaction):
+    print('pouet-here')
+    if self.name in [c.name for c in self.levelname_choices]:
+      print('déjà existant')
       self.logger.log_only('debug', f"level déjà existant")
-      return {'title': '', 'description': f"# Le niveau {level_name} existe déjà #\nTout est prêt pour l'utilisation des commandes reward et reward-stat :wink:", 'color': 'blue'}"""
+      response = {'title': '', 'description': f"# Le niveau {self.name} existe déjà #\nTout est prêt pour l'utilisation des commandes reward et reward-stat :wink:", 'color': 'blue'}
+      await self.send_message.update(interaction, response)
+      return
 
     await self.build_initial_view(interaction)
-    
-    #level = await self.create_level(level_name, standard_energy_cost, coop_energy_cost)
-    return {'title': '', 'description': f"# Le niveau level.get('name') a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
   
   async def build_initial_view(self, interaction):
     self.current_rewards = []
@@ -275,21 +278,39 @@ class Level(commands.Cog):
     self.view = self.ChoiceView(self, button_data=self.ButtonData(selectable_choices=self.reward_types))
     await interaction.edit_original_response(content="\n ### Choississez le(s) type(s) de reward ###", embed=None, view=self.view)
 
-  async def create_level(self, name, standard_energy_cost, coop_energy_cost):
+  async def create_level(self):
+    gear = next((g for g in self.global_selected_rewards if g.get('name') == 'gear'), None)
+    if gear is not None:
+      types = ','.join([hero_type.get('name') for hero_type in gear.get('choices')[0].get('choices')])
+      positions = ','.join([gear_position.get('name') for gear_position in gear.get('choices')[2].get('choices')])
+      items = await self.bot.back_requests.call('getUniqueGearByTypeAndPosition', False, [types, positions])
+      items = sorted(items, key=lambda i: i.get('name'))
+
+      item_choices = []
+      for i in range(len(items)):
+        item_choices.append({'name': items[i].get('name'), 'icon': '', 'grade': i})
+      gear_choices = [gear.get('choices')[1], {'name': 'Item', 'icon': '', 'grade': 3, 'choices': item_choices}]
+
+      gear['choices'] = gear_choices
+      print(self.global_selected_rewards)
+      
     data = {
-      "name": name,
-      "standard_energy_cost": standard_energy_cost,
-      "coop_energy_cost": coop_energy_cost
+      "name": self.name,
+      "standard_energy_cost": self.standard_energy_cost,
+      "coop_energy_cost": self.coop_energy_cost,
+      "reward_choices": self.global_selected_rewards
     }
-    return await self.bot.back_requests.call('addLevel', False, [data])
+    await self.bot.back_requests.call('addLevel', False, [data])
+    await self.bot.update_service.command_setup_updater(['level'], False)
+      
       
   async def setup(self, param_list):
-    #if param_list is None:
-    #  choices = await self.bot.back_requests.call('getAllLevels', False)
-    #else:
-    #  choices = param_list
+    if param_list is None:
+      choices = await self.bot.back_requests.call('getAllLevels', False)
+    else:
+      choices = param_list
     self.reward_types = await self.bot.back_requests.call('getAllRewardTypes', False)
-    #self.levelname_choices = CommandService.set_choices([{'name': c.get('name')} for c in choices]) 
+    self.levelname_choices = CommandService.set_choices([{'name': c.get('name')} for c in choices]) 
 
 async def setup(bot):
   await bot.add_cog(Level(bot))

@@ -97,8 +97,8 @@
     "name": "getHeroesByGearNameAndQuality",
     "url": "hero/gear?&gear_quality=[[param0]]&gear_name=[[param1]]",
     "type": "get",
-    "param0": "str",
-    "param1": "str"
+    "param0": "default",
+    "param1": "default"
   },
   {
     "name": "addLevel",
