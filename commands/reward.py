@@ -64,10 +64,24 @@ class Reward(commands.Cog):
 
   @app_commands.autocomplete(level=level_autocomplete)
   @app_commands.command(name='reward')
-  async def reward_app_command(self, interaction: discord.Interaction, level: str, type: Choice[int], quantity: int):
+  async def reward_app_command(self, interaction: discord.Interaction, level: str, type: Choice[int], quantity: str):
     self.logger.command_log('reward', interaction)
     self.logger.log_only('debug', f"level : {level} | type : {type} | quantity : {quantity}")
-    button_data = self.ButtonData(level, interaction.guild.emojis, quantity, type.name)
+    quantity_int = 0
+    try:
+      quantity_int = int(quantity)
+    except ValueError:
+      if quantity.endswith("k"):
+        try:
+          quantity_int = int(quantity[:-1]) * 1000
+        except ValueError:
+          quantity_int = 0
+
+    if quantity_int == 0:
+      await self.send_message.error(interaction, "Quantité invalide", "Veuillez entrer une quantité valide.")
+      return
+
+    button_data = self.ButtonData(level, interaction.guild.emojis, quantity_int, type.name)
 
     if type.name == 'dust':
       view = self.QualitySelectionView(self, button_data, self.dust_qualities)
@@ -79,7 +93,7 @@ class Reward(commands.Cog):
 
     else:
       await self.send_message.post(interaction)
-      response = await self.bot.level_service.add_reward(interaction.guild.emojis, level, type.name, quantity)
+      response = await self.bot.level_service.add_reward(interaction.guild.emojis, level, type.name, quantity_int)
       await self.send_message.update(interaction, response)
       self.logger.ok_log('reward')
 

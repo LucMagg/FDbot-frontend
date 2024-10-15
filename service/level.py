@@ -72,19 +72,16 @@ class LevelService:
     lines = []
     for r in result:
       icon = ''
+      multilines = False
       match r.get('type'):
         case 'gold':
           icon = ':moneybag:'
-          multilines = False
         case 'potions':
           icon = self.get_potion_emoji(emojis)
-          multilines = False
         case 'gear':
           icon = next((g.get('icon') for g in self.gear_qualities if g.get('name') == r.get('quality')), None)
-          multilines = False # à remplacer par True quand on gèrera les types d'item dans les rewards :D
         case 'dust':
           icon = next((d.get('icon') for d in self.dust_qualities if d.get('name') == r.get('quality')), None)
-          multilines = False
           if len(r.get('rewards')) > 1:
             multilines = True
 
@@ -93,12 +90,15 @@ class LevelService:
         for l in r['rewards']:
           to_append += f"\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• {l.get('quantity')} {r.get('type')}s {format(l.get('appearances') / r.get('total_appearances'), '.2%')} ({l.get('appearances')})\n"
       else:
-        quantity = ' '
-        if r.get('rewards')[0].get('quantity') > 1:
-          quantity = f" {r.get('rewards')[0].get('quantity')} "
-        to_append = f"{icon}{quantity}{r.get('quality', '')} {r.get('type')} : {format(r.get('total_appearances') / total_appearances, '.2%')} ({r.get('total_appearances')})\n"
+        quantity = int(r.get('rewards')[0].get('quantity'))
+        quantity_str = ' '
+        if quantity > 1:
+          quantity_str = f" {quantity} "
+          if quantity % 1000 == 0:
+            quantity_str = f" {quantity // 1000}k "
+        to_append = f"{icon}{quantity_str}{r.get('quality', '')} {r.get('type')} : {format(r.get('total_appearances') / total_appearances, '.2%')} ({r.get('total_appearances')})\n"
       lines.append(to_append)
-   
+
     return f'### Statistiques actuelles sur {total_appearances} récompense{pluriel(total_appearances)} recueillie{pluriel(total_appearances)} : ###\n {'\n'.join([l for l in lines])}'
 
   def get_potion_emoji(self, emojis):
