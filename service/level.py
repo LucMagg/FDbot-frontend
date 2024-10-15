@@ -21,11 +21,12 @@ class LevelService:
     
     return {'title': '', 'description': description, 'color': 'blue'}
 
-  async def add_reward(self, emojis, level_name, reward_type, reward_quantity, reward_quality: Optional[str] = ''):
+  async def add_reward(self, emojis, level_name, reward_type, reward_quantity, reward_appearances, reward_quality: Optional[str] = ''):
     data = {
       "type": reward_type,
       "quantity": reward_quantity,
-      "quality": reward_quality
+      "quality": reward_quality,
+      "appearances": reward_appearances
     }
     level = await self.bot.back_requests.call('addReward', False, [level_name, data])
 

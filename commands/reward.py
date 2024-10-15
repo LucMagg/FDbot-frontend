@@ -26,11 +26,12 @@ class Reward(commands.Cog):
     self.choices = None
 
   class ButtonData:
-    def __init__(self, level_name: str, emojis, quantity: int, reward_type: str):
+    def __init__(self, level_name: str, emojis, quantity: int, times: int, reward_type: str):
       self.level_name = level_name
       self.emojis = emojis
       self.reward_type = reward_type
       self.quantity = quantity
+      self.times = times
 
   class RewardButton(Button):
     def __init__(self, outer, button_data: 'Reward.ButtonData', icon: str, quality: Optional[str]=''):
@@ -40,11 +41,12 @@ class Reward(commands.Cog):
       self.icon = icon
       self.level_name = button_data.level_name
       self.reward_type = button_data.reward_type
+      self.times = button_data.times
       self.button_data = button_data
 
     async def callback(self, interaction: discord.Interaction):
       try:
-        response = await self.outer.bot.level_service.add_reward(self.button_data.emojis, self.level_name, self.reward_type, self.button_data.quantity, self.quality)
+        response = await self.outer.bot.level_service.add_reward(self.button_data.emojis, self.level_name, self.reward_type, self.button_data.quantity, self.times, self.quality)
         await self.outer.send_message.update_remove_view(interaction, response)
       except Exception as e:
         self.outer.logger.error_log(f"Error in callback: {e}")
@@ -64,7 +66,7 @@ class Reward(commands.Cog):
 
   @app_commands.autocomplete(level=level_autocomplete)
   @app_commands.command(name='reward')
-  async def reward_app_command(self, interaction: discord.Interaction, level: str, type: Choice[int], quantity: str):
+  async def reward_app_command(self, interaction: discord.Interaction, level: str, type: Choice[int], quantity: str, times: Optional[int]=1):
     self.logger.command_log('reward', interaction)
     self.logger.log_only('debug', f"level : {level} | type : {type} | quantity : {quantity}")
     quantity_int = 0
@@ -81,7 +83,7 @@ class Reward(commands.Cog):
       await self.send_message.error(interaction, "Quantité invalide", "Veuillez entrer une quantité valide.")
       return
 
-    button_data = self.ButtonData(level, interaction.guild.emojis, quantity_int, type.name)
+    button_data = self.ButtonData(level, interaction.guild.emojis, quantity_int, times, type.name)
 
     if type.name == 'dust':
       view = self.QualitySelectionView(self, button_data, self.dust_qualities)
@@ -93,7 +95,7 @@ class Reward(commands.Cog):
 
     else:
       await self.send_message.post(interaction)
-      response = await self.bot.level_service.add_reward(interaction.guild.emojis, level, type.name, quantity_int)
+      response = await self.bot.level_service.add_reward(interaction.guild.emojis, level, type.name, quantity_int, times)
       await self.send_message.update(interaction, response)
       self.logger.ok_log('reward')
 
