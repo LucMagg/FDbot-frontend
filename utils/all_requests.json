@@ -115,7 +115,7 @@
     "name": "getLevelByName",
     "url": "levels/[[param0]]",
     "type": "get",
-    "param0": "str"
+    "param0": "slug"
   },
   {
     "name": "addReward",
