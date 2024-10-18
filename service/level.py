@@ -1,4 +1,5 @@
 import discord
+from math import floor
 
 from utils.misc_utils import pluriel
 from utils.str_utils import str_to_slug, int_to_str
@@ -56,7 +57,7 @@ class LevelService:
       
       print(to_return)
    
-    return f'### Statistiques actuelles sur {self.total_appearances} récompense{pluriel(self.total_appearances)} recueillie{pluriel(self.total_appearances)} : ###\n{to_return}'
+    return f'### Statistiques actuelles sur {self.total_appearances} récompense{pluriel(self.total_appearances)} recueillie{pluriel(self.total_appearances)} ###\n{to_return}'
   
   def append_with_multiple_reward_types(self, reward, icon):
     print('multiple rewards types')
@@ -108,21 +109,21 @@ class LevelService:
   
   def energy_stats(self, level, reward, icon):
     print(level)
-    to_return = f'\n### Moyennes par combat : ###\n'
+    to_return = f'\n### Moyennes par combat ###\n'
 
     total_rewards = sum([(d.get('quantity') * d.get('appearances')) for d in reward.get('details')])
     print(f'total_rewards: {total_rewards}')
     average_reward = total_rewards/self.total_appearances
     print(f'average: {average_reward}')
 
-    to_return += f'{icon} {round(average_reward)} par combat, soit :\n'
+    to_return += f'{icon} {floor(average_reward)} {reward.get('type')} par combat, soit :\n'
 
     try:
       to_check = [{'attr': 'standard_energy_cost', 'name': 'énergie solo'},{'attr': 'coop_energy_cost', 'name': 'énergie coop'}]
       for energy in to_check:
         energy_cost = level.get(energy.get('attr'))
         if energy_cost is not None:
-          to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• {round(average_reward//energy_cost)} par {energy.get('name')} ({energy_cost} par combat)\n'
+          to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• {round(average_reward//energy_cost)} par {energy.get('name')} ({energy_cost} énergie{pluriel(energy_cost)} / combat)\n'
     except Exception as e:
       print(f'Erreur: {e}')
 

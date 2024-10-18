@@ -357,7 +357,7 @@ class Reward(commands.Cog):
       self.levels = await self.bot.back_requests.call('getAllLevels', False)
     else:
       self.levels = param_list
-    self.levelname_choices = CommandService.set_choices([{'name': l.get('name')} for l in self.levels]) 
+    self.levelname_choices = CommandService.set_choices_by_rewards(self.levels) 
 
 class ResponseManager:
   def __init__(self):

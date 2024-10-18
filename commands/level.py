@@ -334,7 +334,7 @@ class Level(commands.Cog):
     else:
       choices = param_list
     self.reward_types = await self.bot.back_requests.call('getAllRewardTypes', False)
-    self.levelname_choices = CommandService.set_choices([{'name': c.get('name')} for c in choices]) 
+    self.levelname_choices = CommandService.set_choices_by_rewards(choices) 
 
 async def setup(bot):
   await bot.add_cog(Level(bot))
