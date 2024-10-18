@@ -6,7 +6,7 @@ from discord.app_commands import Choice
 class CommandService:
 
   @staticmethod
-  def init_command(command, command_data,no_choices=False):
+  def init_command(command, command_data, no_choices=False):
     if command_data:
       command.name = command_data['name']
       command.description = command_data['description']
@@ -19,6 +19,16 @@ class CommandService:
   @staticmethod
   def set_choices(collection):
     choices = sorted([app_commands.Choice(name=c['name'], value=c['name_slug'] if 'name_slug' in c.keys() else c['name']) for c in collection], key=lambda c:c.name)
+    return choices
+  
+  @staticmethod
+  def set_choices_by_rewards(collection):
+    def sort_function(document):
+      return sum([reward.get('total_appearances', 0) for reward in document.get('rewards')])
+    
+    sorted_collection = sorted(collection, key=lambda c: (sort_function(c), c.get('name')), reverse=True)
+    choices = [app_commands.Choice(name=c['name'], value=c['name']) for c in sorted_collection]
+
     return choices
 
   async def return_autocompletion(self, choices: list, current: str) -> typing.List[app_commands.Choice[str]]:

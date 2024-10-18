@@ -45,8 +45,8 @@
     "name": "getUniqueGearByTypeAndPosition",
     "url": "gear?type=[[param0]]&position=[[param1]]",
     "type": "get",
-    "param0": "str",
-    "param1": "str"
+    "param0": "default",
+    "param1": "default"
   },
   {
     "name": "getAllHeroes",
@@ -115,7 +115,7 @@
     "name": "getLevelByName",
     "url": "levels/[[param0]]",
     "type": "get",
-    "param0": "str"
+    "param0": "slug"
   },
   {
     "name": "addReward",
@@ -169,6 +169,11 @@
     "url": "quality/[[param0]]",
     "type": "get",
     "param0": "str"
+  },
+  {
+    "name": "getAllRewardTypes",
+    "url": "rewardtype",
+    "type": "get"
   },
   {
     "name": "getAllTalents",

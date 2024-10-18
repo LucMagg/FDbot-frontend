@@ -42,7 +42,7 @@ class Rewardstat(commands.Cog):
       choices = await self.bot.back_requests.call('getAllLevels', False)
     else:
       choices = param_list
-    self.choices = CommandService.set_choices([{'name': c.get('name')} for c in choices]) 
+    self.choices = CommandService.set_choices_by_rewards(choices) 
 
 async def setup(bot):
   await bot.add_cog(Rewardstat(bot))
