@@ -1,10 +1,7 @@
-from typing import Optional
-
 import discord
-import requests
 
-from config import DB_PATH
 from utils.misc_utils import pluriel
+from utils.str_utils import str_to_slug, int_to_str
 from collections import defaultdict
 
 
@@ -21,86 +18,85 @@ class LevelService:
     
     return {'title': '', 'description': description, 'color': 'blue'}
 
-  async def add_reward(self, emojis, level_name, reward_type, reward_quantity, reward_quality: Optional[str] = ''):
-    data = {
-      "type": reward_type,
-      "quantity": reward_quantity,
-      "quality": reward_quality
-    }
-    level = await self.bot.back_requests.call('addReward', False, [level_name, data])
+  async def add_reward(self, emojis, level_name, reward_data: dict):
+    level = await self.bot.back_requests.call('addReward', False, [str_to_slug(level_name), reward_data])
+    print('here')
 
     description = f'# {level.get('name')} #\n'
     description += 'Merci d\'avoir ajouté une récompense à ce niveau ! :kissing_heart:\n\n'
-    description += self.get_rewards_str(level.get('rewards', []), emojis)
+    description += self.get_rewards_str(level, emojis)
+
+    print(description)
 
     return {'title': '', 'description': description, 'color': 'blue'}
 
-  def get_rewards_str(self, rewards, emojis) -> str:  
-    has_quality = False
-    for r in rewards:
-      if 'quality' in r.keys():
-        has_quality = True
+  def get_rewards_str(self, level, emojis) -> str:
+    self.total_appearances = sum([r.get('total_appearances') for r in level.get('rewards')])
+    print(self.total_appearances)
 
-    if has_quality:
-      grouped_rewards = defaultdict(lambda: {'rewards': [], 'total_appearances': 0})
-      for r in rewards:
-        key = (r['type'], r.get('quality', ''))
-        grouped_rewards[key]['rewards'].append({
-          'quantity': r['quantity'],
-          'appearances': r['appearances']
-        })
-        grouped_rewards[key]['total_appearances'] += r['appearances']
-
-      result = [{
-        'type': key[0],
-        'quality': key[1],
-        'rewards': value['rewards'],
-        'total_appearances': value['total_appearances']
-      } for key, value in grouped_rewards.items()]
-
-    else:
-      result = [{
-        'type': r.get('type'),
-        'rewards': [{'quantity': r.get('quantity')}],
-        'total_appearances': r.get('appearances')
-      } for r in rewards]
-      
-
-    result.sort(key=lambda x: -x['total_appearances'])
-    total_appearances = sum([r.get('total_appearances') for r in result])
-
-    lines = []
-    for r in result:
-      icon = ''
-      match r.get('type'):
-        case 'gold':
-          icon = ':moneybag:'
-          multilines = False
-        case 'potions':
-          icon = self.get_potion_emoji(emojis)
-          multilines = False
-        case 'gear':
-          icon = next((g.get('icon') for g in self.gear_qualities if g.get('name') == r.get('quality')), None)
-          multilines = False # à remplacer par True quand on gèrera les types d'item dans les rewards :D
-        case 'dust':
-          icon = next((d.get('icon') for d in self.dust_qualities if d.get('name') == r.get('quality')), None)
-          multilines = False
-          if len(r.get('rewards')) > 1:
-            multilines = True
-
-      if multilines:
-        to_append = f"{icon} {r.get('quality', '')} {r.get('type')} : {format(r.get('total_appearances') / total_appearances, '.2%')} ({r.get('total_appearances')}), soit :\n"
-        for l in r['rewards']:
-          to_append += f"\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• {l.get('quantity')} {r.get('type')}s {format(l.get('appearances') / r.get('total_appearances'), '.2%')} ({l.get('appearances')})\n"
+    to_return = ''
+    for r in level.get('rewards'):
+      if r.get('quality') == None:
+        icon = next((rc.get('icon') for rc in level.get('reward_choices') if rc.get('name') == r.get('type')), '')
       else:
-        quantity = ' '
-        if r.get('rewards')[0].get('quantity') > 1:
-          quantity = f" {r.get('rewards')[0].get('quantity')} "
-        to_append = f"{icon}{quantity}{r.get('quality', '')} {r.get('type')} : {format(r.get('total_appearances') / total_appearances, '.2%')} ({r.get('total_appearances')})\n"
-      lines.append(to_append)
+        try:
+          match_reward_type = next((rc for rc in level.get('reward_choices') if rc.get('name') == r.get('type')), '')
+          match_quality = next((rc for rc in match_reward_type.get('choices') if rc.get('name') == 'Quality'), '')
+          icon = next((rc.get('icon') for rc in match_quality.get('choices') if rc.get('name') == r.get('quality')), '')
+        except:
+          print('icon except')
+          icon = ''
+
+      print(f'icon: {icon}')
+      icon = self.get_custom_emoji(emojis, icon)
+      
+      
+      if len(level.get('rewards')) > 1:
+        to_return += self.append_with_multiple_reward_types(r, icon)
+      else:
+        to_return += self.append_with_single_reward_type(r, icon)
+      
+      print(to_return)
    
-    return f'### Statistiques actuelles sur {total_appearances} récompense{pluriel(total_appearances)} recueillie{pluriel(total_appearances)} : ###\n {'\n'.join([l for l in lines])}'
+    return f'### Statistiques actuelles sur {self.total_appearances} récompense{pluriel(self.total_appearances)} recueillie{pluriel(self.total_appearances)} : ###\n{to_return}'
+  
+  def append_with_multiple_reward_types(self, reward, icon):
+    to_return = f"\n{icon} {reward.get('quality')} {reward.get('type')} : {format(reward.get('total_appearances') / self.total_appearances, '.2%')} ({reward.get('total_appearances')}), soit :\n"
+    for d in reward.get('details'):
+      to_return += '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• '
+      if d.get('item') is not None:
+        to_return += f'{d.get('item')} '
+      else:
+        quantity = int_to_str(d.get('quantity'))
+        to_return += f'{quantity} {reward.get('type')} '
+      to_return += f'{format(d.get('appearances') / reward.get('total_appearances'), '.2%')} ({d.get('appearances')})\n'
+    return to_return
+  
+  def append_with_single_reward_type(self, reward, icon):
+    to_return = ''
+    for d in reward.get('details'):
+      if reward.get('quality') is not None:
+        type = f'{reward.get('quality')} {reward.get('type')}'
+      else:
+        type = reward.get('type')
+      quantity = int_to_str(d.get('quantity'))
+      to_return += f'\n{icon} {quantity} {type} : {format(d.get('appearances') / self.total_appearances, '.2%')} ({d.get('appearances')})\n'
+    return to_return
+
 
   def get_potion_emoji(self, emojis):
     potion_emoji = discord.utils.get(emojis, name='potion')
     return str(potion_emoji) if potion_emoji else ''
+  
+  def get_custom_emoji(self, emojis, icon):
+    print('get emoji')
+    if not 'customIcon' in icon:
+      return icon
+    
+    icon = icon.split(':')[1]
+    print(f'iconsplit : {icon}')
+    try:
+      emoji = discord.utils.get(emojis, name=icon)
+    except:
+      emoji = ''
+    return emoji

@@ -30,8 +30,10 @@ class SendMessage:
       if new_message['pic'] is not None:
         bot_response.set_thumbnail(url=new_message['pic'])
     bot_response.set_footer(text=footer_msg['ok'])
-
-    await interaction.edit_original_response(embed=bot_response)
+    if interaction.is_done():
+      await interaction.edit_original_response(embed=bot_response)
+    else:
+      await interaction.response.send_message(embed=bot_response)
 
   async def update_remove_view(self, interaction, new_message):
     footer_msg = self.message.message('footer')

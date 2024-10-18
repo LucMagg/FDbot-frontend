@@ -67,7 +67,7 @@ class MyBot(commands.Bot):
       'commands.update',
       'commands.level',
       #'commands.rewardstat',
-      #'commands.reward',
+      'commands.reward',
     ]
 
     for command in commands:

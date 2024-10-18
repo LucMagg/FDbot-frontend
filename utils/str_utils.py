@@ -17,7 +17,7 @@ def str_to_slug(input_string: str|None) -> str|None:
 
   special_chars = {':': r'\:', '\and': r'\and', '&': r'\and', '-': r'_'}
   for char, escaped in special_chars.items():
-      to_return = to_return.replace(char, escaped)
+    to_return = to_return.replace(char, escaped)
 
   to_return = to_return.replace(' ', '-')
   to_return = re.sub(r'[^a-z0-9\-\:\&\\\_]', '', to_return)
@@ -47,11 +47,44 @@ def slug_to_str(slug: str|None) -> str|None:
   return to_return
   
 def str_to_wiki_url(input_string: str|None) -> str|None:
+  if input_string is None or not isinstance(input_string, str):
+    return None
+
+  to_return = input_string.replace(' ','_').replace('&','%26')
+  return to_return
+    
+def str_to_int(input_string):
   if input_string is None:
     return None
-  else:
-    if type(input_string) is str:
-      slug = input_string.replace(' ','_').replace('&','%26')
-      return slug
-    else:
-      return None
+  
+  if isinstance(input_string, int):
+    return input_string
+  
+  try:
+    input_int = int(input_string)
+    print(input_int)
+  except Exception as e:
+    print(f'error: {e}')
+    if input_string[-1].lower() == 'k':
+      try:
+        input_int = int(input_string[:-1]) * 1000
+      except Exception as e:
+        print(f'error: {e}')
+        return None
+      
+  return input_int
+
+def int_to_str(input_int):
+  if input_int is None:
+    return None
+  
+  if not isinstance(input_int, int):
+    return input_int
+  
+  if input_int < 1000:
+    return input_int
+
+  if input_int % 1000 == 0:
+    return f'{input_int//1000}k'
+  
+  return f'{input_int/1000}k'
