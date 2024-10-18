@@ -135,7 +135,6 @@ class Level(commands.Cog):
 
       if self.is_selected:
         self.outer.current_rewards.append(to_check)
-        print(self.outer.current_rewards)
       else:
         self.outer.current_rewards.remove(to_check)
 
@@ -184,14 +183,10 @@ class Level(commands.Cog):
         self.outer.global_selected_rewards.append(crw)
 
     def append_with_no_choices_left(self, item):
-      print(item)
       gr = next((r for r in self.outer.reward_types if r.get('name') == self.outer.current_reward_name), None)
-      print(gr)
       gr_choices = gr['choices']
-      print(gr_choices)
       choices_iter = 0
       item['choices'].append({'name': gr_choices[choices_iter].get('name'), 'icon': gr_choices[choices_iter].get('icon'), 'grade': gr_choices[choices_iter].get('grade'), 'choices': []})
-      print(f'item : {item}')
       del item['remaining_choices']
       for cr in self.outer.current_rewards:
         del cr['remaining_choices']
@@ -199,17 +194,11 @@ class Level(commands.Cog):
       return item
     
     def append_with_choices_left(self, item):
-      print(item)
       gr = next((r for r in self.outer.reward_types if r.get('name') == self.outer.current_reward_name), None)
-      print(gr)
       gr_choices = gr['choices']
-      print(gr_choices)
       choices_iter = len(gr_choices) - item['remaining_choices']
-      print(choices_iter)
       item['choices'][choices_iter] = {'name': gr_choices[choices_iter].get('name'), 'icon': gr_choices[choices_iter].get('icon'), 'grade': gr_choices[choices_iter].get('grade'), 'choices': []}
-      print(item)
       if len(gr_choices) == 1 and item.get('remaining_choices') == 1:
-        print('return')
         return
       
       for cr in self.outer.current_rewards:
@@ -243,7 +232,6 @@ class Level(commands.Cog):
         
     async def submit_new_level(self, interaction):
       self.append_current_choices()
-      print(self.outer.global_selected_rewards)
       await self.outer.create_level()
       response = {'title': '', 'description': f"# Le niveau {self.outer.name} a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
       await self.outer.send_message.update_remove_view(interaction, response)
@@ -300,10 +288,7 @@ class Level(commands.Cog):
     self.global_selected_rewards = []
     self.current_reward_name = ''
     self.view = self.ChoiceView(self, button_data=self.ButtonData(selectable_choices=self.reward_types))
-    try:
-      await interaction.edit_original_response(content="\n ### Choississez le(s) type(s) de reward ###", embed=None, view=self.view)
-    except Exception as e:
-      print(f'erreur {e}')
+    await interaction.edit_original_response(content="\n ### Choississez le(s) type(s) de reward ###", embed=None, view=self.view)
 
   async def create_level(self):
     gear = next((g for g in self.global_selected_rewards if g.get('name') == 'gear'), None)
