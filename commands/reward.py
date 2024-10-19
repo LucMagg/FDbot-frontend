@@ -222,9 +222,18 @@ class Reward(commands.Cog):
 
     async def on_submit(self, interaction: discord.Interaction):
       quantity = str_to_int(self.input_quantity.value)
-
+      
+      failed_because_of_bahabulle = False
       if quantity is None:
-        response = {'title': 'Erreur', 'description': f"{self.quantity} n'est pas une quantité valide, merci de recommencer :rolling_eyes:", 'color': 'red'}
+        failed_because_of_bahabulle = True
+      if isinstance(quantity, int):
+        if quantity <= 0:
+          failed_because_of_bahabulle = True
+      
+      if failed_because_of_bahabulle:
+        print('here')
+        response = {'title': 'Erreur', 'description': f"{self.input_quantity.value} n'est pas une quantité valide, merci de recommencer :rolling_eyes:", 'color': 'red'}
+        print(response)
         await self.outer.response_manager.handle_response(interaction=interaction, response=response)
         self.logger.ok_log('reward')
         return

@@ -71,7 +71,7 @@ def str_to_int(input_string):
       except Exception as e:
         print(f'error: {e}')
         return None
-      
+  print(input_int)
   return input_int
 
 def int_to_str(input_int):
