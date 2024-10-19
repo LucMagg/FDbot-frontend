@@ -231,9 +231,7 @@ class Reward(commands.Cog):
           failed_because_of_bahabulle = True
       
       if failed_because_of_bahabulle:
-        print('here')
         response = {'title': 'Erreur', 'description': f"{self.input_quantity.value} n'est pas une quantité valide, merci de recommencer :rolling_eyes:", 'color': 'red'}
-        print(response)
         await self.outer.response_manager.handle_response(interaction=interaction, response=response)
         self.logger.ok_log('reward')
         return
