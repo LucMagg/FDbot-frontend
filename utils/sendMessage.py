@@ -16,7 +16,6 @@ class SendMessage:
 
 
   async def update(self, interaction: discord.Interaction, new_message):
-    print('here')
     footer_msg = self.message.message('footer')
     if len(new_message['description']) + len(footer_msg['ok']) > 4096:
       taille_max = 4096 - len(footer_msg['ok']) - len(footer_msg['too_long'])

@@ -7,12 +7,14 @@ class StaticData:
     self.dusts = None
     self.qualities = None
     self.commands = None
+    self.xpdata = None
 
   def load_all_data(self):
     self.load_messages()
     self.load_dusts()
     self.load_qualities()
     self.load_commands()
+    self.load_xpdata()
 
   def load_messages(self):
     try:
@@ -61,3 +63,15 @@ class StaticData:
     if self.commands is None:
       self.load_commands()
     return self.commands
+  
+  def load_xpdata(self):
+    try:
+      response = requests.get(DB_PATH + 'heroXp')
+      self.xpdata = response.json()
+    except requests.RequestException as e:
+      print(f"Erreur lors de la récupération des heroXp: {e}")
+
+  def get_xpdata(self):
+    if self.xpdata is None:
+      self.load_xpdata()
+    return self.xpdata
