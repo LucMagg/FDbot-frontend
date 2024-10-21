@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from utils.sendMessage import SendMessage
-from utils.misc_utils import stars
+from utils.misc_utils import stars as stars_to_str
 from service.command import CommandService
 
 
@@ -22,52 +22,48 @@ class Xp(commands.Cog):
     self.command_service = CommandService()
     CommandService.init_command(self.xp_app_command, self.command)
     self.ascend_choices = None
-    self.hero_choices = None
-    self.stars = None
+    self.star_choices = None
 
 
-  async def héros_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    choices = await self.command_service.return_autocompletion(self.hero_choices, current)
-    return choices
+  async def stars_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[int]]:
+    return [c for c in self.star_choices if current in str(c.name)]
 
   async def ascend_choices_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return [c for c in self.ascend_choices if current.lower() in c.name.lower()]
   
 
-  @app_commands.autocomplete(héros=héros_autocomplete)
+  @app_commands.autocomplete(stars=stars_autocomplete)
   @app_commands.autocomplete(current_ascend=ascend_choices_autocomplete)
   @app_commands.autocomplete(target_ascend=ascend_choices_autocomplete)
   @app_commands.command(name='xp')
-  async def xp_app_command(self, interaction: discord.Interaction, héros: str, current_ascend: str, current_level: int, target_ascend: str, target_level: int):
+  async def xp_app_command(self, interaction: discord.Interaction, stars: int, current_ascend: str, current_level: int, target_ascend: str, target_level: int):
     self.logger.command_log('xp', interaction)
     await self.send_message.post(interaction)
-    response = await self.get_response(interaction, héros, current_ascend, current_level, target_ascend, target_level)
+    response = await self.get_response(stars, current_ascend, current_level, target_ascend, target_level)
     if response:
       await self.send_message.update(interaction, response)
     self.logger.ok_log('xp')
 
-  async def get_response(self, interaction, hero_name, current_ascend, current_level, target_ascend, target_level):
-    hero = await self.bot.back_requests.call('getHeroByName', True, [hero_name], interaction)
-    if not hero:
-      return False
-    
-    #Un commentaire pour faire plaisir à Fanfrelax :)
-    
-    self.stars = hero.get('stars') # stocke le nombre d'étoiles du héros
-    self.xp_table = next((d.get('data') for d in self.xpdata if d.get('hero_stars') == self.stars), None) #récupère la table d'xp en fonction du nb d'étoiles
-    self.threshold_table = next((d for d in self.thresholds if d.get('hero_stars') == self.stars), None) #récupère la table des seuils de level
-    
-    is_a_valid_request = self.check_errors(hero, current_ascend, current_level, target_ascend, target_level) # check les erreurs d'entrée
-    if is_a_valid_request is not True: # si c'est pas bon
-      return is_a_valid_request # renvoie le message d'erreur
-    
-    description = f'# {hero['name']}   {stars(hero['stars'])} #\n'
-    description += self.calc_xp(hero.get('name'), current_ascend, current_level, target_ascend, target_level)
+  async def get_response(self, stars, current_ascend, current_level, target_ascend, target_level):
+    if stars not in [s.name for s in self.star_choices]:
+      return {'title': 'Erreur', 'description': f'{stars} n\'est pas un nombre d\'étoiles valide pour un héro :wink:', 'color': 'red'}
 
-    return {'title': '', 'description': description, 'color': hero.get('color')}
+    
+    self.xp_table = next((d.get('data') for d in self.xpdata if d.get('hero_stars') == stars), None)
+    self.threshold_table = next((d for d in self.thresholds if d.get('hero_stars') == stars), None)
+    
+    
+    is_a_valid_request = self.check_errors(stars, current_ascend, current_level, target_ascend, target_level)
+    if is_a_valid_request is not True:
+      return is_a_valid_request
+    
+    description = f'# {stars_to_str(stars)} #\n'
+    description += self.calc_xp(stars, current_ascend, current_level, target_ascend, target_level)
 
-  def calc_xp(self, hero_name, current_ascend, current_level, target_ascend, target_level):
-    initial_return = f' potions d\'xp pour passer {hero_name} de {current_ascend} niveau {current_level} à {target_ascend} niveau {target_level}'
+    return {'title': '', 'description': description, 'color': 'blue'}
+
+  def calc_xp(self, stars, current_ascend, current_level, target_ascend, target_level):
+    initial_return = f' potions d\'xp pour passer un héros {stars}* de {current_ascend} niveau {current_level} à {target_ascend} niveau {target_level}'
     
     current_potions = 0
     total_potions = 0
@@ -108,15 +104,15 @@ class Xp(commands.Cog):
     return f'Il faut {total_potions}{initial_return}{optional_return}{calc_return}'
 
 
-  def check_errors(self, hero, current_ascend, current_level, target_ascend, target_level):
+  def check_errors(self, stars, current_ascend, current_level, target_ascend, target_level):
     if current_ascend not in [c.name for c in self.ascend_choices] or target_ascend not in [c.name for c in self.ascend_choices]:
       return {'title': 'Erreur', 'description': 'Merci de choisir une ascension valide parmi celles proposées :rolling_eyes:', 'color': 'red'}
    
-    check_current = self.check_level_consistency(hero.get('name'), current_ascend, current_level)
+    check_current = self.check_level_consistency(stars, current_ascend, current_level)
     if not check_current.get('valid'):
       return check_current.get('error_response')
     
-    check_target = self.check_level_consistency(hero.get('name'), target_ascend, target_level)
+    check_target = self.check_level_consistency(stars, target_ascend, target_level)
     if not check_target.get('valid'):
       return check_target.get('error_response')
     
@@ -142,10 +138,10 @@ class Xp(commands.Cog):
 
     return True
 
-  def check_level_consistency(self, hero_name, ascend, level):
+  def check_level_consistency(self, stars, ascend, level):
     threshold_data = self.threshold_table.get(ascend)
     if level < threshold_data.get('level').get('min') or level > threshold_data.get('level').get('max'):
-      return {'valid': False, 'error_response': {'title': 'Erreur', 'description': f'Il est impossible pour {hero_name} d\'être level {level} avec une ascension {ascend}.\nMerci de vérifier et de réitérer la commande :rolling_eyes:', 'color': 'red'}}
+      return {'valid': False, 'error_response': {'title': 'Erreur', 'description': f'Il est impossible pour un héros {stars}* d\'être level {level} avec une ascension {ascend}.\nMerci de vérifier et de réitérer la commande :rolling_eyes:', 'color': 'red'}}
     return {'valid': True}
 
   def calc_ascend_choices(self):
@@ -153,13 +149,21 @@ class Xp(commands.Cog):
     self.ascends.remove('level')
     choices = [app_commands.Choice(name=a, value=a) for a in self.ascends]
     return choices
+  
+  def calc_star_choices(self, heroes):
+    to_return = []
+    for h in heroes:
+      if h.get('stars') not in to_return:
+        to_return.append(h.get('stars'))
+    print([app_commands.Choice(name=s, value=s) for s in sorted(to_return)])
+    return [app_commands.Choice(name=s, value=s) for s in sorted(to_return)]
     
   async def setup(self, param_list):
     if param_list is None:
-      choices = await self.bot.back_requests.call('getAllHeroes', False)
+      heroes = await self.bot.back_requests.call('getAllHeroes', False)
     else:
-      choices = param_list
-    self.hero_choices = CommandService.set_choices(choices)
+      heroes = param_list
+    self.star_choices = self.calc_star_choices(heroes)
     self.ascend_choices = self.calc_ascend_choices()
   
 async def setup(bot):
