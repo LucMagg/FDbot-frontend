@@ -155,7 +155,6 @@ class Xp(commands.Cog):
     for h in heroes:
       if h.get('stars') not in to_return:
         to_return.append(h.get('stars'))
-    print([app_commands.Choice(name=s, value=s) for s in sorted(to_return)])
     return [app_commands.Choice(name=s, value=s) for s in sorted(to_return)]
     
   async def setup(self, param_list):
