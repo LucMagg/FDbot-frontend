@@ -8,6 +8,7 @@ class StaticData:
     self.qualities = None
     self.commands = None
     self.xpdata = None
+    self.xp_thresholds = None
 
   def load_all_data(self):
     self.load_messages()
@@ -15,6 +16,7 @@ class StaticData:
     self.load_qualities()
     self.load_commands()
     self.load_xpdata()
+    self.load_xp_thresholds()
 
   def load_messages(self):
     try:
@@ -75,3 +77,15 @@ class StaticData:
     if self.xpdata is None:
       self.load_xpdata()
     return self.xpdata
+  
+  def load_xp_thresholds(self):
+    try:
+      response = requests.get(DB_PATH + 'xpThresholds')
+      self.xp_thresholds = response.json()
+    except requests.RequestException as e:
+      print(f"Erreur lors de la récupération des heroXp: {e}")
+
+  def get_xp_thresholds(self):
+    if self.xp_thresholds is None:
+      self.load_xp_thresholds()
+    return self.xp_thresholds
