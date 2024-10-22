@@ -1,5 +1,6 @@
 import typing
 import discord
+from discord.utils import MISSING
 import emoji
 import re
 
@@ -12,7 +13,7 @@ from discord.ui import Button, TextInput
 
 from service.command import CommandService
 from utils.message import Message
-from utils.str_utils import str_to_slug, str_to_int
+from utils.str_utils import str_to_slug, str_to_int, int_to_str
 from utils.misc_utils import get_discord_color
 
 class Reward(commands.Cog):
@@ -31,8 +32,12 @@ class Reward(commands.Cog):
     self.current_reward_choice = None
     self.selected_reward = None
     self.view = None
+    self.modal = None
+    self.times = None
+
 
   class ChoiceView(discord.ui.View):
+###### VUES DES CHOIX
     def __init__(self, outer, button_data: 'Reward.ButtonData'):
       super().__init__(timeout=180)
       self.outer = outer
@@ -107,7 +112,6 @@ class Reward(commands.Cog):
         
       await self.outer.response_manager.handle_response(interaction=interaction, view=self)
 
-      
   class ChoiceButton(Button):
     def __init__(self, outer, icon: str, label: str, button_data:'Reward.ButtonData', grade: int = None, has_quantity: bool = None, is_selected: bool = False):
       style = discord.ButtonStyle.primary if is_selected else discord.ButtonStyle.secondary
@@ -163,11 +167,9 @@ class Reward(commands.Cog):
 
     async def callback(self, interaction: discord.Interaction):
       if self.label == 'Valider':
-        await self.submit_reward(interaction)
+        await self.outer.build_validation_view(interaction)
       elif self.label == 'Suivant':
         await self.display_next_view(interaction)
-      else: #Ajouter une autre reward pour le même level / TODO
-        pass
 
     async def display_next_view(self, interaction):
       next_view_choices = self.select_next_view()
@@ -201,18 +203,16 @@ class Reward(commands.Cog):
         
         self.outer.current_reward_choice = next_choices.get('name').lower()
         return sorted(next_choices.get('choices'), key=lambda x: x['grade'])     
-               
-    async def submit_reward(self, interaction):
-      response = await self.outer.bot.level_service.add_reward(emojis=interaction.guild.emojis, level_name=self.outer.current_level.get('name'), reward_data=self.outer.selected_reward)
-      await self.outer.response_manager.handle_response(interaction=interaction, response=response)
-      self.logger.ok_log('reward')
     
   class ButtonData:
     def __init__(self, selectable_choices, initial_interaction):
       self.selectable_choices = selectable_choices
       self.initial_interaction = initial_interaction
   
+
+
   class InputModal(discord.ui.Modal):
+##### MODALE DE QUANTITÉ
     def __init__(self, outer, title:str):
       super().__init__(title=title)
       self.outer = outer
@@ -237,16 +237,98 @@ class Reward(commands.Cog):
         return
 
       self.outer.selected_reward['quantity'] = quantity
-      response = await self.outer.bot.level_service.add_reward(emojis=interaction.guild.emojis, level_name=self.outer.current_level.get('name'), reward_data=self.outer.selected_reward)
-      await self.outer.response_manager.handle_response(interaction=interaction, response=response)
-      self.logger.ok_log('reward')
+      await self.outer.build_validation_view(interaction)
                             
   class InputField(TextInput):
     def __init__(self, outer, custom_id: str):
       super().__init__(label='Entrez une quantité', custom_id=custom_id, required=True)
       self.outer = outer
 
+  class ValidationView(discord.ui.View):
+##### VUE FINALE DE VALIDATION DE LA REWARD
+    def __init__(self, outer):
+      super().__init__(timeout=180)
+      self.outer = outer
+      self.add_item(self.outer.ManyTimesSelector(outer=self.outer))
+      self.add_item(self.outer.CancelButton(outer=self.outer))
+      self.add_item(self.outer.SubmitRewardButton(outer=self.outer))
+  
+  class ManyTimesSelector(discord.ui.Select):
+    def __init__(self, outer):
+      self.outer = outer
+      super().__init__(custom_id='selector', placeholder=self.outer.times)
 
+      for i in range(1,6):
+        self.add_option(label=i, value=i)
+
+    async def callback(self, interaction: discord.Interaction):
+      self.outer.times = self.values[0]
+      await self.outer.build_validation_view(interaction)
+  
+  class CancelButton(Button):
+    def __init__(self, outer):
+      super().__init__(style=discord.ButtonStyle.red, label='Annuler', custom_id='annuler')
+      self.outer = outer
+
+    async def callback(self, interaction: discord.Interaction):
+      description = f'# {self.outer.current_level.get('name')} # \nRécompense annulée :)'
+      response = {'title': '', 'description': description, 'color': 'red'}
+      await self.outer.response_manager.handle_response(interaction=interaction, response=response)
+      self.outer.logger.ok_log('reward')
+
+  class SubmitRewardButton(Button):
+    def __init__(self, outer):
+      self.outer = outer
+      super().__init__(style=discord.ButtonStyle.success, label=f'Ajouter {self.outer.times} fois', custom_id='submit')
+      
+    async def callback(self, interaction: discord.Interaction):
+      self.outer.selected_reward['times'] = int(self.outer.times)
+      response = await self.outer.bot.level_service.add_reward(emojis=interaction.guild.emojis, level_name=self.outer.current_level.get('name'), reward_data=self.outer.selected_reward)
+      await self.outer.response_manager.handle_response(interaction=interaction, response=response)
+      self.logger.ok_log('reward')
+
+  class ResponseManager:
+##### GESTION DES INTERACTIONS
+    def __init__(self):
+      self.initial_interaction = None
+      self.last_content = None
+
+    async def handle_response(self, interaction: discord.Interaction, response=None, content='', view=None, modal=None):
+      try:
+        if response is not None:
+          embed = discord.Embed(title=response.get('title'), description=response.get('description'), color=get_discord_color(response.get('color')))
+        else:
+          embed = None  
+
+        if modal is not None:
+          await interaction.response.send_modal(modal)
+        else:
+          if self.initial_interaction is None:
+            self.initial_interaction = interaction
+            if view is None:
+                await interaction.response.send_message(content=content, embed=embed)
+            else:
+                await interaction.response.send_message(content=content, embed=embed, view=view)
+                self.last_content = content
+          else:
+            if view is None:
+              try:
+                await interaction.response.edit_message(content='', embed=embed, view=None)
+              except Exception as e:
+                print(f'Erreur : {e}\n-> envoi d\'une nouvelle interaction')
+                interaction.response.send_message(content='', embed=embed, view=None)                  
+
+            else:
+              if content == '':
+                content = self.last_content
+              await interaction.response.edit_message(content=content, embed=embed, view=view)
+              self.last_content = content        
+      
+      except Exception as e:
+        print(f"Une erreur s'est produite : {e}")
+
+
+##### COMMANDE
   async def level_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await self.command_service.return_autocompletion(self.levelname_choices, current)
 
@@ -259,7 +341,8 @@ class Reward(commands.Cog):
     await self.get_response(interaction, level)
 
   async def get_response(self, interaction, level_name):
-    self.response_manager = ResponseManager()
+    self.response_manager = self.ResponseManager()
+    self.times = 1
 
     if level_name not in [cl.name for cl in self.levelname_choices]:
       self.logger.log_only('debug', 'level inexistant')
@@ -306,52 +389,34 @@ class Reward(commands.Cog):
     except Exception as e:
       print(f'erreur : {e}')
 
+  async def build_validation_view(self, interaction:discord.Interaction):
+    try:
+      self.view = self.ValidationView(outer=self)
+      await self.response_manager.handle_response(interaction=interaction, content=self.build_final_content(), view=self.view)
+    except Exception as e:
+      print(f'erreur : {e}')
+
+  def build_final_content(self):
+    content = f'# {self.current_level.get('name')} #\n'
+    content += f'Vous êtes sur le point d\'ajouter {self.times} fois '
+    if 'quantity' in self.selected_reward.keys():
+      content += str(int_to_str(self.selected_reward.get('quantity')))
+      if 'quality' in self.selected_reward.keys():
+        content += f' {self.selected_reward.get('quality')}'
+      content += f' {self.selected_reward.get('type')}'
+    else:
+      content += f'{self.selected_reward.get('quality')} {self.selected_reward.get('item')}'
+    content += '. Voulez-vous valider ?'
+    return content
+   
+    
   async def setup(self, param_list):
     if param_list is None:
       self.levels = await self.bot.back_requests.call('getAllLevels', False)
     else:
       self.levels = param_list
-    self.levelname_choices = CommandService.set_choices_by_rewards(self.levels) 
+    self.levelname_choices = CommandService.set_choices_by_rewards(self.levels)
 
-class ResponseManager:
-  def __init__(self):
-    self.initial_interaction = None
-    self.last_response_type = None
-    self.last_content = None
-
-  async def handle_response(self, interaction, response=None, content='', view=None, modal=None):
-    try:
-      if response is not None:
-        embed = discord.Embed(title=response.get('title'), description=response.get('description'), color=get_discord_color(response.get('color')))
-      else:
-        embed = None  
-
-      if modal is not None:
-        await interaction.response.send_modal(modal)
-        self.last_response_type = 'modal'
-      else:
-        if self.initial_interaction is None:
-          self.initial_interaction = interaction
-          if view is None:
-              await interaction.response.send_message(content=content, embed=embed)
-          else:
-              await interaction.response.send_message(content=content, embed=embed, view=view)
-              self.last_content = content
-          self.last_response_type = 'edit'
-
-        else:
-          if view is None:
-            await interaction.response.edit_message(content='', embed=embed, view=None)
-          else:
-            if content == '':
-              content = self.last_content
-            await interaction.response.edit_message(content=content, embed=embed, view=view)
-            self.last_content = content
-          self.last_response_type = 'edit'              
-    
-    except Exception as e:
-        print(f"Une erreur s'est produite : {e}")
-        
 
 async def setup(bot):
   await bot.add_cog(Reward(bot))

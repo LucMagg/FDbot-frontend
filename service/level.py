@@ -15,15 +15,11 @@ class LevelService:
   async def display_rewards(self, emojis, level_name):
     level = await self.bot.back_requests.call('getLevelByName', False, [level_name])
     description = f'# {level.get('name')} #\n'
-    description += self.get_rewards_str(level, emojis)
-
-    print(description)
-    
+    description += self.get_rewards_str(level, emojis)    
     return {'title': '', 'description': description, 'color': 'blue'}
 
   async def add_reward(self, emojis, level_name, reward_data: dict):
     level = await self.bot.back_requests.call('addReward', False, [str_to_slug(level_name), reward_data])
-    print('here')
 
     description = f'# {level.get('name')} #\n'
     description += 'Merci d\'avoir ajouté une récompense à ce niveau ! :kissing_heart:\n\n'
@@ -33,7 +29,6 @@ class LevelService:
 
   def get_rewards_str(self, level, emojis) -> str:
     self.total_appearances = sum([r.get('total_appearances') for r in level.get('rewards')])
-    print(self.total_appearances)
 
     to_return = ''
     for r in level.get('rewards'):
@@ -46,7 +41,6 @@ class LevelService:
           icon = next((rc.get('icon') for rc in match_quality.get('choices') if rc.get('name') == r.get('quality')), '')
         except:
           icon = ''
-      print('here')
       icon = self.get_custom_emoji(emojis, icon)
       
       
@@ -54,13 +48,10 @@ class LevelService:
         to_return += self.append_with_multiple_reward_types(r, icon)
       else:
         to_return += self.append_with_single_reward_type(level, r, icon)
-      
-      print(to_return)
    
     return f'### Statistiques actuelles sur {self.total_appearances} récompense{pluriel(self.total_appearances)} recueillie{pluriel(self.total_appearances)} ###\n{to_return}'
   
   def append_with_multiple_reward_types(self, reward, icon):
-    print('multiple rewards types')
     to_return = f"\n{icon} {reward.get('quality')} {reward.get('type')} : {format(reward.get('total_appearances') / self.total_appearances, '.2%')} ({reward.get('total_appearances')}), soit :\n"
     for d in reward.get('details'):
       to_return += '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• '
@@ -73,7 +64,6 @@ class LevelService:
     return to_return
   
   def append_with_single_reward_type(self, level, reward, icon):
-    print('single reward type')
     to_return = ''
     has_quantity = False
     for d in reward.get('details'):
@@ -91,16 +81,13 @@ class LevelService:
     
     if has_quantity:
       to_return += self.energy_stats(level, reward, icon)
-    print(to_return)
     return to_return
  
   def get_custom_emoji(self, emojis, icon):
-    print('get emoji')
     if not 'customIcon' in icon:
       return icon
     
     icon = icon.split(':')[1]
-    print(f'iconsplit : {icon}')
     try:
       emoji = discord.utils.get(emojis, name=icon)
     except:
@@ -108,14 +95,10 @@ class LevelService:
     return emoji
   
   def energy_stats(self, level, reward, icon):
-    print(level)
     to_return = f'\n### Moyennes par combat ###\n'
 
     total_rewards = sum([(d.get('quantity') * d.get('appearances')) for d in reward.get('details')])
-    print(f'total_rewards: {total_rewards}')
     average_reward = total_rewards/self.total_appearances
-    print(f'average: {average_reward}')
-
     to_return += f'{icon} {floor(average_reward)} {reward.get('type')} par combat, soit :\n'
 
     try:
