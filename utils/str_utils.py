@@ -62,13 +62,12 @@ def str_to_int(input_string):
   
   try:
     input_int = int(input_string)
-  except Exception as e:
-    print(f'error: {e}')
+  except:
     if input_string[-1].lower() == 'k':
       try:
-        input_int = int(input_string[:-1]) * 1000
-      except Exception as e:
-        print(f'error: {e}')
+        input_string = input_string.replace(',','.')
+        input_int = int(float(input_string[:-1]) * 1000)
+      except:
         return None
   return input_int
 
