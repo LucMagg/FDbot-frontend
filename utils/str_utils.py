@@ -28,9 +28,6 @@ def str_to_slug(input_string: str|None) -> str|None:
 def slug_to_str(slug: str|None) -> str|None:
   if slug is None or not isinstance(slug, str):
     return None
-  
-  if re.match(r'^[a-z\\:]+(?:[-_][a-z\\:]+)*$', slug):
-    return slug
 
   def capitalize_words(text):
     words = text.split()

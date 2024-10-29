@@ -50,7 +50,7 @@ class Item(commands.Cog):
     return{'title': '', 'description': self.description(item, heroes), 'color': 'default'}
   
   async def get_heroes_by_item(self, whichone, interaction):
-    extract_quality = slug_to_str(whichone.split(' ')[0])
+    extract_quality = slug_to_str(whichone.split(' ')[0]).capitalize()
     quality = next((q for q in self.qualities if q['name'] == extract_quality), None)
     if quality:
       item = slug_to_str(' '.join(whichone.split(' ')[1:]))
