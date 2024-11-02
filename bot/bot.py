@@ -68,7 +68,8 @@ class MyBot(commands.Bot):
       'commands.level',
       'commands.rewardstat',
       'commands.reward',
-      'commands.xp'
+      'commands.xp',
+      'commands.spire'
     ]
 
     for command in commands:

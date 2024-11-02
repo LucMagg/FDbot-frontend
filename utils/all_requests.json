@@ -197,5 +197,22 @@
     "url": "update?type=[[param0]]",
     "type": "get",
     "param0": "slug"
-  }  
+  },
+  {
+    "name": "addSpireData",
+    "url": "spiredata/add",
+    "type": "post",
+    "param0": "json"
+  },
+  {
+    "name": "extractSpireData",
+    "url": "spiredata/extract",
+    "type": "post",
+    "param0": "json"
+  },
+  {
+    "name": "getAllExistingGuilds",
+    "url": "spiredata/guilds",
+    "type": "get"
+  }
 ]
