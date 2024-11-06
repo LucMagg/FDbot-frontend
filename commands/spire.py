@@ -2,12 +2,10 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from typing import Optional
-from datetime import datetime
 
 from utils.sendMessage import SendMessage
 from utils.misc_utils import get_discord_color
 from service.command import CommandService
-
 
 class Spire(commands.Cog):
   def __init__(self, bot):
@@ -18,13 +16,13 @@ class Spire(commands.Cog):
 
     self.command_service = CommandService()
     CommandService.init_command(self.spire_app_command, self.command)
-    
+
     self.guilds = None
     self.tiers = ['Platinum','Gold','Silver','Bronze','Hero','Adventurer']
     self.selected_guild = None
     self.selected_tier = None
     self.spire_data = None
-
+    self.send_spire_results.start()
 
   class GuildModificationView(discord.ui.View):
 ##### VIEW DE VALIDATION DE LA GUILDE
@@ -38,12 +36,12 @@ class Spire(commands.Cog):
       except Exception as e:
         print(f'erreur: {e}')
       print('init guild modification view end')
- 
+
   class GuildSelector(discord.ui.Select):
     def __init__(self, outer):
       print('init guild selector begin')
       try:
-        self.outer = outer      
+        self.outer = outer
         options = [discord.SelectOption(label='Ajouter une nouvelle guilde', value='Ajouter une nouvelle guilde')]
         for g in self.outer.guilds:
           options.append(discord.SelectOption(label=g, value=g))
@@ -68,14 +66,14 @@ class Spire(commands.Cog):
         await self.outer.build_guild_modification_view(interaction)
       except Exception as e:
         print(f'guildselector erreur: {e}')
-  
+
   class GuildNextButton(discord.ui.Button):
     def __init__(self, outer):
       print('init next button begin')
       self.outer = outer
       super().__init__(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
       print('init next button end')
-      
+
     async def callback(self, interaction: discord.Interaction):
       if self.outer.selected_guild == 'Ajouter une nouvelle guilde':
         print('nouvelle guilde')
@@ -84,7 +82,7 @@ class Spire(commands.Cog):
         self.outer.spire_data['guild'] = self.outer.selected_guild
         print(f'guild: {self.outer.spire_data.get('guild')}')
         await self.outer.build_tier_modification_view(interaction)
-  
+
   class GuildCreationModal(discord.ui.Modal):
 ##### MODALE DE CREATION DE GUILDE
     def __init__(self, outer):
@@ -99,14 +97,14 @@ class Spire(commands.Cog):
       else:
         self.outer.spire_data['guild'] = self.outer.selected_guild
         await self.outer.build_tier_modification_view(interaction)
-    
+
     def does_guild_already_exist(self):
       for g in self.outer.guilds:
         if self.input_guild.value.lower() == g.lower():
           self.outer.selected_guild = g
           return True
       return False
-                            
+
   class InputGuild(discord.ui.TextInput):
     def __init__(self):
       super().__init__(label='Entrez le nom de votre guilde', custom_id='input', required=True, min_length=2, max_length=32)
@@ -127,17 +125,17 @@ class Spire(commands.Cog):
       self.outer = outer
       super().__init__(style=discord.ButtonStyle.danger, label='Non', custom_id='no')
       print('init no button end')
-      
+
     async def callback(self, interaction: discord.Interaction):
       await self.outer.build_guild_modification_view(interaction)
-  
+
   class YesButton(discord.ui.Button):
     def __init__(self, outer):
       print('init yes button begin')
       self.outer = outer
       super().__init__(style=discord.ButtonStyle.success, label='Oui', custom_id='yes')
       print('init yes button end')
-      
+
     async def callback(self, interaction: discord.Interaction):
       self.outer.spire_data['guild'] = self.outer.selected_guild
       await self.outer.build_tier_modification_view(interaction)
@@ -177,14 +175,14 @@ class Spire(commands.Cog):
         await self.outer.build_tier_modification_view(interaction)
       except Exception as e:
         print(f'tierselector erreur: {e}')
-  
+
   class TierNextButton(discord.ui.Button):
     def __init__(self, outer):
       print('init next button begin')
       self.outer = outer
       super().__init__(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
       print('init next button end')
-      
+
     async def callback(self, interaction: discord.Interaction):
       self.outer.spire_data['tier'] = self.outer.selected_tier
       await self.outer.build_score_modification_modal(interaction)
@@ -232,12 +230,13 @@ class Spire(commands.Cog):
         value = int(to_check)
       except:
         print(f'Couldn\'t cast {to_check} to int')
+
         return None
       if value < min_value or max_value and value > max_value:
         print(f'{value} not within [{min_value}, {max_value}]')
         return None
       return value
-                            
+
   class InputScore(discord.ui.TextInput):
     def __init__(self, label, default):
       super().__init__(label=label, default=default, required=True)
@@ -261,7 +260,7 @@ class Spire(commands.Cog):
       self.outer = outer
       super().__init__(style=discord.ButtonStyle.danger, label='Abandonner', custom_id='cancel')
       print('init cancel button end')
-      
+
     async def callback(self, interaction: discord.Interaction):
       response = {'title': 'Abandon', 'description': 'La saisie de ton score de spire a bien été annulée :cry:\nN\'hésite pas à recommencer pour soutenir ta guilde :grin:', 'color': 'red'}
       await self.outer.send_message.update_remove_view(interaction, response)
@@ -273,7 +272,7 @@ class Spire(commands.Cog):
       self.outer = outer
       super().__init__(style=discord.ButtonStyle.success, label='Modifier', custom_id='modif')
       print('init valid button end')
-      
+
     async def callback(self, interaction: discord.Interaction):
       await self.outer.build_score_modification_modal(interaction)
 
@@ -296,7 +295,7 @@ class Spire(commands.Cog):
       self.outer = outer
       super().__init__(style=discord.ButtonStyle.danger, label='Modifier', custom_id='modif')
       print('init modif button end')
-      
+
     async def callback(self, interaction: discord.Interaction):
       await self.outer.build_guild_modification_view(interaction)
 
@@ -306,7 +305,7 @@ class Spire(commands.Cog):
       self.outer = outer
       super().__init__(style=discord.ButtonStyle.success, label='Valider', custom_id='valid')
       print('init valid button end')
-      
+
     async def callback(self, interaction: discord.Interaction):
       await self.outer.send_validation_message(interaction)
 
@@ -321,7 +320,7 @@ class Spire(commands.Cog):
         if response is not None:
           embed = discord.Embed(title=response.get('title'), description=response.get('description'), color=get_discord_color(response.get('color')))
         else:
-          embed = None  
+          embed = None
         if modal is not None:
           await interaction.response.send_modal(modal)
         else:
@@ -338,13 +337,13 @@ class Spire(commands.Cog):
                 await interaction.response.edit_message(content='', embed=embed, view=None)
               except Exception as e:
                 print(f'Erreur : {e}\n-> envoi d\'une nouvelle interaction')
-                interaction.response.send_message(content='', embed=embed, view=None)                  
+                interaction.response.send_message(content='', embed=embed, view=None)
             else:
               if content == '':
                 content = self.last_content
               await interaction.response.edit_message(content=content, embed=embed, view=view)
-              self.last_content = content        
-      
+              self.last_content = content
+
       except Exception as e:
         print(f"Une erreur s'est produite : {e}")
 
@@ -357,9 +356,6 @@ class Spire(commands.Cog):
   async def get_response(self, image_url, interaction: discord.Interaction):
     self.spire_data = self.get_user_and_guildname(interaction)
     self.response_manager = self.ResponseManager()
-################### POUR LES TESTS ! ##################
-    self.spire_data['date'] = '2024-11-03T18:00:00'
-#######################################################
     self.spire_data['image_url'] = image_url
     self.spire_data = await self.bot.back_requests.call('extractSpireData', False, [self.spire_data])
     print(f'spire_data: {self.spire_data}')
@@ -374,7 +370,6 @@ class Spire(commands.Cog):
     else:
       await self.build_validation_view(interaction)
 
-  
   def get_user_and_guildname(self, interaction: discord.Interaction):
     self.spire_data = None
     full_user = interaction.user.nick
@@ -395,8 +390,7 @@ class Spire(commands.Cog):
       else:
         print('user only')
         return {'username': full_user, 'guild': None}
-        
-      
+
   async def build_guild_modification_view(self, interaction: discord.Interaction):
     self.view = self.GuildModificationView(self)
     content = '# Guilde #\nVeuillez choisir votre guilde ou en créer une nouvelle si la vôtre n\'est pas dans la liste :'

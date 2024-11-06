@@ -15,7 +15,7 @@ class SpireService:
     
   async def display_scores_after_posting_spire(self, tier):
     print('display scores begin')
-    scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player', 'date': '2024-11-03T18:00:00'}])
+    scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player'}])
     to_return = f'## Classement actuel en {tier} ##\n'
     print(to_return)
     to_return += self.scores_to_str(scores=scores, tier=tier, key='current_climb')
@@ -23,8 +23,8 @@ class SpireService:
     return to_return
   
   async def display_scores_from_scheduler(self, date):
-    player_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player', 'date': date}])
-    guild_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'guild', 'date': date}])
+    player_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player'}])
+    guild_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'guild'}])
     if player_scores.get('climb') < 4:
       print('here')
       to_return = f'# Classements du climb #{player_scores.get('climb')} #\n'
