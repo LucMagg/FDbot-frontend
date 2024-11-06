@@ -458,7 +458,7 @@ class Spire(commands.Cog):
       guilds = await self.bot.back_requests.call('getAllExistingGuilds', False)
     else:
       guilds = param_list
-    self.guilds = [guild.get('name') for guild in guilds]
+    self.guilds = [guild.get('name') for guild in guilds] if guilds else []
 
 async def setup(bot):
   await bot.add_cog(Spire(bot))
