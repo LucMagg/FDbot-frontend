@@ -11,7 +11,7 @@ from utils.misc_utils import get_discord_color
 class SpireService:
   def __init__(self, bot):
     self.bot = bot
-    self.send_spire_results.start()
+    #self.send_spire_results.start()
     
   async def display_scores_after_posting_spire(self, tier):
     print('display scores begin')
