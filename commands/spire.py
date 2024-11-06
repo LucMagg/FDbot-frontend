@@ -94,7 +94,7 @@ class Spire(commands.Cog):
       if self.does_guild_already_exist():
         await self.outer.build_guild_already_exists_view(interaction)
       else:
-        self.outer.spire_data['guild'] = self.outer.selected_guild
+        self.outer.spire_data['guild'] = self.input_guild.value
         await self.outer.build_tier_modification_view(interaction)
 
     def does_guild_already_exist(self):
@@ -453,11 +453,14 @@ class Spire(commands.Cog):
     self.logger.ok_log('spire')
 
   async def setup(self, param_list):
-    if param_list is None:
-      guilds = await self.bot.back_requests.call('getAllExistingGuilds', False)
-    else:
-      guilds = param_list
-    self.guilds = [guild.get('name') for guild in guilds] if guilds else []
+    try:
+      if param_list is None:
+        guilds = await self.bot.back_requests.call('getAllExistingGuilds', False)
+      else:
+        guilds = param_list
+      self.guilds = [guild.get('name') for guild in guilds] if guilds else []
+    except Exception as e:
+      print(f'Erreur: {e}')
 
 async def setup(bot):
   await bot.add_cog(Spire(bot))
