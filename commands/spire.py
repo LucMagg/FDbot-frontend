@@ -22,7 +22,6 @@ class Spire(commands.Cog):
     self.selected_guild = None
     self.selected_tier = None
     self.spire_data = None
-    self.send_spire_results.start()
 
   class GuildModificationView(discord.ui.View):
 ##### VIEW DE VALIDATION DE LA GUILDE
