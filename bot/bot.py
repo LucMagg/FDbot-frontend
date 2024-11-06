@@ -11,6 +11,7 @@ from utils.logger import Logger
 from service.back_requests import BackRequests
 from service.level import LevelService
 from service.update import UpdateService
+from service.spire import SpireService
 
 
 status = cycle(['faire plaisir à Spirou'])
@@ -51,6 +52,8 @@ class MyBot(commands.Bot):
     self.logger.bot_log('Initialisation du service Level')
     self.update_service = UpdateService(self)
     self.logger.bot_log('Initialisation du service Update')
+    self.spire_service = SpireService(self)
+    self.logger.bot_log('Initialisation du service Spire')
 
   async def load_all_commands(self):
     commands = [

@@ -40,9 +40,14 @@ class BackRequests:
     try:
       match my_request.get('type'):
         case 'get':
-          response = requests.get(url.get('url'))
+          if url.get('has_json_in_params') is not None:
+            self.logger.log_only('debug', f"json : {params[url.get('has_json_in_params')]}")
+            response = requests.get(url.get('url'), json=params[url.get('has_json_in_params')])
+          else:
+            response = requests.get(url.get('url'))
         case 'post':
           if url.get('has_json_in_params') is not None:
+            self.logger.log_only('debug', f"json : {params[url.get('has_json_in_params')]}")
             response = requests.post(url.get('url'), json=params[url.get('has_json_in_params')])
           else:
             response = requests.post(url.get('url'))

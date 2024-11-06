@@ -214,5 +214,17 @@
     "name": "getAllExistingGuilds",
     "url": "spiredata/guilds",
     "type": "get"
+  },
+  {
+    "name": "getSpireDataScores",
+    "url": "spiredata/scores",
+    "type": "get",
+    "param0": "json"
+  },
+  {
+    "name": "addChannelToSpire",
+    "url": "spire/add_channel",
+    "type": "post",
+    "param0": "json"
   }
 ]

@@ -2,8 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from typing import Optional
-
-from discord.utils import MISSING
+from datetime import datetime
 
 from utils.sendMessage import SendMessage
 from utils.misc_utils import get_discord_color
@@ -232,16 +231,11 @@ class Spire(commands.Cog):
         print(f'check: {to_check}')
         value = int(to_check)
       except:
-        print('int error')
+        print(f'Couldn\'t cast {to_check} to int')
         return None
-      if not value >= min_value:
-        print('trop bas')
+      if value < min_value or max_value and value > max_value:
+        print(f'{value} not within [{min_value}, {max_value}]')
         return None
-      if max_value:
-        if not value <= max_value:
-          print('trop haut')
-          return None
-      print(f'{value} ok')
       return value
                             
   class InputScore(discord.ui.TextInput):
@@ -363,6 +357,9 @@ class Spire(commands.Cog):
   async def get_response(self, image_url, interaction: discord.Interaction):
     self.spire_data = self.get_user_and_guildname(interaction)
     self.response_manager = self.ResponseManager()
+################### POUR LES TESTS ! ##################
+    self.spire_data['date'] = '2024-11-03T18:00:00'
+#######################################################
     self.spire_data['image_url'] = image_url
     self.spire_data = await self.bot.back_requests.call('extractSpireData', False, [self.spire_data])
     print(f'spire_data: {self.spire_data}')
@@ -450,9 +447,14 @@ class Spire(commands.Cog):
       await self.send_message.update_remove_view(interaction, {'title': 'Erreur !', 'description': 'Ton score n\'a pas pu être ajouté :cry:\nMerci de réitérer la commande :innocent:', 'color': 'red'})
       self.logger.ok_log('spire')
       return
+    
+    add_channel_data = {'date': '2024-11-03T15:00:00', 'channel_id': interaction.channel_id, 'guild': self.spire_data.get('guild')}
+    print(add_channel_data)
+    await self.bot.back_requests.call('addChannelToSpire', False, [add_channel_data])
 
     description = '# Score validé ! #\n'
-    description += f'Merci pour ta participation {self.spire_data.get('username')} :wink:'
+    description += f'Merci pour ta participation {self.spire_data.get('username')} :wink:\n\n'
+    description += await self.bot.spire_service.display_scores_after_posting_spire(tier=self.spire_data.get('tier'))
     response = {'title': '', 'description': description, 'color': 'blue', 'image': self.spire_data.get('image_url')}
     await self.send_message.update_remove_view(interaction, response)
     self.logger.ok_log('spire')
@@ -463,7 +465,6 @@ class Spire(commands.Cog):
     else:
       guilds = param_list
     self.guilds = [guild.get('name') for guild in guilds]
-    print(self.guilds)
 
 async def setup(bot):
   await bot.add_cog(Spire(bot))
