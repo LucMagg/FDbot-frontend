@@ -208,7 +208,6 @@ class Reward(commands.Cog):
     def __init__(self, selectable_choices, initial_interaction):
       self.selectable_choices = selectable_choices
       self.initial_interaction = initial_interaction
-  
 
 
   class InputModal(discord.ui.Modal):

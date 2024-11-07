@@ -40,20 +40,27 @@ class SendMessage:
       print(f'erreur: {e}')
 
   async def update_remove_view(self, interaction, new_message):
-    footer_msg = self.message.message('footer')
-    if len(new_message['description']) + len(footer_msg['ok']) > 4096:
-      taille_max = 4096 - len(footer_msg['ok']) - len(footer_msg['too_long'])
-      new_message['description'] = new_message['description'][0:taille_max] + footer_msg['too_long']
+    print("update remove view")
+    try:
+      footer_msg = self.message.message('footer')
+      if len(new_message['description']) + len(footer_msg['ok']) > 4096:
+        taille_max = 4096 - len(footer_msg['ok']) - len(footer_msg['too_long'])
+        new_message['description'] = new_message['description'][0:taille_max] + footer_msg['too_long']
 
-    bot_response = discord.Embed(title=new_message['title'], description=new_message['description'],
-                                 color=get_discord_color(new_message['color']))
+      bot_response = discord.Embed(title=new_message['title'], description=new_message['description'],
+                                   color=get_discord_color(new_message['color']))
 
-    if 'image' in new_message.keys():
-      bot_response.set_image(url=new_message['image'])
-    elif 'pic' in new_message.keys():
-      if new_message['pic'] is not None:
-        bot_response.set_thumbnail(url=new_message['pic'])
-    bot_response.set_footer(text=footer_msg['ok'])
+      if 'image' in new_message.keys():
+        bot_response.set_image(url=new_message['image'])
+      elif 'pic' in new_message.keys():
+        if new_message['pic'] is not None:
+          bot_response.set_thumbnail(url=new_message['pic'])
+      bot_response.set_footer(text=footer_msg['ok'])
+    except Exception as e:
+      print(f'erreur {e}')
+
+    print(bot_response)
+    print("end update remove view")
 
     await interaction.response.edit_message(embed=bot_response, view=None, content=None)
 
