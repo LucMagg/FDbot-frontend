@@ -9,16 +9,19 @@ from utils.misc_utils import get_discord_color
 #time = discord_time.time(hour=12, minute=0, tzinfo=local_tz)
 
 class SpireService:
-  def __init__(self, bot):
+  def __init__(self, bot, channel_ids):
     self.bot = bot
+    self.channel_ids = channel_ids
+    self.spire_start_time = datetime.fromisoformat("2024-11-06T12:00:00")
+    self.spire_length = 14
     #self.send_spire_results.start()
-    
+
   async def display_scores_after_posting_spire(self, tier):
     print('display scores begin')
     scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player'}])
     to_return = f'## Classement actuel en {tier} ##\n'
     print(to_return)
-    to_return += self.scores_to_str(scores=scores, tier=tier, key='current_climb')
+    to_return += self.scores_str(scores=scores, tier=tier, key='current_climb')
     print(to_return)
     return to_return
   
@@ -47,21 +50,18 @@ class SpireService:
   def get_all_brackets_scores(self, player_scores, guild_scores, key):
     to_return = ''
     for tier in ['Platinum', 'Gold', 'Silver', 'Bronze', 'Hero', 'Adventurer']:
-      print(tier)
       if tier in player_scores.get(key).keys() or tier in guild_scores.get(key).keys():
-        to_return +='\n'
-        to_return += '-' * 40
-        to_return += f'\n### {tier} ###\n'
+        to_return += f'\n{'-' * 40}\n### {tier} ###\n'
         if tier in player_scores.get(key).keys():
-          print(to_return)
-          to_return += f'\n__ Joueurs __\n'
-          to_return += self.scores_to_str(scores=player_scores, tier=tier, key=key)
+          player_scores_str = self.scores_str(scores=player_scores, tier=tier, key=key)
+          to_return += f'\n__ Joueurs __\n{player_scores_str}'
         if tier in guild_scores.get(key).keys():
-          to_return += f'\n__ Guildes __\n'
-          to_return += self.scores_to_str(scores=guild_scores, tier=tier, key=key)
+          guild_scores_str = self.scores_str(scores=guild_scores, tier=tier, key=key)
+          to_return += f'\n__ Guildes __\n{guild_scores_str}'
+
     return to_return
 
-  def scores_to_str(self, scores, tier: str, key: str):
+  def scores_str(self, scores, tier: str, key: str):
     to_return = ''
     icons = [':first_place:', ':second_place:', ':third_place:']
     scores_data = scores.get(key).get(tier)
@@ -78,14 +78,36 @@ class SpireService:
       to_return += f'\n'
 
     return to_return
-  
+
+  async def send_spire_start_message(self):
+    description = await self.display_scores_from_scheduler(date='2024-11-03T18:00:00')
+    await self.send_message('spire start', description)
+
+  async def send_spire_end_message(self):
+    description = await self.display_scores_from_scheduler(date='2024-11-03T18:00:00')
+    await self.send_message('spire end', description)
+
+  async def send_climb_end_message(self):
+    description = await self.display_scores_from_scheduler(date='2024-11-03T18:00:00')
+    await self.send_message('climb end', description)
+
+  async def send_message(self, title, description):
+    response = discord.Embed(title=title, description=description, color=get_discord_color('blue'))
+    for channel_id in self.channel_ids:
+      channel = self.bot.get_channel(channel_id)
+      await channel.send(embed=response)
+
 """
   @tasks.loop(time=time)
   async def send_spire_results(self):
-    channel = self.bot.get_channel(1119633026989707367)
-    description = await self.display_scores_from_scheduler(date='2024-11-03T18:00:00')
-    response = discord.Embed(title='', description=description, color= get_discord_color('blue'))
-    await channel.send(embed=response)
+    diff = datetime.now() - self.spire_start_time
+    days = diff.days % self.spire_length
+    if days == 0:
+      await self.send_spire_start_message()
+    elif days == 12:
+      await self.send_spire_end_message()
+    elif days % 3 == 0:
+      await self.send_climb_end_message()
 
   @send_spire_results.before_loop
   async def before_loop(self):

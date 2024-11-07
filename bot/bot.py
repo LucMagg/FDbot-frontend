@@ -26,6 +26,9 @@ class MyBot(commands.Bot):
     self.static_data = StaticData()
     self.synced = False
     self.back_requests = None
+    self.level_service = None
+    self.update_service = None
+    self.spire_service = None
     self.logger = Logger(log_file=f'logs/{LOG_FILE}')
 
   async def on_ready(self):
@@ -52,7 +55,7 @@ class MyBot(commands.Bot):
     self.logger.bot_log('Initialisation du service Level')
     self.update_service = UpdateService(self)
     self.logger.bot_log('Initialisation du service Update')
-    self.spire_service = SpireService(self)
+    self.spire_service = SpireService(self, [1119633026989707367])
     self.logger.bot_log('Initialisation du service Spire')
 
   async def load_all_commands(self):
