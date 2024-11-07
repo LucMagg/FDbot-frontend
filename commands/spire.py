@@ -371,24 +371,25 @@ class Spire(commands.Cog):
 
   def get_user_and_guildname(self, interaction: discord.Interaction):
     self.spire_data = None
-    full_user = interaction.user.nick
-    print(f'user: {full_user}')
-    if full_user is None:
-      print('user not defined -> user.name')
-      return {'username': interaction.user.name, 'guild': None}
-    else:
-      if '[' in full_user and ']' in full_user:
-        print('user & guild ok')
-        username = full_user.split('[')[0].strip()
-        guild = full_user.split('[')[1].split(']')[0]
-        if username == '':
-          username = full_user.split(']')[1].strip()
-        print(f'username: {username}')
-        print(f'guild: {guild}')
-        return {'username': username, 'guild': guild}
+    user = interaction.user.display_name
+    print(f'user: {user}')
+    if '[' in user and ']' in user:
+      print('user & guild ok')
+      username = user.split('[')[0].strip()
+      guild = user.split('[')[1]
+      if guild[-1] == ']':
+        guild = guild[:-1]
+      elif username == '':
+        username = user.split(']')[1].strip()
+        guild = user.split('[')[1].split(']')[0].strip()
       else:
-        print('user only')
-        return {'username': full_user, 'guild': None}
+        guild = f'[{guild}'
+      print(f'username: {username}')
+      print(f'guild: {guild}')
+      return {'username': username, 'guild': guild}
+    else:
+      print('user only')
+      return {'username': user, 'guild': None}
 
   async def build_guild_modification_view(self, interaction: discord.Interaction):
     self.view = self.GuildModificationView(self)
