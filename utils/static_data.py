@@ -7,7 +7,7 @@ class StaticData:
     self.dusts = None
     self.qualities = None
     self.commands = None
-    self.xpdata = None
+    self.xp_data = None
     self.xp_thresholds = None
 
   def load_all_data(self):
@@ -15,7 +15,7 @@ class StaticData:
     self.load_dusts()
     self.load_qualities()
     self.load_commands()
-    self.load_xpdata()
+    self.load_xp_data()
     self.load_xp_thresholds()
 
   def load_messages(self):
@@ -66,17 +66,17 @@ class StaticData:
       self.load_commands()
     return self.commands
   
-  def load_xpdata(self):
+  def load_xp_data(self):
     try:
       response = requests.get(DB_PATH + 'heroXp')
-      self.xpdata = response.json()
+      self.xp_data = response.json()
     except requests.RequestException as e:
       print(f"Erreur lors de la récupération des heroXp: {e}")
 
-  def get_xpdata(self):
-    if self.xpdata is None:
-      self.load_xpdata()
-    return self.xpdata
+  def get_xp_data(self):
+    if self.xp_data is None:
+      self.load_xp_data()
+    return self.xp_data
   
   def load_xp_thresholds(self):
     try:
