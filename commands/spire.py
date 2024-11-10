@@ -18,7 +18,6 @@ class Spire(commands.Cog):
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'spire'), None)
 
-    self.command_service = CommandService()
     CommandService.init_command(self.spire_app_command, self.command)
 
     self.guilds = None

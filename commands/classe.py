@@ -17,12 +17,11 @@ class Classe(commands.Cog):
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'class'), None)
 
-    self.command_service = CommandService()
     CommandService.init_command(self.classe_app_command, self.command)
     self.choices = None
 
   async def classe_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return await self.command_service.return_autocompletion(self.choices, current)
+    return await CommandService.return_autocompletion(self.choices, current)
 
   @app_commands.autocomplete(classe=classe_autocomplete)
   @app_commands.command(name='class')

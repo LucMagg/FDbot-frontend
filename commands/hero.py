@@ -19,12 +19,11 @@ class Hero(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'hero'), None)
     self.help_msg = Message(bot).help('hero')
   
-    self.command_service = CommandService()
     CommandService.init_command(self.hero_app_command, self.command)
     self.choices = None
 
   async def héros_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return await self.command_service.return_autocompletion(self.choices, current)
+    return await CommandService.return_autocompletion(self.choices, current)
 
   @app_commands.autocomplete(héros=héros_autocomplete)
   @app_commands.command(name='hero')

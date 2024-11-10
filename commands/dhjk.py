@@ -16,7 +16,6 @@ class Dhjk(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'dhjk'), None)
     self.messages = next((m for m in bot.static_data.messages if m['name'] == 'dhjk'), None)
 
-    self.command_service = CommandService()
     CommandService.init_command(self.dhjk_app_command, self.command)
 
 

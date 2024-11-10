@@ -18,7 +18,6 @@ class Update(commands.Cog):
     self.return_msg = Message(bot).message('update')
     self.help_msg = Message(bot).help('update')
 
-    self.command_service = CommandService()
     CommandService.init_command(self.update_app_command, self.command, no_choices=True)
     self.choices = self.get_choices()
 

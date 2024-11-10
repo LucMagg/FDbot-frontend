@@ -19,12 +19,11 @@ class Petlist(commands.Cog):
     self.error_msg = Message(bot).message('error')
     self.help_msg = Message(bot).help('petlist')
 
-    self.command_service = CommandService()
     CommandService.init_command(self.petlist_app_command, self.command)
     self.choices = None
 
   async def héros_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return await self.command_service.return_autocompletion(self.choices, current)
+    return await CommandService.return_autocompletion(self.choices, current)
 
   @app_commands.autocomplete(héros=héros_autocomplete)
   @app_commands.command(name='petlist')

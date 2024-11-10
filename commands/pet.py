@@ -19,12 +19,11 @@ class Pet(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'pet'), None)
     self.help_msg = Message(bot).help('pet')
 
-    self.command_service = CommandService()
     CommandService.init_command(self.pet_app_command, self.command)
     self.choices = None
 
   async def pet_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return await self.command_service.return_autocompletion(self.choices, current)
+    return await CommandService.return_autocompletion(self.choices, current)
 
   @app_commands.autocomplete(pet=pet_autocomplete)
   @app_commands.command(name='pet')

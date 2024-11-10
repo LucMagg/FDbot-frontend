@@ -14,7 +14,7 @@ class Botstats(commands.Cog):
     self.logger = bot.logger
     self.send_message = SendMessage(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'botstats'), None)
-    self.command_service = CommandService()
+    
     CommandService.init_command(self.botstats_app_command, self.command)
 
 

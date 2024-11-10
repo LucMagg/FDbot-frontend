@@ -19,7 +19,6 @@ class Reward(commands.Cog):
     self.send_message = SendMessage(self.bot)
     self.reward_command = next((c for c in bot.static_data.commands if c['name'] == 'reward'), None)
     
-    self.command_service = CommandService()
     CommandService.init_command(self.reward_app_command, self.reward_command)
     self.levels = None
     self.levelname_choices = None
@@ -285,7 +284,7 @@ class Reward(commands.Cog):
   
 ##### COMMANDE
   async def level_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return await self.command_service.return_autocompletion(self.levelname_choices, current)
+    return await CommandService.return_autocompletion(self.levelname_choices, current)
 
   @app_commands.autocomplete(level=level_autocomplete)
   @app_commands.command(name='reward')

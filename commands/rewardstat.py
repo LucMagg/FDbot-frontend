@@ -14,12 +14,11 @@ class Rewardstat(commands.Cog):
     self.send_message = SendMessage(self.bot)
     self.reward_stat_command = next((c for c in bot.static_data.commands if c['name'] == 'rewardstat'), None)
 
-    self.command_service = CommandService()
     CommandService.init_command(self.reward_stat_app_command, self.reward_stat_command)
     self.choices = None
 
   async def level_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-    return await self.command_service.return_autocompletion(self.choices, current)
+    return await CommandService.return_autocompletion(self.choices, current)
 
   @app_commands.autocomplete(level=level_autocomplete)
   @app_commands.command(name='rewardstat')

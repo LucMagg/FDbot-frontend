@@ -15,7 +15,6 @@ class Bothelp(commands.Cog):
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'bothelp'), None)
     self.help_msg = Message(bot).help('help')
 
-    self.command_service = CommandService()
     CommandService.init_command(self.bothelp_app_command, self.command)
 
   @app_commands.command(name='bothelp')

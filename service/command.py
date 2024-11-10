@@ -31,6 +31,7 @@ class CommandService:
 
     return choices
 
-  async def return_autocompletion(self, choices: list, current: str) -> typing.List[app_commands.Choice[str]]:
+  @staticmethod
+  async def return_autocompletion(choices: list, current: str) -> typing.List[app_commands.Choice[str]]:
     first_25_choices = [c for c in choices if current.lower() in c.name.lower()][:25]
     return first_25_choices
