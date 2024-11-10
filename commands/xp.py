@@ -38,10 +38,10 @@ class Xp(commands.Cog):
   @app_commands.command(name='xp')
   async def xp_app_command(self, interaction: discord.Interaction, stars: int, current_ascend: str, current_level: int, target_ascend: str, target_level: int):
     self.logger.command_log('xp', interaction)
-    await self.send_message.post(interaction)
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response(stars, current_ascend, current_level, target_ascend, target_level)
     if response:
-      await self.send_message.update(interaction, response)
+      await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('xp')
 
   async def get_response(self, stars, current_ascend, current_level, target_ascend, target_level):

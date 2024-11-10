@@ -31,9 +31,9 @@ class Talent(commands.Cog):
   async def talent_app_command(self, interaction: discord.Interaction, talent: str):
     self.logger.command_log('talent', interaction)
     self.logger.log_only('debug', f"arg : {talent}")
-    await self.send_message.post(interaction)
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response(talent, interaction)
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('talent')
 
   async def get_response(self, talent, interaction):

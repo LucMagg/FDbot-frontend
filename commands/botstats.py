@@ -21,9 +21,9 @@ class Botstats(commands.Cog):
   @app_commands.command(name='botstats')
   async def botstats_app_command(self, interaction: discord.Interaction):
     self.logger.command_log('botstats', interaction)
-    await self.send_message.post(interaction)
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response()
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('botstats')
 
   async def get_response(self):

@@ -33,12 +33,12 @@ class Update(commands.Cog):
   async def update_app_command(self, interaction: discord.Interaction, type: str):
     self.logger.command_log('update', interaction)
     self.logger.log_only('debug', f"arg : {type}")
-    await self.send_message.post(interaction, self.return_msg['description']['warning'])
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True, more_response=self.return_msg['description']['warning'])
     if not type:
       type = 'all'
     
     response = await self.get_response(type, interaction)
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('update')
 
 
@@ -47,9 +47,9 @@ class Update(commands.Cog):
       return self.help_msg
     
     if type == 'all':
-      update = await self.bot.back_requests('getAllUpdates', False)
+      update = await self.bot.back_requests.call('getAllUpdates', False)
     else:
-      update = await self.bot.back_requests('getOneUpdate', False, [type])
+      update = await self.bot.back_requests.call('getOneUpdate', False, [type])
 
     if not update:
       return {'title': self.return_msg['title'], 'description': self.return_msg['description']['erreur'], 'color': 'default'}

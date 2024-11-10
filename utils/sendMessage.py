@@ -2,68 +2,126 @@ import discord
 from discord import Color
 from utils.message import Message
 from utils.misc_utils import get_discord_color
+from pprint import pformat
 
 class SendMessage:
   def __init__(self, bot):
     self.bot = bot
     self.message = Message(bot)
+    self.error_message = Message(bot).message('error')
+    self.original_message_id = None
+    self.was_a_modal = False
+    self.last_content = None
 
-  async def post(self, interaction, more_msg = ''):
-    bot_msg = self.message.message('wait')
-    initial_response = discord.Embed(title = bot_msg['title'], description = bot_msg['description'] + more_msg, color = get_discord_color(bot_msg['color']))
-    await interaction.response.send_message(embed = initial_response)
-    return interaction
-
-
-  async def update(self, interaction: discord.Interaction, new_message):
-    footer_msg = self.message.message('footer')
-    if len(new_message['description']) + len(footer_msg['ok']) > 4096:
-      taille_max = 4096 - len(footer_msg['ok']) - len(footer_msg['too_long'])
-      new_message['description'] = new_message['description'][0:taille_max] + footer_msg['too_long']
-
-    bot_response = discord.Embed(title=new_message['title'], description=new_message['description'],
-                                 color=get_discord_color(new_message['color']))
-
-    if 'image' in new_message.keys():
-      bot_response.set_image(url=new_message['image'])
-    elif 'pic' in new_message.keys():
-      if new_message['pic'] is not None:
-        bot_response.set_thumbnail(url=new_message['pic'])
-    bot_response.set_footer(text=footer_msg['ok'])
-
+  async def handle_response(self, interaction: discord.Interaction, response=None, content='', view=None, modal=None, wait_msg=False, more_response='', generic_error_msg=False):   
     try:
-      if interaction.response.is_done():
-        await interaction.edit_original_response(embed=bot_response)
+      if modal is not None:
+        print('modal')
+        if hasattr(interaction, 'message') and interaction.message:
+          self.original_message_id = interaction.message.id
+        await interaction.response.send_modal(modal)
+        self.was_a_modal = True
+        return
+      
+      if not interaction.response.is_done():
+        await interaction.response.defer()
+
+      if view is not None:
+        print('view')
+        await self.handle_view_response(interaction, content, view)
       else:
-        await interaction.response.send_message(embed=bot_response)
-    except Exception as e:
-      print(f'erreur: {e}')
+        print('embed')
+        embed = self.build_embed(response, wait_msg, more_response, generic_error_msg)
+        await self.handle_embed_response(interaction, embed)
 
-  async def update_remove_view(self, interaction, new_message):
-    print("update remove view")
+      self.was_a_modal = False
+    except Exception as e:
+      print(e)
+
+  async def handle_view_response(self, interaction: discord.Interaction, content, view):
+    if content == '':
+      content = self.last_content
+
+    if self.original_message_id and hasattr(interaction, 'message'):
+      try:
+        original_message = await interaction.channel.fetch_message(self.original_message_id)
+        await original_message.edit(content=content, embed=None, view=view)
+        self.original_message_id = None
+        print('view after modal with an original message')
+        return
+      except Exception as e:
+          print(e)
+    if self.was_a_modal:
+      try:
+        await interaction.followup.send(content=content, embed=None, view=view)
+        print('view after modal with no original message')
+        return
+      except Exception as e:
+        print(e)
     try:
-      footer_msg = self.message.message('footer')
-      if len(new_message['description']) + len(footer_msg['ok']) > 4096:
-        taille_max = 4096 - len(footer_msg['ok']) - len(footer_msg['too_long'])
-        new_message['description'] = new_message['description'][0:taille_max] + footer_msg['too_long']
-
-      bot_response = discord.Embed(title=new_message['title'], description=new_message['description'],
-                                   color=get_discord_color(new_message['color']))
-
-      if 'image' in new_message.keys():
-        bot_response.set_image(url=new_message['image'])
-      elif 'pic' in new_message.keys():
-        if new_message['pic'] is not None:
-          bot_response.set_thumbnail(url=new_message['pic'])
-      bot_response.set_footer(text=footer_msg['ok'])
+      await interaction.edit_original_response(content=content, embed=None, view=view)
     except Exception as e:
-      print(f'erreur {e}')
+      print(e)
+      try:
+        await interaction.response.edit_message(content=content, embed=None, view=view)
+      except Exception as e:
+        print(e)
+        await interaction.response.send_message(content=content, embed=None, view=view)
 
-    print(bot_response)
-    print("end update remove view")
+    self.last_content = content
+    
+  async def handle_embed_response(self, interaction: discord.Interaction, embed):
+    if self.original_message_id and hasattr(interaction, 'message'):
+      try:
+        original_message = await interaction.channel.fetch_message(self.original_message_id)
+        await original_message.edit(content='', embed=embed, view=None)
+        self.original_message_id = None
+        print('embed after modal with an original message')
+        return
+      except Exception as e:
+          print(e)
+    if self.was_a_modal:
+      try:
+        await interaction.followup.send(content='', embed=embed, view=None)
+        print('view after modal with no original message')
+        return
+      except Exception as e:
+        print(e)
+    try:
+      await interaction.edit_original_response(content='', embed=embed, view=None)
+    except Exception as e:
+      print(e)
+      try:
+        await interaction.response.edit_message(content='', embed=embed, view=None)
+      except Exception as e:
+        print(e)
+        await interaction.response.send_message(content='', embed=embed, view=None)
 
-    await interaction.response.edit_message(embed=bot_response, view=None, content=None)
+  def build_embed(self, response, wait_msg, more_response, generic_error_msg):
+    if response is None and not wait_msg and not generic_error_msg:
+      return None
 
-  async def error(self, interaction, title, description):
-    initial_response = discord.Embed(title=title, description=description, color=Color.from_rgb(255, 0, 0))
-    await interaction.response.send_message(embed=initial_response)
+    if response is not None:
+      footer_msg = self.message.message('footer')
+
+      if len(response.get('description')) + len(footer_msg.get('ok')) > 4096:
+        taille_max = 4096 - len(footer_msg.get('ok')) - len(footer_msg.get('too_long'))
+        response['description'] = response.get('description')[0:taille_max] + footer_msg.get('too_long')
+      embed = discord.Embed(title=response.get('title'), description=response.get('description'), color=get_discord_color(response.get('color')))
+
+      if 'image' in response.keys():
+        embed.set_image(url=response.get('image'))
+      if 'thumbnail' in response.keys():
+        embed.set_thumbnail(url=response.get('thumbnail'))
+
+      embed.set_footer(text=footer_msg.get('ok'))
+    elif wait_msg:
+      tempo_response = self.message.message('wait')
+      embed = discord.Embed(title = tempo_response.get('title'), description = tempo_response.get('description') + more_response, color=get_discord_color(tempo_response.get('color')))
+    elif generic_error_msg:
+      error_response = self.error_message.get('description').get('generic')[0].get('text')
+      embed = discord.Embed(title = self.error_message.get('title'), description = error_response, color=get_discord_color(self.error_message.get('color')))
+    else:
+      print('foirage de paramètres :)')
+      return None
+    return embed

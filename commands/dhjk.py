@@ -23,9 +23,9 @@ class Dhjk(commands.Cog):
   @app_commands.command(name='dhjk')
   async def dhjk_app_command(self, interaction: discord.Interaction):
     self.logger.command_log('dhjk', interaction)
-    await self.send_message.post(interaction)
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
     response = Dhjk.get_response(self)
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('dhjk')
 
   def get_response(self):

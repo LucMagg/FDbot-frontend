@@ -244,7 +244,7 @@ class Spire(commands.Cog):
           response = {'title': 'Abandon',
                       'description': 'La saisie de ton score de spire a bien été annulée :cry:\nN\'hésite pas à recommencer pour soutenir ta guilde :grin:',
                       'color': 'red'}
-          await self.outer.send_message.update_remove_view(interaction, response)
+          await self.outer.send_message.handle_response(interaction=interaction, response=response)
           self.outer.logger.ok_log('spire')
         error_cancel_button.callback = error_cancel_callback
         self.add_item(error_modif_button)
@@ -269,41 +269,7 @@ class Spire(commands.Cog):
       except Exception as e:
         print(f'erreur: {e}')
       print('init validation view end')
-
-  class ResponseManager:
-##### GESTION DES INTERACTIONS
-    def __init__(self):
-      self.initial_interaction = None
-      self.last_content = None
-
-    async def handle_response(self, interaction: discord.Interaction, content='', view=None, modal=None, ephemeral=False):
-      try:
-        if modal is not None:
-          await interaction.response.send_modal(modal)
-          return
-        if self.initial_interaction is None:
-          self.initial_interaction = interaction
-          if view is None:
-            await interaction.response.send_message(content=content)
-          else:
-            await interaction.response.send_message(content=content, view=view)
-            self.last_content = content
-          return
-        if view is None:
-          try:
-            await interaction.response.edit_message(content='', view=None)
-          except Exception as e:
-            print(f'Erreur : {e}\n-> envoi d\'une nouvelle interaction')
-            interaction.response.send_message(content='', view=None)
-          return
-
-        if content == '':
-          content = self.last_content
-        await interaction.response.edit_message(content=content, embed=embed, view=view)
-        self.last_content = content
-
-      except Exception as e:
-        print(f"Une erreur s'est produite : {e}")
+  
 
   @app_commands.command(name='spire')
   async def spire_app_command(self, interaction: discord.Interaction, screenshot: discord.Attachment):
@@ -313,7 +279,6 @@ class Spire(commands.Cog):
 
   async def get_response(self, image_url, interaction: discord.Interaction):
     self.spire_data = self.get_user_and_guildname(interaction)
-    self.response_manager = self.ResponseManager()
     self.spire_data['image_url'] = image_url
     self.spire_data = await self.bot.back_requests.call('extractSpireData', False, [self.spire_data])
     print(f'spire_data: {self.spire_data}')
@@ -353,34 +318,34 @@ class Spire(commands.Cog):
   async def build_guild_modification_view(self, interaction: discord.Interaction):
     view = self.GuildModificationView(self)
     content = '# Guilde #\nVeuillez choisir votre guilde ou en créer une nouvelle si la vôtre n\'est pas dans la liste :'
-    await self.response_manager.handle_response(interaction=interaction, content=content, view=view)
+    await self.send_message.handle_response(interaction=interaction, content=content, view=view)
 
   async def build_guild_creation_modal(self, interaction: discord.Interaction):
     modal = self.GuildCreationModal(self)
-    await self.response_manager.handle_response(interaction=interaction, modal=modal)
+    await self.send_message.handle_response(interaction=interaction, modal=modal)
 
   async def build_guild_already_exists_view(self, interaction: discord.Interaction):
     view = self.GuildAlreadyExistsView(self)
     content = f'# {self.selected_guild} #\nCette guilde existe déjà...\nVoulez-vous valider ?'
-    await self.response_manager.handle_response(interaction=interaction, content=content, view=view)
+    await self.send_message.handle_response(interaction=interaction, content=content, view=view)
 
   async def build_tier_modification_view(self, interaction: discord.Interaction):
     view = self.TierModificationView(self)
     content = '# Dragonspire Tier #\nChoisissez votre niveau de spire parmi les suivants :'
-    await self.response_manager.handle_response(interaction=interaction, content=content, view=view)
+    await self.send_message.handle_response(interaction=interaction, content=content, view=view)
 
   async def build_score_modification_modal(self, interaction: discord.Interaction):
     modal = self.ScoreModificationModal(self)
-    await self.response_manager.handle_response(interaction=interaction, modal=modal)
+    await self.send_message.handle_response(interaction=interaction, modal=modal)
 
   async def build_error_view(self, interaction: discord.Interaction, message):
     self.view = self.ErrorView(self)
-    await self.response_manager.handle_response(interaction=interaction, content=message, view=self.view)
+    await self.send_message.handle_response(interaction=interaction, content=message, view=self.view)
 
   async def build_validation_view(self, interaction: discord.Interaction):
     self.view = self.ValidationView(self)
     content = self.build_validation_content()
-    await self.response_manager.handle_response(interaction=interaction, content=content, view=self.view)
+    await self.send_message.handle_response(interaction=interaction, content=content, view=self.view)
 
   def build_validation_content(self):
     self.spire_data['score'] = self.spire_data.get('floors') * 50000 - self.spire_data.get('loss') * 1000 - self.spire_data.get('turns') * 100 + self.spire_data.get('bonus') * 250
@@ -393,11 +358,10 @@ class Spire(commands.Cog):
     return to_return
 
   async def send_validation_message(self, interaction: discord.Interaction):
-    await self.send_message.post(interaction)
     post_spire = await self.bot.back_requests.call('addSpireData', False, [self.spire_data])
 
     if not post_spire:
-      await self.send_message.update(interaction, {'title': 'Erreur !', 'description': 'Ton score n\'a pas pu être ajouté :cry:\nMerci de réitérer la commande :innocent:', 'color': 'red'})
+      await self.send_message.handle_response(interaction=interaction, response={'title': 'Erreur !', 'description': 'Ton score n\'a pas pu être ajouté :cry:\nMerci de réitérer la commande :innocent:', 'color': 'red'})
       self.logger.ok_log('spire')
       return
     
@@ -409,7 +373,7 @@ class Spire(commands.Cog):
     description += f'Merci pour ta participation {self.spire_data.get('username')} :wink:\n\n'
     description += await self.bot.spire_service.display_scores_after_posting_spire(tier=self.spire_data.get('tier'))
     response = {'title': '', 'description': description, 'color': 'blue', 'image': self.spire_data.get('image_url')}
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('spire')
 
   async def setup(self, param_list):

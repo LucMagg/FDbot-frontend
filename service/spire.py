@@ -3,8 +3,6 @@ import datetime as discord_time
 from datetime import datetime
 from discord.ext import tasks
 
-from utils.misc_utils import get_discord_color
-
 #local_tz = datetime.now().astimezone().tzinfo
 #time = discord_time.time(hour=12, minute=0, tzinfo=local_tz)
 
@@ -27,7 +25,9 @@ class SpireService:
   
   async def display_scores_from_scheduler(self, date):
     player_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player'}])
+    print(player_scores)
     guild_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'guild'}])
+    print(guild_scores)
     if player_scores.get('climb') < 4:
       print('here')
       to_return = f'# Classements du climb #{player_scores.get('climb')} #\n'
@@ -78,7 +78,7 @@ class SpireService:
       to_return += f'\n'
 
     return to_return
-
+"""
   async def send_spire_start_message(self):
     description = await self.display_scores_from_scheduler(date='2024-11-03T18:00:00')
     await self.send_message('spire start', description)
@@ -97,7 +97,7 @@ class SpireService:
       channel = self.bot.get_channel(channel_id)
       await channel.send(embed=response)
 
-"""
+
   @tasks.loop(time=time)
   async def send_spire_results(self):
     diff = datetime.now() - self.spire_start_time

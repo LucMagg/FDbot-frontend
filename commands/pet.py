@@ -31,9 +31,9 @@ class Pet(commands.Cog):
   async def pet_app_command(self, interaction: discord.Interaction, pet: str):
     self.logger.command_log('pet', interaction)
     self.logger.log_only('debug', f"arg : {pet}")
-    await self.send_message.post(interaction)
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response(pet, interaction)
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('pet')
 
   async def get_response(self, pet, interaction):
@@ -44,7 +44,7 @@ class Pet(commands.Cog):
     if not pet_item:
       return
 
-    return {'title': '', 'description': await self.description(pet_item), 'color': pet_item['color'], 'pic': pet_item['image_url']}
+    return {'title': '', 'description': await self.description(pet_item), 'color': pet_item.get('color'), 'thumbnail': pet_item.get('image_url')}
    
   async def description(self, pet):
     return self.print_header(pet) + self.print_stats(pet) + self.print_signature(pet) + await self.print_full_talent(pet) + await self.print_talents(pet) + self.print_comments(pet, Message(self.bot))

@@ -21,9 +21,8 @@ class Bothelp(commands.Cog):
   @app_commands.command(name='bothelp')
   async def bothelp_app_command(self, interaction: discord.Interaction):
     self.logger.command_log('bothelp', interaction)
-    await self.send_message.post(interaction)
-    response = self.help_msg
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
+    await self.send_message.handle_response(interaction=interaction, response=self.help_msg)
     self.logger.ok_log('bothelp')
 
   

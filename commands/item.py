@@ -33,10 +33,10 @@ class Item(commands.Cog):
   async def item_app_command(self, interaction: discord.Interaction, item: str):
     self.logger.command_log('item', interaction)
     self.logger.log_only('debug', f"arg : {item}")
-    await self.send_message.post(interaction)
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response(item, interaction)
     if response:
-      await self.send_message.update(interaction, response)
+      await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('item')
 
   async def get_response(self, item, interaction):

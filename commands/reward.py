@@ -1,28 +1,24 @@
 import typing
 import discord
-from discord.utils import MISSING
 import emoji
 import re
-
-from typing import Optional
-from discord.app_commands import Choice
 
 from discord.ext import commands
 from discord import app_commands
 from discord.ui import Button, TextInput
 
 from service.command import CommandService
-from utils.message import Message
+from utils.sendMessage import SendMessage
 from utils.str_utils import str_to_slug, str_to_int, int_to_str
-from utils.misc_utils import get_discord_color
+
 
 class Reward(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.message = Message(bot)
+    self.send_message = SendMessage(self.bot)
     self.reward_command = next((c for c in bot.static_data.commands if c['name'] == 'reward'), None)
-
+    
     self.command_service = CommandService()
     CommandService.init_command(self.reward_app_command, self.reward_command)
     self.levels = None
@@ -110,7 +106,7 @@ class Reward(commands.Cog):
       else:
         self.remove_both_buttons(submit_button, next_button)
         
-      await self.outer.response_manager.handle_response(interaction=interaction, view=self)
+      await self.outer.send_message.handle_response(interaction=interaction, view=self)
 
   class ChoiceButton(Button):
     def __init__(self, outer, icon: str, label: str, button_data:'Reward.ButtonData', grade: int = None, has_quantity: bool = None, is_selected: bool = False):
@@ -177,7 +173,7 @@ class Reward(commands.Cog):
       if next_view_choices:
         next_choices_content = f'\n### Choix {self.outer.current_reward_choice} pour le type de reward {self.outer.selected_reward.get('type')} : ###'
         self.outer.view = self.outer.ChoiceView(outer=self.outer, button_data=self.outer.ButtonData(selectable_choices=next_view_choices, initial_interaction=interaction))
-        await self.outer.response_manager.handle_response(interaction=interaction, content=next_choices_content, view=self.outer.view)
+        await self.outer.send_message.handle_response(interaction=interaction, content=next_choices_content, view=self.outer.view)
         return
 
       await self.outer.build_quantity_modal(interaction)
@@ -231,7 +227,7 @@ class Reward(commands.Cog):
       
       if failed_because_of_bahabulle:
         response = {'title': 'Erreur', 'description': f"{self.input_quantity.value} n'est pas une quantité valide, merci de recommencer :rolling_eyes:", 'color': 'red'}
-        await self.outer.response_manager.handle_response(interaction=interaction, response=response)
+        await self.outer.send_message.handle_response(interaction=interaction, response=response)
         self.logger.ok_log('reward')
         return
 
@@ -272,7 +268,7 @@ class Reward(commands.Cog):
     async def callback(self, interaction: discord.Interaction):
       description = f'# {self.outer.current_level.get('name')} # \nRécompense annulée :)'
       response = {'title': '', 'description': description, 'color': 'red'}
-      await self.outer.response_manager.handle_response(interaction=interaction, response=response)
+      await self.outer.send_message.handle_response(interaction=interaction, response=response)
       self.outer.logger.ok_log('reward')
 
   class SubmitRewardButton(Button):
@@ -283,50 +279,10 @@ class Reward(commands.Cog):
     async def callback(self, interaction: discord.Interaction):
       self.outer.selected_reward['times'] = int(self.outer.times)
       response = await self.outer.bot.level_service.add_reward(emojis=interaction.guild.emojis, level_name=self.outer.current_level.get('name'), reward_data=self.outer.selected_reward)
-      await self.outer.response_manager.handle_response(interaction=interaction, response=response)
+      await self.outer.send_message.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('reward')
 
-  class ResponseManager:
-##### GESTION DES INTERACTIONS
-    def __init__(self):
-      self.initial_interaction = None
-      self.last_content = None
-
-    async def handle_response(self, interaction: discord.Interaction, response=None, content='', view=None, modal=None):
-      try:
-        if response is not None:
-          embed = discord.Embed(title=response.get('title'), description=response.get('description'), color=get_discord_color(response.get('color')))
-        else:
-          embed = None  
-
-        if modal is not None:
-          await interaction.response.send_modal(modal)
-        else:
-          if self.initial_interaction is None:
-            self.initial_interaction = interaction
-            if view is None:
-                await interaction.response.send_message(content=content, embed=embed)
-            else:
-                await interaction.response.send_message(content=content, embed=embed, view=view)
-                self.last_content = content
-          else:
-            if view is None:
-              try:
-                await interaction.response.edit_message(content='', embed=embed, view=None)
-              except Exception as e:
-                print(f'Erreur : {e}\n-> envoi d\'une nouvelle interaction')
-                interaction.response.send_message(content='', embed=embed, view=None)                  
-
-            else:
-              if content == '':
-                content = self.last_content
-              await interaction.response.edit_message(content=content, embed=embed, view=view)
-              self.last_content = content        
-      
-      except Exception as e:
-        print(f"Une erreur s'est produite : {e}")
-
-
+  
 ##### COMMANDE
   async def level_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await self.command_service.return_autocompletion(self.levelname_choices, current)
@@ -340,13 +296,12 @@ class Reward(commands.Cog):
     await self.get_response(interaction, level)
 
   async def get_response(self, interaction, level_name):
-    self.response_manager = self.ResponseManager()
     self.times = 1
 
     if level_name not in [cl.name for cl in self.levelname_choices]:
       self.logger.log_only('debug', 'level inexistant')
       response = {'title': 'Erreur', 'description': f'Le level {level_name} n\'existe pas.\nMerci de vérifier et/ou de contacter Spirou ou Prep pour la création du level si besoin :wink:', 'color': 'red'}
-      await self.response_manager.handle_response(interaction=interaction, response=response)
+      await self.send_message.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('reward')
       return
 
@@ -358,14 +313,14 @@ class Reward(commands.Cog):
     self.selected_reward = {}
     choices = sorted(self.current_level.get('reward_choices'), key=lambda x:x['grade'])
     self.view = self.ChoiceView(self, button_data=self.ButtonData(selectable_choices=choices, initial_interaction=interaction))
-    await self.response_manager.handle_response(interaction=interaction, content="\n ### Choississez le type de reward ###", view=self.view)
+    await self.send_message.handle_response(interaction=interaction, content="\n ### Choississez le type de reward ###", view=self.view)
 
   async def initial_view_with_single_choice(self, interaction: discord.Interaction):
     self.current_reward_choice = self.current_level.get('reward_choices')[0].get('choices')[0].get('name').lower()
     choices = sorted(self.current_level.get('reward_choices')[0].get('choices')[0].get('choices'), key=lambda x:x['grade'])
     initial_view_content = f'\n### Choix {self.current_reward_choice} pour le type de reward {self.selected_reward.get('type')} : ###'
     self.view = self.ChoiceView(self, button_data=self.ButtonData(selectable_choices=choices, initial_interaction=interaction))
-    await self.response_manager.handle_response(interaction=interaction, content=initial_view_content, view=self.view)
+    await self.send_message.handle_response(interaction=interaction, content=initial_view_content, view=self.view)
 
   async def build_initial_view(self, interaction: discord.Interaction):
     if len(self.current_level.get('reward_choices')) > 1:
@@ -384,14 +339,14 @@ class Reward(commands.Cog):
     quantity_content = f'Choix de la quantité de {self.selected_reward.get('type')}'
     self.modal = self.InputModal(outer=self, title=quantity_content)
     try:
-      await self.response_manager.handle_response(interaction=interaction, modal=self.modal)
+      await self.send_message.handle_response(interaction=interaction, modal=self.modal)
     except Exception as e:
       print(f'erreur : {e}')
 
   async def build_validation_view(self, interaction:discord.Interaction):
     try:
       self.view = self.ValidationView(outer=self)
-      await self.response_manager.handle_response(interaction=interaction, content=self.build_final_content(), view=self.view)
+      await self.send_message.handle_response(interaction=interaction, content=self.build_final_content(), view=self.view)
     except Exception as e:
       print(f'erreur : {e}')
 

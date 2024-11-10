@@ -35,9 +35,9 @@ class Addcomment(commands.Cog):
   async def addcomment_app_command(self, interaction: discord.Interaction, héros_ou_pet: str, commentaire: Optional[str] = None):
     self.logger.command_log('addcomment', interaction)
     self.logger.log_only('debug', f"arg : {héros_ou_pet} | commentaire : {commentaire}")
-    await self.send_message.post(interaction)
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response(héros_ou_pet, commentaire, nick(interaction), interaction)
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('addcomment')
 
   async def get_response(self, h_or_p, comment, author, interaction):

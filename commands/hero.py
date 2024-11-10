@@ -31,9 +31,9 @@ class Hero(commands.Cog):
   async def hero_app_command(self, interaction: discord.Interaction, héros: str):
     self.logger.command_log('hero', interaction)
     self.logger.log_only('debug', f"arg : {héros}")
-    await self.send_message.post(interaction)
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response(héros, interaction)
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('hero')
   
   async def get_response(self, héros, interaction=None):
@@ -45,11 +45,11 @@ class Hero(commands.Cog):
       return
     
     if hero['pet'] is not None:
-      pet = await self.bot.back_requests.call('getPetByName', False, [hero.get('pet')], interaction)
+      pet = await self.bot.back_requests.call('getPetByName', False, [hero.get('pet')])
     else:
       pet = False
 
-    return {'title': '', 'description': await self.description(hero, pet), 'color': hero['color'], 'pic': hero['image_url']}
+    return {'title': '', 'description': await self.description(hero, pet), 'color': hero.get('color'), 'thumbnail': hero.get('image_url')}
   
   async def description(self, hero, pet):
     return self.print_header(hero) + self.print_stats(hero) + self.print_lead(hero) + self.print_talents(hero) + self.print_gear(hero) + await self.print_pet(hero, pet) + self.print_comments(hero, Message(self.bot).message('nocomment'))

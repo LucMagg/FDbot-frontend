@@ -26,15 +26,17 @@ class Rewardstat(commands.Cog):
   async def reward_stat_app_command(self, interaction: discord.Interaction, level: str):
     self.logger.command_log('rewardstat', interaction)
     self.logger.log_only('debug', f"level : {level}")
+    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
+
     if level not in [c.name for c in self.choices]:
       self.logger.log_only('debug', f"level inexistant")
-      await self.send_message.error(interaction, "Ce niveau n'existe pas", "Veuillez choisir un niveau dans la liste ou contacter Prep ou Spirou.")
+      response = {'title': 'Erreur !', 'description': 'Ce niveau n\'existe pas.\nVeuillez choisir un niveau dans la liste ou contacter Prep ou Spirou.', 'color': 'red'}
+      await self.send_message.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('rewardstat')
       return
 
-    await self.send_message.post(interaction)
     response = await self.bot.level_service.display_rewards(interaction.guild.emojis, level)
-    await self.send_message.update(interaction, response)
+    await self.send_message.handle_response(interaction, response)
     self.logger.ok_log('rewardstat')
 
   async def setup(self, param_list):

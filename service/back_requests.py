@@ -62,7 +62,7 @@ class BackRequests:
       self.logger.error_log(f"Une erreur s'est produite lors de la requête : {str(e)}")
       if interaction:
           error_response = {'title': 'Erreur', 'description': 'Une erreur s\'est produite sur la partie backend <@553925318683918336> :cry:', 'color': 'red'}
-          await self.send_message.update(interaction, error_response)
+          await self.send_message.handle_response(interaction=interaction, response=error_response)
       return False
 
   def build_url(self, my_request, params):
@@ -98,14 +98,14 @@ class BackRequests:
           param = ' '.join(params)
           whichone = my_request.get('command')
           description = f"{self.error_msg.get('description').get(whichone)[0].get('text')} {param} {self.error_msg.get('description').get(whichone)[1].get('text')}"
-          response = {'title': self.error_msg['title'], 'description': description, 'color': self.error_msg['color']}
-          await self.send_message.update(interaction, response)
+          response = {'title': self.error_msg.get('title'), 'description': description, 'color': self.error_msg.get('color')}
+          await self.send_message.handle_response(interaction=interaction, response=response)
         return False
       case 500:
         self.logger.log_only('error', f"Réponse du back-end : {response.status_code}")
         if interaction:
           response = {'title': 'Erreur', 'description': 'La partie backend ne répond plus <@553925318683918336> :cry:', 'color': 'red'}
-          await self.send_message.update(interaction, response)
+          await self.send_message.handle_response(interaction=interaction, response=response)
         else:
           self.logger.error_log(f"Erreur du back : {response.json()}")
         return False
