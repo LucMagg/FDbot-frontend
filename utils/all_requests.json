@@ -226,5 +226,11 @@
     "url": "spire/add_channel",
     "type": "post",
     "param0": "json"
+  },
+  {
+    "name": "getSpireByDate",
+    "url": "spire",
+    "type": "get",
+    "param0": "json"
   }
 ]
