@@ -2,17 +2,21 @@ import discord
 import datetime as discord_time
 from datetime import datetime
 from discord.ext import tasks
+from utils.misc_utils import get_discord_color
 
-#local_tz = datetime.now().astimezone().tzinfo
-#time = discord_time.time(hour=12, minute=0, tzinfo=local_tz)
+local_tz = datetime.now().astimezone().tzinfo
+time = discord_time.time(hour=12, minute=0, tzinfo=local_tz)
 
 class SpireService:
-  def __init__(self, bot, channel_ids):
+  def __init__(self, bot):
     self.bot = bot
-    self.channel_ids = channel_ids
     self.spire_start_time = datetime.fromisoformat("2024-11-06T12:00:00")
     self.spire_length = 14
-    #self.send_spire_results.start()
+    self.send_spire_results.start()
+
+  async def get_channel_ids(self):
+    spire = await self.bot.back_requests.call("getSpireByDate", False, [{'date': str("2024-10-24T18:00:00")}])
+    return [c.get('discord_channel_id') for c in spire.get('channels')]
 
   async def display_scores_after_posting_spire(self, tier):
     print('display scores begin')
@@ -22,8 +26,8 @@ class SpireService:
     to_return += self.scores_str(scores=scores, tier=tier, key='current_climb')
     print(to_return)
     return to_return
-  
-  async def display_scores_from_scheduler(self, date):
+
+  async def display_scores_from_scheduler(self):
     player_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player'}])
     print(player_scores)
     guild_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'guild'}])
@@ -42,9 +46,9 @@ class SpireService:
       print('there')
       to_return = f'# Classements finaux #\n'
       print(to_return)
-      
+
       to_return += self.get_all_brackets_scores(player_scores=player_scores, guild_scores=guild_scores, key='current_spire')
-    
+
     return to_return
 
   def get_all_brackets_scores(self, player_scores, guild_scores, key):
@@ -78,22 +82,22 @@ class SpireService:
       to_return += f'\n'
 
     return to_return
-"""
+
   async def send_spire_start_message(self):
-    description = await self.display_scores_from_scheduler(date='2024-11-03T18:00:00')
+    description = await self.display_scores_from_scheduler()
     await self.send_message('spire start', description)
 
   async def send_spire_end_message(self):
-    description = await self.display_scores_from_scheduler(date='2024-11-03T18:00:00')
+    description = await self.display_scores_from_scheduler()
     await self.send_message('spire end', description)
 
   async def send_climb_end_message(self):
-    description = await self.display_scores_from_scheduler(date='2024-11-03T18:00:00')
+    description = await self.display_scores_from_scheduler()
     await self.send_message('climb end', description)
 
   async def send_message(self, title, description):
     response = discord.Embed(title=title, description=description, color=get_discord_color('blue'))
-    for channel_id in self.channel_ids:
+    for channel_id in await self.get_channel_ids():
       channel = self.bot.get_channel(channel_id)
       await channel.send(embed=response)
 
@@ -112,4 +116,3 @@ class SpireService:
   @send_spire_results.before_loop
   async def before_loop(self):
     await self.bot.wait_until_ready()
-"""

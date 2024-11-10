@@ -55,7 +55,7 @@ class MyBot(commands.Bot):
     self.logger.bot_log('Initialisation du service Level')
     self.update_service = UpdateService(self)
     self.logger.bot_log('Initialisation du service Update')
-    self.spire_service = SpireService(self, [1119633026989707367])
+    self.spire_service = SpireService(self)
     self.logger.bot_log('Initialisation du service Spire')
 
   async def load_all_commands(self):
