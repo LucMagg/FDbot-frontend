@@ -283,6 +283,7 @@ class Spire(commands.Cog):
     print(f'spire_data: {self.spire_data}')
     self.selected_guild = self.spire_data.get('guild')
     self.selected_tier = self.spire_data.get('tier')
+
     if self.spire_data.get('guild') is not None and self.spire_data.get('guild') not in self.guilds:
       self.guilds.append(self.spire_data.get('guild'))
       self.guilds = sorted(self.guilds)
@@ -295,6 +296,9 @@ class Spire(commands.Cog):
   def get_user_and_guildname(self, interaction: discord.Interaction):
     self.spire_data = None
     user = interaction.user.display_name
+    print(f'display_name: {interaction.user.display_name}')
+    print(f'nick: {interaction.user.nick}')
+    print(f'global: {interaction.user.global_name}')
     print(f'user: {user}')
     if '[' in user and ']' in user:
       print('user & guild ok')

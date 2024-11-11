@@ -1,6 +1,6 @@
 import discord
 import datetime as discord_time
-from datetime import datetime
+from datetime import datetime, timedelta
 from discord.ext import tasks
 from utils.misc_utils import get_discord_color
 
@@ -25,12 +25,16 @@ class SpireService:
     print(to_return)
     to_return += self.scores_str(scores=scores, tier=tier, key='current_climb')
     print(to_return)
+
+    test_scores = await self.display_scores_from_scheduler()
+    print(test_scores)
     return to_return
 
   async def display_scores_from_scheduler(self):
-    player_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player'}])
+    date = (datetime.now() - timedelta(minutes=1)).isoformat()
+    player_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player', 'date': date}])
     print(player_scores)
-    guild_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'guild'}])
+    guild_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'guild', 'date': date}])
     print(guild_scores)
     if player_scores.get('climb') < 4:
       print('here')
