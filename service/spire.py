@@ -15,7 +15,7 @@ class SpireService:
     self.send_spire_results.start()
 
   async def get_channel_ids(self):
-    spire = await self.bot.back_requests.call("getSpireByDate", False, [{'date': str("2024-10-24T18:00:00")}])
+    spire = await self.bot.back_requests.call("getSpireByDate", False, [{'date': datetime.now()}])
     return [c.get('discord_channel_id') for c in spire.get('channels')]
 
   async def display_scores_after_posting_spire(self, tier):

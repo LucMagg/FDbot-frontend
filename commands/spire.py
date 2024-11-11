@@ -4,11 +4,11 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from typing import Optional
+from datetime import datetime
 
 from discord.ui import Button
 
 from utils.sendMessage import SendMessage
-from utils.misc_utils import get_discord_color
 from service.command import CommandService
 
 class Spire(commands.Cog):
@@ -364,15 +364,20 @@ class Spire(commands.Cog):
       self.logger.ok_log('spire')
       return
     
-    add_channel_data = {'date': '2024-11-03T15:00:00', 'channel_id': interaction.channel_id, 'guild': self.spire_data.get('guild')}
-    print(add_channel_data)
-    await self.bot.back_requests.call('addChannelToSpire', False, [add_channel_data])
-
     description = '# Score validé ! #\n'
     description += f'Merci pour ta participation {self.spire_data.get('username')} :wink:\n\n'
     description += await self.bot.spire_service.display_scores_after_posting_spire(tier=self.spire_data.get('tier'))
     response = {'title': '', 'description': description, 'color': 'blue', 'image': self.spire_data.get('image_url')}
     await self.send_message.handle_response(interaction=interaction, response=response)
+    
+    if self.spire_data.get('guild') not in self.guilds:
+      self.guilds.append(self.spire_data.get('guild'))
+      print(self.guilds)
+      self.guilds = sorted(self.guilds)
+
+    add_channel_data = {'date': datetime.now().isoformat(), 'channel_id': interaction.channel_id, 'guild': self.spire_data.get('guild')}
+    await self.bot.back_requests.call('addChannelToSpire', False, [add_channel_data])
+    
     self.logger.ok_log('spire')
 
   async def setup(self, param_list):
