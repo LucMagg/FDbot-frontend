@@ -25,7 +25,7 @@ class XpService:
         current_ascend = XpService.ascends[current_ascend_idx]
         calc_return = f'- passer directement {current_ascend}\n'
 
-    while not current_level == target_level and current_ascend == target_ascend:
+    while not current_level == target_level or not current_ascend == target_ascend:
       current_level += 1
       level_potions = next((xp.get(current_ascend) for xp in xp_table if xp.get('level') == current_level), None)
       if level_potions is not None:
