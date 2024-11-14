@@ -12,6 +12,7 @@ from service.back_requests import BackRequests
 from service.level import LevelService
 from service.update import UpdateService
 from service.spire import SpireService
+from service.spireranking import SpireRankingService
 
 
 status = cycle(['faire plaisir à Spirou'])
@@ -57,6 +58,9 @@ class MyBot(commands.Bot):
     self.logger.bot_log('Initialisation du service Update')
     self.spire_service = SpireService(self)
     self.logger.bot_log('Initialisation du service Spire')
+    self.spire_ranking_service = SpireRankingService(self)
+    self.logger.bot_log('Initialisation du service SpireRanking')
+    
 
   async def load_all_commands(self):
     commands = [
@@ -75,7 +79,8 @@ class MyBot(commands.Bot):
       'commands.rewardstat',
       'commands.reward',
       'commands.xp',
-      'commands.spire'
+      'commands.spire',
+      #'commands.testcommand'
     ]
 
     for command in commands:

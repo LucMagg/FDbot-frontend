@@ -1,8 +1,6 @@
 import discord
-from discord import Color
 from utils.message import Message
 from utils.misc_utils import get_discord_color
-from pprint import pformat
 
 class SendMessage:
   def __init__(self, bot):
@@ -19,22 +17,26 @@ class SendMessage:
         print('modal')
         if hasattr(interaction, 'message') and interaction.message:
           self.original_message_id = interaction.message.id
-        await interaction.response.send_modal(modal)
         self.was_a_modal = True
-        return
+        return await interaction.response.send_modal(modal)
       
+      self.was_a_modal = False
       if not interaction.response.is_done():
         await interaction.response.defer()
 
-      if view is not None:
-        print('view')
-        await self.handle_view_response(interaction, content, view)
-      else:
-        print('embed')
+      if view is not None and response is None:
+        print('view only')
+        return await self.handle_view_response(interaction, content, view)
+      
+      if response is not None and view is None:
+        print('embed only')
         embed = self.build_embed(response, wait_msg, more_response, generic_error_msg)
-        await self.handle_embed_response(interaction, embed)
-
-      self.was_a_modal = False
+        return await self.handle_embed_response(interaction, embed)
+      
+      print('view & embed')
+      embed = self.build_embed(response, wait_msg, more_response, generic_error_msg)
+      return await self.handle_view_and_embed_response(interaction, embed, view)
+      
     except Exception as e:
       print(e)
 
@@ -45,57 +47,86 @@ class SendMessage:
     if self.original_message_id and hasattr(interaction, 'message'):
       try:
         original_message = await interaction.channel.fetch_message(self.original_message_id)
-        await original_message.edit(content=content, embed=None, view=view)
         self.original_message_id = None
         print('view after modal with an original message')
-        return
+        return await original_message.edit(content=content, embed=None, view=view)
       except Exception as e:
           print(e)
+
     if self.was_a_modal:
       try:
-        await interaction.followup.send(content=content, embed=None, view=view)
         print('view after modal with no original message')
-        return
+        return await interaction.followup.send(content=content, embed=None, view=view)        
       except Exception as e:
         print(e)
+
     try:
-      await interaction.edit_original_response(content=content, embed=None, view=view)
+      self.last_content = content
+      return await interaction.edit_original_response(content=content, embed=None, view=view)
     except Exception as e:
       print(e)
       try:
-        await interaction.response.edit_message(content=content, embed=None, view=view)
+        self.last_content = content
+        return await interaction.response.edit_message(content=content, embed=None, view=view)
       except Exception as e:
         print(e)
-        await interaction.response.send_message(content=content, embed=None, view=view)
-
-    self.last_content = content
+        self.last_content = content
+        return await interaction.response.send_message(content=content, embed=None, view=view)
+    
     
   async def handle_embed_response(self, interaction: discord.Interaction, embed):
     if self.original_message_id and hasattr(interaction, 'message'):
       try:
         original_message = await interaction.channel.fetch_message(self.original_message_id)
-        await original_message.edit(content='', embed=embed, view=None)
         self.original_message_id = None
         print('embed after modal with an original message')
-        return
-      except Exception as e:
-          print(e)
-    if self.was_a_modal:
-      try:
-        await interaction.followup.send(content='', embed=embed, view=None)
-        print('view after modal with no original message')
-        return
+        return await original_message.edit(content='', embed=embed, view=None)
       except Exception as e:
         print(e)
+
+    if self.was_a_modal:
+      try:
+        print('embed after modal with no original message')
+        return await interaction.followup.send(content='', embed=embed, view=None)        
+      except Exception as e:
+        print(e)
+
     try:
-      await interaction.edit_original_response(content='', embed=embed, view=None)
+      return await interaction.edit_original_response(content='', embed=embed, view=None)
     except Exception as e:
       print(e)
       try:
-        await interaction.response.edit_message(content='', embed=embed, view=None)
+        return await interaction.response.edit_message(content='', embed=embed, view=None)
       except Exception as e:
         print(e)
-        await interaction.response.send_message(content='', embed=embed, view=None)
+        return await interaction.response.send_message(content='', embed=embed, view=None)
+  
+  async def handle_view_and_embed_response(self, interaction: discord.Interaction, embed, view):
+    if self.original_message_id and hasattr(interaction, 'message'):
+      try:
+        original_message = await interaction.channel.fetch_message(self.original_message_id)
+        self.original_message_id = None
+        print('embed&view after modal with an original message')
+        return await original_message.edit(content='', embed=embed, view=view)
+      except Exception as e:
+        print(e)
+
+    if self.was_a_modal:
+      try:
+        print('embed&view after modal with no original message')
+        return await interaction.followup.send(content='', embed=embed, view=view)       
+      except Exception as e:
+        print(e)
+
+    try:
+      return await interaction.edit_original_response(content='', embed=embed, view=view)
+    except Exception as e:
+      print(e)
+      try:
+        return await interaction.response.edit_message(content='', embed=embed, view=view)
+      except Exception as e:
+        print(e)
+        return await interaction.response.send_message(content='', embed=embed, view=view)
 
   def build_embed(self, response, wait_msg, more_response, generic_error_msg):
     if response is None and not wait_msg and not generic_error_msg:
