@@ -19,8 +19,7 @@ class SendMessage:
           self.original_message_id = interaction.message.id
         self.was_a_modal = True
         return await interaction.response.send_modal(modal)
-      
-      self.was_a_modal = False
+
       if not interaction.response.is_done():
         await interaction.response.defer()
 
@@ -47,15 +46,18 @@ class SendMessage:
     if self.original_message_id and hasattr(interaction, 'message'):
       try:
         original_message = await interaction.channel.fetch_message(self.original_message_id)
-        self.original_message_id = None
         print('view after modal with an original message')
-        return await original_message.edit(content=content, embed=None, view=view)
+        new_message = await original_message.edit(content=content, embed=None, view=view)
+        self.original_message_id = None
+        self.was_a_modal = False
+        return new_message
       except Exception as e:
-          print(e)
+        print(e)
 
     if self.was_a_modal:
       try:
         print('view after modal with no original message')
+        self.was_a_modal = False
         return await interaction.followup.send(content=content, embed=None, view=view)        
       except Exception as e:
         print(e)
@@ -78,15 +80,18 @@ class SendMessage:
     if self.original_message_id and hasattr(interaction, 'message'):
       try:
         original_message = await interaction.channel.fetch_message(self.original_message_id)
-        self.original_message_id = None
         print('embed after modal with an original message')
-        return await original_message.edit(content='', embed=embed, view=None)
+        new_message = await original_message.edit(content='', embed=embed, view=None)
+        self.original_message_id = None
+        self.was_a_modal = False
+        return new_message
       except Exception as e:
         print(e)
 
     if self.was_a_modal:
       try:
         print('embed after modal with no original message')
+        self.was_a_modal = False
         return await interaction.followup.send(content='', embed=embed, view=None)        
       except Exception as e:
         print(e)
@@ -105,15 +110,18 @@ class SendMessage:
     if self.original_message_id and hasattr(interaction, 'message'):
       try:
         original_message = await interaction.channel.fetch_message(self.original_message_id)
-        self.original_message_id = None
         print('embed&view after modal with an original message')
-        return await original_message.edit(content='', embed=embed, view=view)
+        new_message = await original_message.edit(content='', embed=embed, view=view)
+        self.original_message_id = None
+        self.was_a_modal = False
+        return new_message
       except Exception as e:
         print(e)
 
     if self.was_a_modal:
       try:
         print('embed&view after modal with no original message')
+        self.was_a_modal = False
         return await interaction.followup.send(content='', embed=embed, view=view)       
       except Exception as e:
         print(e)
