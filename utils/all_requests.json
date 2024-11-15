@@ -232,5 +232,17 @@
     "url": "spire",
     "type": "get",
     "param0": "json"
+  },
+  {
+    "name": "addMessageId",
+    "url": "spire/add_message_id",
+    "type": "post",
+    "param0": "json"
+  },
+  {
+    "name": "deleteMessageId",
+    "url": "spire/del_message_id",
+    "type": "delete",
+    "param0": "json"
   }
 ]

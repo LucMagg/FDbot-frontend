@@ -51,6 +51,12 @@ class BackRequests:
             response = requests.post(url.get('url'), json=params[url.get('has_json_in_params')])
           else:
             response = requests.post(url.get('url'))
+        case 'delete':
+          if url.get('has_json_in_params') is not None:
+            self.logger.log_only('debug', f"json : {params[url.get('has_json_in_params')]}")
+            response = requests.delete(url.get('url'), json=params[url.get('has_json_in_params')])
+          else:
+            response = requests.delete(url.get('url'))
 
       is_ok = await self.error_handler(my_request, response, handle_errors, params, interaction)
 

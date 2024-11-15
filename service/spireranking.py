@@ -14,6 +14,8 @@ class SpireRankingService:
     self.bot = bot
     self.current_page = 0
     self.message = None
+    self.view = None
+    self.response = None
     self.rankings = []
     self.send_message = SendMessage(self.bot)
     self.spire_start_time = datetime.fromisoformat("2024-11-06T12:00:00")
@@ -64,9 +66,7 @@ class SpireRankingService:
 
   async def get_rankings(self):
     player_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player', 'date': self.date_to_get}])
-    print(player_scores)
     guild_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'guild', 'date': self.date_to_get}])
-    print(guild_scores)
     to_return = []
 
     for tier in ['Platinum', 'Gold', 'Silver', 'Bronze', 'Hero', 'Adventurer']:
@@ -84,7 +84,6 @@ class SpireRankingService:
           to_append += self.get_all_brackets_scores(player_scores=player_scores, guild_scores=guild_scores, key='current_spire', tier=tier)
       if to_append != '':
         to_return.append(to_append)
-    print(f'rankings: {to_return}')
     return to_return
 
   def get_all_brackets_scores(self, player_scores: dict, guild_scores: dict, key: str, tier: str) -> str:
@@ -116,28 +115,69 @@ class SpireRankingService:
       to_return += f'\n'
     return to_return
   
-  async def get_channel_ids(self):
+  async def get_channels(self):
     spire = await self.bot.back_requests.call("getSpireByDate", False, [{'date': self.date_to_get}])
-    return [c.get('discord_channel_id') for c in spire.get('channels')]
- 
-  async def send_spire_message(self):
+    return spire.get('channels')
+  
+  async def unpin_old_messages(self, channels):
+    try:
+      for channel_data in channels:
+        if channel_data.get('ranking_message_id') is not None:
+          channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
+          if channel:
+            message = await channel.fetch_message(channel_data.get('ranking_message_id'))
+            if message and message.pinned:
+              await message.unpin()
+              await self.bot.back_requests.call("deleteMessageId", False, [{'date': self.date_to_get, 'channel_id': channel_data.get('discord_channel_id')}])
+    except Exception as e:
+      print(e)
+  
+  async def build_response(self):
     self.rankings = await self.get_rankings()
     self.view = self.RankingsView(outer=self)
     self.response = discord.Embed(title='', description=self.rankings[self.current_page], color=get_discord_color('blue'))
-    for channel_id in await self.get_channel_ids():
-      channel = self.bot.get_channel(channel_id)
-      print(f'channel: {channel}')
-      message = await channel.send(embed=self.response, view=self.view)
-      await message.pin()
+ 
+  async def post_messages(self, channels):
+    try:
+      for channel_data in channels:
+        channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
+        message = await channel.send(embed=self.response, view=self.view)
+        pinned = await self.bot.back_requests.call("addMessageId", False, [{'date': self.date_to_get, 'channel_id': channel_data.get('discord_channel_id'), 'message_id': message.id}])
+        if pinned:
+          await message.pin()
+    except Exception as e:
+      print(e)
 
+  async def send_spire_rankings(self):
+    channels = await self.get_channels()
+    print(channels)
+    await self.unpin_old_messages(channels)
+    await self.build_response()
+    await self.post_messages(channels)
+
+  async def send_spire_start(self):
+    channels = await self.get_channels()
+    print(channels)
+    await self.unpin_old_messages(channels)
+    description = '# Début de la bataille des guildes ! # \nQue les bonus et l\'absence de moves foireux soient avec vous :grin:\nBon courage à tous :wink:'
+    self.response = discord.Embed(title='', description=description, color=get_discord_color('blue'))
+    for channel_data in channels:
+      channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
+      await channel.send(embed=self.response)
+      
   @tasks.loop(time=time)
+  #@tasks.loop(seconds=30)
   async def send_spire_results(self):
     diff = datetime.now() - self.spire_start_time
     days = diff.days % self.spire_length
+    #days = 3
     print(f'{datetime.now()} || loop: {days}')
-    self.date_to_get = (datetime.now() - timedelta(minutes=1)).isoformat()
-    if days % 3 == 0:
-      await self.send_spire_message()
+    if days % 3 == 0 and days > 0:
+      self.date_to_get = (datetime.now() - timedelta(minutes=1)).isoformat()
+      await self.send_spire_rankings()
+    if days == 0:
+      self.date_to_get = (datetime.now() - timedelta(days=2, minutes=1)).isoformat()
+      await self.send_spire_start()
 
   @send_spire_results.before_loop
   async def before_loop(self):
