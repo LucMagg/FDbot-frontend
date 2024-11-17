@@ -196,6 +196,11 @@ class Spire(commands.Cog):
       self.outer.spire_data['loss'] = self.is_input_valid(self.input_loss.value, 0)
       self.outer.spire_data['turns'] = self.is_input_valid(self.input_turns.value, 31)
       self.outer.spire_data['bonus'] = self.is_input_valid(self.input_bonus.value, 0, 84)
+      try:
+        self.outer.spire_data['score'] = self.outer.spire_data.get('floors') * 50000 - self.outer.spire_data.get('loss') * 1000 - self.outer.spire_data.get('turns') * 100 + self.outer.spire_data.get('bonus') * 250
+      except Exception as e:
+        print(e)
+      print(self.outer.spire_data)
       if not None in self.outer.spire_data.values():
         await self.outer.build_validation_view(interaction)
       else:
