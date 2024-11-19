@@ -3,8 +3,8 @@ from math import floor
 
 from utils.misc_utils import pluriel
 from utils.str_utils import str_to_slug, int_to_str
-from collections import defaultdict
 
+str_gap = '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'
 
 class LevelService:
   def __init__(self, bot):
@@ -54,7 +54,7 @@ class LevelService:
   def append_with_multiple_reward_types(self, reward, icon):
     to_return = f"\n{icon} {reward.get('quality')} {reward.get('type')} : {format(reward.get('total_appearances') / self.total_appearances, '.2%')} ({reward.get('total_appearances')}), soit :\n"
     for d in reward.get('details'):
-      to_return += '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• '
+      to_return += f'{str_gap}• '
       if d.get('item') is not None:
         to_return += f'{d.get('item')} '
       else:
@@ -99,14 +99,23 @@ class LevelService:
 
     total_rewards = sum([(d.get('quantity') * d.get('appearances')) for d in reward.get('details')])
     average_reward = total_rewards/self.total_appearances
-    to_return += f'{icon} {floor(average_reward)} {reward.get('type')} par combat, soit :\n'
+    if average_reward < 1000:
+      displayed_average_reward = floor(average_reward * 1000) / 1000
+    else:
+      displayed_average_reward = floor(average_reward)
+    to_return += f'{icon} {displayed_average_reward} {reward.get('type')} par combat, soit :\n'
 
     try:
       to_check = [{'attr': 'standard_energy_cost', 'name': 'énergie solo'},{'attr': 'coop_energy_cost', 'name': 'énergie coop'}]
       for energy in to_check:
         energy_cost = level.get(energy.get('attr'))
         if energy_cost is not None:
-          to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• {round(average_reward//energy_cost)} par {energy.get('name')} ({energy_cost} énergie{pluriel(energy_cost)} / combat)\n'
+          average_per_energy = average_reward/energy_cost
+          if average_reward < 1000:
+            displayed_average_per_energy = floor(average_per_energy * 1000) / 1000
+          else:
+            displayed_average_per_energy = floor(average_per_energy)
+          to_return += f'{str_gap}• {displayed_average_per_energy} par {energy.get('name')} ({energy_cost} énergie{pluriel(energy_cost)} / combat)\n'
     except Exception as e:
       print(f'Erreur: {e}')
 
