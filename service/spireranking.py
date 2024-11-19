@@ -81,6 +81,7 @@ class SpireRankingService:
             to_append += f'\n# Classements de la spire #\n'
           else:
             to_append = f'# Classements finaux #\n'
+            to_append += f'## {tier} ##\n'
           to_append += self.get_all_brackets_scores(player_scores=player_scores, guild_scores=guild_scores, key='current_spire', tier=tier)
       if to_append != '':
         to_return.append(to_append)

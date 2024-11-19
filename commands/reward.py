@@ -329,9 +329,11 @@ class Reward(commands.Cog):
     self.selected_reward = {'type' : self.current_level.get('reward_choices')[0].get('name')}
 
     if 'choices' in self.current_level.get('reward_choices')[0].keys():
-      await self.initial_view_with_single_choice(interaction)
-      return
-    
+      if len(self.current_level.get('reward_choices')[0].get('choices')[0].get('choices')) > 1:
+        await self.initial_view_with_single_choice(interaction)
+        return
+      else:  
+        self.selected_reward['quality'] = self.current_level.get('reward_choices')[0].get('choices')[0].get('choices')[0].get('name')
     await self.build_quantity_modal(interaction)
     
   async def build_quantity_modal(self, interaction: discord.Interaction):
