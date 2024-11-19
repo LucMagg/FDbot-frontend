@@ -82,3 +82,13 @@ def int_to_str(input_int):
     return f'{input_int//1000}k'
   
   return f'{input_int/1000}k'
+
+def format_float(input_float: float, how_many:int = 2) -> str|None:
+  if input_float is None:
+    return None
+  
+  if not isinstance(input_float, float):
+    return input_float
+  
+  to_return = f'{input_float:.{how_many}f}'
+  return to_return.rstrip('0').rstrip('.')
