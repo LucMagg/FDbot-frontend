@@ -15,7 +15,7 @@ class SpireRankingService:
     self.response = None
     self.rankings = []
     self.send_message = SendMessage(self.bot)
-    self.spire_start_time = datetime.fromisoformat("2024-11-06T11:00:00")
+    self.spire_start_time = datetime.fromisoformat("2024-11-06T11:00:00+00:00")
     self.spire_length = 14
     self.send_spire_results.start()
     self.date_to_get = None

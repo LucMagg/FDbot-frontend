@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from discord.ui import Button
 
@@ -384,7 +384,7 @@ class Spire(commands.Cog):
       print(self.guilds)
       self.guilds = sorted(self.guilds)
 
-    add_channel_data = {'date': datetime.now().isoformat(), 'channel_id': interaction.channel_id, 'guild': self.spire_data.get('guild')}
+    add_channel_data = {'date': datetime.now(datetime.timezone.utc).isoformat(), 'channel_id': interaction.channel_id, 'guild': self.spire_data.get('guild')}
     await self.bot.back_requests.call('addChannelToSpire', False, [add_channel_data])
     
     self.logger.ok_log('spire')
