@@ -1,13 +1,10 @@
 import discord
-import datetime as discord_time
 from datetime import datetime, timedelta
 from discord.ext import tasks
 
 from utils.misc_utils import get_discord_color
 from utils.sendMessage import SendMessage
 
-local_tz = datetime.now().astimezone().tzinfo
-time = discord_time.time(hour=12, minute=0, tzinfo=local_tz)
 
 class SpireRankingService:
   def __init__(self, bot):
@@ -18,7 +15,7 @@ class SpireRankingService:
     self.response = None
     self.rankings = []
     self.send_message = SendMessage(self.bot)
-    self.spire_start_time = datetime.fromisoformat("2024-11-06T12:00:00")
+    self.spire_start_time = datetime.fromisoformat("2024-11-06T11:00:00")
     self.spire_length = 14
     self.send_spire_results.start()
     self.date_to_get = None
@@ -166,18 +163,19 @@ class SpireRankingService:
       channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
       await channel.send(embed=self.response)
       
-  @tasks.loop(time=time)
+  @tasks.loop(time=datetime.time(hour=11, minute=0, tzinfo=datetime.timezone.utc))
   #@tasks.loop(seconds=30)
   async def send_spire_results(self):
-    diff = datetime.now() - self.spire_start_time
+    now = datetime.now(datetime.timezone.utc)
+    diff = now - self.spire_start_time
     days = diff.days % self.spire_length
     #days = 3
-    print(f'{datetime.now()} || loop: {days}')
+    print(f'{now} || loop: {days}')
     if days % 3 == 0 and days > 0:
-      self.date_to_get = (datetime.now() - timedelta(minutes=1)).isoformat()
+      self.date_to_get = (now - timedelta(minutes=1)).isoformat()
       await self.send_spire_rankings()
     if days == 0:
-      self.date_to_get = (datetime.now() - timedelta(days=2, minutes=1)).isoformat()
+      self.date_to_get = (now - timedelta(days=2, minutes=1)).isoformat()
       await self.send_spire_start()
 
   @send_spire_results.before_loop
