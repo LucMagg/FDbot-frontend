@@ -1,5 +1,5 @@
 import discord
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, time
 from discord.ext import tasks
 
 from utils.misc_utils import get_discord_color
@@ -165,7 +165,7 @@ class SpireRankingService:
       channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
       await channel.send(embed=self.response)
       
-  @tasks.loop(time=datetime.time(hour=11, minute=0, tzinfo=datetime.timezone.utc))
+  @tasks.loop(time=time(hour=11, minute=0, tzinfo=timezone.utc))
   #@tasks.loop(seconds=30)
   async def send_spire_results(self):
     now = datetime.now(datetime.timezone.utc)
