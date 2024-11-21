@@ -173,6 +173,53 @@ class Spire(commands.Cog):
 
     async def callback(self, interaction: discord.Interaction):
       self.outer.spire_data['tier'] = self.outer.selected_tier
+      await self.outer.build_climb_modification_view(interaction)
+
+  class ClimbModificationView(discord.ui.View):
+  ##### VIEW DE VALIDATION DU CLIMB
+    def __init__(self, outer):
+      print('init climb modification view begin')
+      super().__init__(timeout=180)
+      self.outer = outer
+      try:
+        self.add_item(self.outer.ClimbSelector(outer=self.outer))
+        self.add_item(self.outer.ClimbNextButton(outer=self.outer))
+      except Exception as e:
+        print(f'erreur: {e}')
+      print('init climb modification view end')
+
+  class ClimbSelector(discord.ui.Select):
+    def __init__(self, outer):
+      print('init climb selector begin')
+      try:
+        self.outer = outer
+        options = []
+        for t in range(1,5):
+          options.append(discord.SelectOption(label=t, value=t))
+        placeholder = self.outer.selected_climb
+        super().__init__(custom_id='selector', placeholder=placeholder, options=options)
+
+      except Exception as e:
+        print(f'climb selector erreur: {e}')
+      print('init climb selector end')
+
+    async def callback(self, interaction: discord.Interaction):
+      try:
+        print(f'select: {self.values[0]}')
+        self.outer.selected_climb = self.values[0]
+        await self.outer.build_climb_modification_view(interaction)
+      except Exception as e:
+        print(f'climb selector erreur: {e}')
+
+  class ClimbNextButton(discord.ui.Button):
+    def __init__(self, outer):
+      print('init next button begin')
+      self.outer = outer
+      super().__init__(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
+      print('init next button end')
+
+    async def callback(self, interaction: discord.Interaction):
+      self.outer.spire_data['climb'] = self.outer.selected_climb
       await self.outer.build_score_modification_modal(interaction)
 
   class ScoreModificationModal(discord.ui.Modal):
@@ -288,6 +335,7 @@ class Spire(commands.Cog):
     print(f'spire_data: {self.spire_data}')
     self.selected_guild = self.spire_data.get('guild')
     self.selected_tier = self.spire_data.get('tier')
+    self.selected_climb = self.spire_data.get('climb')
 
     if self.spire_data.get('guild') is not None and self.spire_data.get('guild') not in self.guilds:
       self.guilds.append(self.spire_data.get('guild'))
@@ -340,6 +388,11 @@ class Spire(commands.Cog):
   async def build_tier_modification_view(self, interaction: discord.Interaction):
     view = self.TierModificationView(self)
     content = '# Dragonspire Tier #\nChoisissez votre niveau de spire parmi les suivants :'
+    await self.send_message.handle_response(interaction=interaction, content=content, view=view)
+
+  async def build_climb_modification_view(self, interaction: discord.Interaction):
+    view = self.ClimbModificationView(self)
+    content = '# Climb #\nChoisissez le climb parmi les suivants :'
     await self.send_message.handle_response(interaction=interaction, content=content, view=view)
 
   async def build_score_modification_modal(self, interaction: discord.Interaction):
