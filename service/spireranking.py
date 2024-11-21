@@ -168,11 +168,9 @@ class SpireRankingService:
   @tasks.loop(time=datetime.now(tz=timezone.utc).replace(hour=11, minute=0, second=0, microsecond=0).time())
   async def send_spire_results(self):
     try:
-      print('loop!')
       now = datetime.now(tz=timezone.utc)
       diff = now - self.spire_start_time
       days = diff.days % self.spire_length
-      #days = 3
       print(f'{now} || loop: {days}')
       if days % 3 == 0 and days > 0:
         self.date_to_get = (now - timedelta(minutes=1)).isoformat()
@@ -185,7 +183,4 @@ class SpireRankingService:
 
   @send_spire_results.before_loop
   async def before_loop(self):
-    print('loop starts')
     await self.bot.wait_until_ready()
-    print('loop opé!')
-    print(datetime.now(timezone.utc).replace(second=datetime.now(timezone.utc).second+10).time())
