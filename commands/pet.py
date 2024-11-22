@@ -6,7 +6,7 @@ import typing
 
 from service.command import CommandService
 from utils.message import Message
-from utils.sendMessage import SendMessage
+from service.interaction_handler import InteractionHandler
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars, pluriel
 
@@ -15,7 +15,7 @@ class Pet(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.send_message = SendMessage(self.bot)
+    self.interaction_handler = InteractionHandler(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'pet'), None)
     self.help_msg = Message(bot).help('pet')
 
@@ -30,9 +30,9 @@ class Pet(commands.Cog):
   async def pet_app_command(self, interaction: discord.Interaction, pet: str):
     self.logger.command_log('pet', interaction)
     self.logger.log_only('debug', f"arg : {pet}")
-    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
+    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response(pet, interaction)
-    await self.send_message.handle_response(interaction=interaction, response=response)
+    await self.interaction_handler.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('pet')
 
   async def get_response(self, pet, interaction):

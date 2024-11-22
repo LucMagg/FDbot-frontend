@@ -5,7 +5,7 @@ from requests.exceptions import RequestException
 
 from config import DB_PATH
 from utils.str_utils import str_to_slug, slug_to_str
-from utils.sendMessage import SendMessage
+from service.interaction_handler import InteractionHandler
 from utils.message import Message
 
 
@@ -13,7 +13,7 @@ class BackRequests:
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.send_message = SendMessage(self.bot)
+    self.interaction_handler = InteractionHandler(self.bot)
     self.error_msg = Message(bot).message('error')
 
 
@@ -68,7 +68,7 @@ class BackRequests:
       self.logger.error_log(f"Une erreur s'est produite lors de la requête : {str(e)}")
       if interaction:
           error_response = {'title': 'Erreur', 'description': 'Une erreur s\'est produite sur la partie backend <@553925318683918336> :cry:', 'color': 'red'}
-          await self.send_message.handle_response(interaction=interaction, response=error_response)
+          await self.interaction_handler.handle_response(interaction=interaction, response=error_response)
       return False
 
   def build_url(self, my_request, params):
@@ -105,13 +105,13 @@ class BackRequests:
           whichone = my_request.get('command')
           description = f"{self.error_msg.get('description').get(whichone)[0].get('text')} {param} {self.error_msg.get('description').get(whichone)[1].get('text')}"
           response = {'title': self.error_msg.get('title'), 'description': description, 'color': self.error_msg.get('color')}
-          await self.send_message.handle_response(interaction=interaction, response=response)
+          await self.interaction_handler.handle_response(interaction=interaction, response=response)
         return False
       case 500:
         self.logger.log_only('error', f"Réponse du back-end : {response.status_code}")
         if interaction:
           response = {'title': 'Erreur', 'description': 'La partie backend ne répond plus <@553925318683918336> :cry:', 'color': 'red'}
-          await self.send_message.handle_response(interaction=interaction, response=response)
+          await self.interaction_handler.handle_response(interaction=interaction, response=response)
         else:
           self.logger.error_log(f"Erreur du back : {response.json()}")
         return False

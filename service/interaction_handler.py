@@ -7,7 +7,7 @@ from utils.misc_utils import get_discord_color
 
 max_attempts = 3
 
-class SendMessage:
+class InteractionHandler:
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger

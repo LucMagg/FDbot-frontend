@@ -9,14 +9,14 @@ import emoji
 import re
 
 from service.command import CommandService
-from utils.sendMessage import SendMessage
+from service.interaction_handler import InteractionHandler
 
 
 class Level(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.send_message = SendMessage(self.bot)
+    self.interaction_handler = InteractionHandler(self.bot)
     self.level_command = next((c for c in bot.static_data.commands if c['name'] == 'level'), None)
 
     CommandService.init_command(self.level_app_command, self.level_command)
@@ -97,7 +97,7 @@ class Level(commands.Cog):
       else:
         self.remove_both_buttons(submit_button, next_button)
 
-      await self.outer.send_message.handle_response(interaction=interaction, view=self)
+      await self.outer.interaction_handler.handle_response(interaction=interaction, view=self)
 
       
   class ChoiceButton(Button):
@@ -167,7 +167,7 @@ class Level(commands.Cog):
       next_choices_content = f'\n### Choix des {next_view_choices.get('name')} pour le type de reward {self.outer.current_reward_name} : ###'
       
       self.outer.view = self.outer.ChoiceView(outer=self.outer, button_data=self.outer.ButtonData(selectable_choices=next_view_choices.get('choices')))
-      await self.outer.send_message.handle_response(interaction=interaction, content=next_choices_content, view=self.outer.view)
+      await self.outer.interaction_handler.handle_response(interaction=interaction, content=next_choices_content, view=self.outer.view)
     
     def append_main_view_choices(self):
       for crw in self.outer.current_rewards:
@@ -233,7 +233,7 @@ class Level(commands.Cog):
       self.append_current_choices()
       await self.outer.create_level()
       response = {'title': '', 'description': f"# Le niveau {self.outer.name} a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
-      await self.outer.send_message.handle_response(interaction=interaction, response=response)
+      await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('level')
      
 
@@ -252,12 +252,12 @@ class Level(commands.Cog):
     author = str(interaction.user)
     if "spirou" not in author and "prep" not in author:
       error_msg = {'title': '', 'description': '### Cette commande n\'est pas publique pour l\'instant\nVeuillez contacter Prep ou Spirou pour ajouter votre niveau à la liste', 'color': 'red'}
-      await self.send_message.handle_response(interaction=interaction, response=error_msg)
+      await self.interaction_handler.handle_response(interaction=interaction, response=error_msg)
       self.logger.log_only('debug', f"user {author} non autorisé")
       self.logger.ok_log('level')
       return
     
-    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
+    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
   
     self.name = name
     self.standard_energy_cost = standard_energy_cost
@@ -270,14 +270,14 @@ class Level(commands.Cog):
     if self.name in [c.name for c in self.levelname_choices]:
       self.logger.log_only('debug', f"level déjà existant")
       response = {'title': '', 'description': f"# Le niveau {self.name} existe déjà #\nTout est prêt pour l'utilisation des commandes reward et rewardstat :wink:", 'color': 'blue'}
-      await self.send_message.handle_response(interaction=interaction, response=response)
+      await self.interaction_handler.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('level')
       return
     
     if self.standard_energy_cost is None and self.coop_energy_cost is None:
       self.logger.log_only('debug', f"paramètres manquants")
       response = {'title': '', 'description': f"# Erreur #\nUn level doit avoir au moins un coût en énergie (standard ou coop)", 'color': 'red'}
-      await self.send_message.handle_response(interaction=interaction, response=response)
+      await self.interaction_handler.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('level')
       return
 
@@ -288,7 +288,7 @@ class Level(commands.Cog):
     self.global_selected_rewards = []
     self.current_reward_name = ''
     self.view = self.ChoiceView(self, button_data=self.ButtonData(selectable_choices=self.reward_types))
-    await self.send_message.handle_response(interaction=interaction, content="\n ### Choississez le(s) type(s) de reward ###", view=self.view)
+    await self.interaction_handler.handle_response(interaction=interaction, content="\n ### Choississez le(s) type(s) de reward ###", view=self.view)
 
   async def create_level(self):
     gear = next((g for g in self.global_selected_rewards if g.get('name') == 'gear'), None)

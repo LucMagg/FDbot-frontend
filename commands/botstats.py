@@ -4,7 +4,7 @@ from discord import app_commands
 from collections import Counter
 
 from service.command import CommandService
-from utils.sendMessage import SendMessage
+from service.interaction_handler import InteractionHandler
 from utils.misc_utils import stars
 
 
@@ -12,7 +12,7 @@ class Botstats(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.send_message = SendMessage(self.bot)
+    self.interaction_handler = InteractionHandler(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'botstats'), None)
     
     CommandService.init_command(self.botstats_app_command, self.command)
@@ -21,9 +21,9 @@ class Botstats(commands.Cog):
   @app_commands.command(name='botstats')
   async def botstats_app_command(self, interaction: discord.Interaction):
     self.logger.command_log('botstats', interaction)
-    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
+    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response()
-    await self.send_message.handle_response(interaction=interaction, response=response)
+    await self.interaction_handler.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('botstats')
 
   async def get_response(self):

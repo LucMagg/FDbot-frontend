@@ -1,9 +1,8 @@
 import discord
-from datetime import datetime, timedelta, timezone, time
+from datetime import datetime, timedelta, timezone
 from discord.ext import tasks
 
 from utils.misc_utils import get_discord_color
-from utils.sendMessage import SendMessage
 
 
 class SpireRankingService:
@@ -14,7 +13,6 @@ class SpireRankingService:
     self.view = None
     self.response = None
     self.rankings = []
-    self.send_message = SendMessage(self.bot)
     self.spire_start_time = datetime.fromisoformat("2024-11-06T11:00:00+00:00")
     self.spire_length = 14
     self.send_spire_results.start()

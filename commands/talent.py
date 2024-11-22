@@ -4,7 +4,7 @@ from discord import app_commands
 import typing
 
 from utils.message import Message
-from utils.sendMessage import SendMessage
+from service.interaction_handler import InteractionHandler
 from utils.str_utils import str_to_slug
 from utils.misc_utils import stars
 from service.command import CommandService
@@ -15,7 +15,7 @@ class Talent(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.send_message = SendMessage(self.bot)
+    self.interaction_handler = InteractionHandler(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'talent'), None)
     self.help_msg = Message(bot).help('talent')
 
@@ -30,9 +30,9 @@ class Talent(commands.Cog):
   async def talent_app_command(self, interaction: discord.Interaction, talent: str):
     self.logger.command_log('talent', interaction)
     self.logger.log_only('debug', f"arg : {talent}")
-    await self.send_message.handle_response(interaction=interaction, wait_msg=True)
+    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
     response = await self.get_response(talent, interaction)
-    await self.send_message.handle_response(interaction=interaction, response=response)
+    await self.interaction_handler.handle_response(interaction=interaction, response=response)
     self.logger.ok_log('talent')
 
   async def get_response(self, talent, interaction):
