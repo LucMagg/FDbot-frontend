@@ -50,7 +50,7 @@ class Reward(commands.Cog):
     def has_one_selected(self) -> bool:
       for button in self.children:
         if isinstance(button, discord.ui.Button):
-          if button.custom_id not in ['submit', 'next'] and button.is_selected:
+          if button.custom_id not in ['Valider', 'Suivant'] and button.is_selected:
             return True
       return False
     
