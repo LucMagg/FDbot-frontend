@@ -3,7 +3,7 @@ import asyncio
 from discord.errors import HTTPException, InteractionResponded
 
 from utils.message import Message
-from utils.misc_utils import get_discord_color
+from utils.misc_utils import get_discord_color, convert_seconds
 
 max_attempts = 3
 
@@ -17,7 +17,7 @@ class InteractionHandler:
     self.was_a_modal = False
     self.last_content = None
 
-  async def handle_response(self, interaction: discord.Interaction, response=None, content='', view=None, modal=None, wait_msg=False, more_response='', generic_error_msg=False):
+  async def handle_response(self, interaction: discord.Interaction, response=None, content='', view=None, modal=None, wait_msg=False, more_response='', generic_error_msg=False, timeout=None):
     for attempt in range(max_attempts):
       try:
         if modal is not None:
@@ -36,11 +36,11 @@ class InteractionHandler:
         
         if response is not None and view is None:
           self.logger.log_only('debug', ' embed only')
-          embed = self.build_embed(response, wait_msg, more_response, generic_error_msg)
+          embed = self.build_embed(response, wait_msg, more_response, generic_error_msg, timeout)
           return await self.handle_embed_response(interaction, embed)
         
         self.logger.log_only('debug', ' view & embed')
-        embed = self.build_embed(response, wait_msg, more_response, generic_error_msg)
+        embed = self.build_embed(response, wait_msg, more_response, generic_error_msg, timeout)
         return await self.handle_view_and_embed_response(interaction, embed, view)
 
       except (HTTPException, InteractionResponded) as e:
@@ -148,8 +148,8 @@ class InteractionHandler:
         self.logger.log_only('debug', f'erreur : {e}')
         return await interaction.response.send_message(content='', embed=embed, view=view)
 
-  def build_embed(self, response, wait_msg, more_response, generic_error_msg):
-    if response is None and not wait_msg and not generic_error_msg:
+  def build_embed(self, response, wait_msg, more_response, generic_error_msg, timeout):
+    if response is None and not wait_msg and not generic_error_msg and not timeout:
       return None
 
     if response is not None:
@@ -172,6 +172,10 @@ class InteractionHandler:
     elif generic_error_msg:
       error_response = self.error_message.get('description').get('generic')[0].get('text')
       embed = discord.Embed(title = self.error_message.get('title'), description = error_response, color=get_discord_color(self.error_message.get('color')))
+    elif timeout is not None:
+      inactivity_time = convert_seconds(timeout)
+      embed = discord.Embed(title='Session expirée ⏰', description=f'La commande a été annulée après {inactivity_time} :shrug:\nMerci de réitérer la commande :wink:', color=get_discord_color('red'))
+      self.logger.log_only('debug', 'command timeout')
     else:
       self.logger.log_only('warning', ' foirage de paramètres :)')
       return None

@@ -41,8 +41,22 @@ def pluriel(elements: Union[List, int]) -> str:
 		return 's'
 	return ''
 
-def nick(message):
+def nick(message: discord.message) -> str:
 	nickname = message.user.nick
 	if nickname is None:
 		nickname = message.user.global_name
 	return nickname
+
+def convert_seconds(seconds) -> str:
+	to_return = []
+	hours = seconds // 3600
+	if hours > 0:
+		seconds = seconds % 3600
+		to_return.append(f'{hours} heures')
+	minutes = seconds // 60
+	if minutes > 0:
+		seconds = seconds % 60
+		to_return.append(f'{minutes} minutes')
+	if seconds > 0:
+		to_return.append(f'{seconds} secondes')
+	return ', '.join(to_return)
