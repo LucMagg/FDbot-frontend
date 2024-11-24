@@ -30,6 +30,7 @@ class Reward(commands.Cog):
     self.modal = None
     self.times = None
     self.last_interaction = None
+    self.handle_timeout = False
 
   class ChoiceView(discord.ui.View):
 ###### VUES DES CHOIX
@@ -98,7 +99,9 @@ class Reward(commands.Cog):
       await self.outer.interaction_handler.handle_response(interaction=interaction, view=self)
 
     async def on_timeout(self):
-      await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
+      if self.outer.handle_timeout:
+        self.outer.logger.log_only('debug', 'choice view timeout')
+        await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
 
   class ChoiceButton(Button):
     def __init__(self, outer, icon: str, label: str, grade: int = None, has_quantity: bool = None, is_selected: bool = False):
@@ -149,7 +152,7 @@ class Reward(commands.Cog):
 
     async def callback(self, interaction: discord.Interaction):
       self.outer.last_interaction = interaction
-      self.outer.view._timeout_expiry = None
+      self.outer.view.stop()
       if self.label == 'Valider':
         await self.outer.build_validation_view(interaction)
       elif self.label == 'Suivant':
@@ -192,7 +195,7 @@ class Reward(commands.Cog):
       self.add_item(self.input_quantity)
 
     async def on_submit(self, interaction: discord.Interaction):
-      self._timeout_expiry = None
+      self.stop()
       self.outer.last_interaction = interaction
       quantity = str_to_int(self.input_quantity.value)
       failed_because_of_bahabulle = False
@@ -203,6 +206,7 @@ class Reward(commands.Cog):
           failed_because_of_bahabulle = True
       if failed_because_of_bahabulle:
         response = {'title': 'Erreur', 'description': f"{self.input_quantity.value} n'est pas une quantité valide, merci de recommencer :rolling_eyes:", 'color': 'red'}
+        self.outer.handle_timeout = False
         await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
         self.logger.ok_log('reward')
         return
@@ -210,8 +214,10 @@ class Reward(commands.Cog):
       await self.outer.build_validation_view(interaction)
 
     async def on_timeout(self):
-      self.stop()
-      await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
+      if self.outer.handle_timeout:
+        self.outer.logger.log_only('debug', 'input modal timeout')
+        self.stop()
+        await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
                             
   class ValidationView(discord.ui.View):
 ##### VUE FINALE DE VALIDATION DE LA REWARD
@@ -223,7 +229,9 @@ class Reward(commands.Cog):
       self.add_item(self.outer.SubmitRewardButton(outer=self.outer))
     
     async def on_timeout(self):
-      await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
+      if self.outer.handle_timeout:
+        self.outer.logger.log_only('debug', 'validation view timeout')
+        await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
   
   class ManyTimesSelector(discord.ui.Select):
     def __init__(self, outer):
@@ -243,7 +251,8 @@ class Reward(commands.Cog):
       self.outer = outer
 
     async def callback(self, interaction: discord.Interaction):
-      self.outer.view._timeout_expiry = None
+      self.outer.view.stop()
+      self.outer.handle_timeout = False
       description = f'# {self.outer.current_level.get('name')} # \nRécompense annulée :)'
       response = {'title': '', 'description': description, 'color': 'red'}
       await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
@@ -255,7 +264,8 @@ class Reward(commands.Cog):
       super().__init__(style=discord.ButtonStyle.success, label=f'Ajouter {self.outer.times} fois', custom_id='submit')
       
     async def callback(self, interaction: discord.Interaction):
-      self.outer.view._timeout_expiry = None
+      self.outer.view.stop()
+      self.outer.handle_timeout = False
       self.outer.selected_reward['times'] = int(self.outer.times)
       response = await self.outer.bot.level_service.add_reward(emojis=interaction.guild.emojis, level_name=self.outer.current_level.get('name'), reward_data=self.outer.selected_reward)
       await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
@@ -276,6 +286,7 @@ class Reward(commands.Cog):
   async def get_response(self, interaction, level_name):
     self.times = 1
     self.last_interaction = interaction
+    self.handle_timeout = True
     if level_name not in [cl.name for cl in self.levelname_choices]:
       self.logger.log_only('debug', 'level inexistant')
       response = {'title': 'Erreur', 'description': f'Le level {level_name} n\'existe pas.\nMerci de vérifier et/ou de contacter Spirou ou Prep pour la création du level si besoin :wink:', 'color': 'red'}
@@ -332,7 +343,7 @@ class Reward(commands.Cog):
     else:
       content += f'{self.selected_reward.get('quality')} {self.selected_reward.get('item')}'
     content += '. Voulez-vous valider ?'
-    return content
+    return content   
    
   async def setup(self, param_list=None):
     if param_list is None:
