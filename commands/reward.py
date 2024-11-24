@@ -150,8 +150,10 @@ class Reward(commands.Cog):
     async def callback(self, interaction: discord.Interaction):
       self.outer.last_interaction = interaction
       if self.label == 'Valider':
+        self.outer.view._timeout_expiry = None
         await self.outer.build_validation_view(interaction)
       elif self.label == 'Suivant':
+        self.outer.view._timeout_expiry = None
         await self.display_next_view(interaction)
 
     async def display_next_view(self, interaction):
@@ -191,6 +193,7 @@ class Reward(commands.Cog):
       self.add_item(self.input_quantity)
 
     async def on_submit(self, interaction: discord.Interaction):
+      self._timeout_expiry = None
       self.outer.last_interaction = interaction
       quantity = str_to_int(self.input_quantity.value)
       failed_because_of_bahabulle = False
@@ -241,6 +244,7 @@ class Reward(commands.Cog):
       self.outer = outer
 
     async def callback(self, interaction: discord.Interaction):
+      self.outer.view._timeout_expiry = None
       description = f'# {self.outer.current_level.get('name')} # \nRécompense annulée :)'
       response = {'title': '', 'description': description, 'color': 'red'}
       await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
@@ -252,6 +256,7 @@ class Reward(commands.Cog):
       super().__init__(style=discord.ButtonStyle.success, label=f'Ajouter {self.outer.times} fois', custom_id='submit')
       
     async def callback(self, interaction: discord.Interaction):
+      self.outer.view._timeout_expiry = None
       self.outer.selected_reward['times'] = int(self.outer.times)
       response = await self.outer.bot.level_service.add_reward(emojis=interaction.guild.emojis, level_name=self.outer.current_level.get('name'), reward_data=self.outer.selected_reward)
       await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
