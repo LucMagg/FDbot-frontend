@@ -35,11 +35,11 @@ class InteractionHandler:
           return await self.handle_view_response(interaction, content, view)
         
         if response is not None and view is None:
-          self.logger.log_only('debug', ' embed only')
+          self.logger.log_only('debug', 'embed only')
           embed = self.build_embed(response, wait_msg, more_response, generic_error_msg, timeout)
           return await self.handle_embed_response(interaction, embed)
         
-        self.logger.log_only('debug', ' view & embed')
+        self.logger.log_only('debug', 'view & embed')
         embed = self.build_embed(response, wait_msg, more_response, generic_error_msg, timeout)
         return await self.handle_view_and_embed_response(interaction, embed, view)
 
@@ -58,7 +58,7 @@ class InteractionHandler:
     if self.original_message_id and hasattr(interaction, 'message'):
       try:
         original_message = await interaction.channel.fetch_message(self.original_message_id)
-        self.logger.log_only('debug', ' view after modal with an original message')
+        self.logger.log_only('debug', 'view after modal with an original message')
         new_message = await original_message.edit(content=content, embed=None, view=view)
         self.original_message_id = None
         self.was_a_modal = False
@@ -68,7 +68,7 @@ class InteractionHandler:
 
     if self.was_a_modal:
       try:
-        self.logger.log_only('debug', ' view after modal with no original message')
+        self.logger.log_only('debug', 'view after modal with no original message')
         self.was_a_modal = False
         return await interaction.followup.send(content=content, embed=None, view=view)        
       except Exception as e:
@@ -92,7 +92,7 @@ class InteractionHandler:
     if self.original_message_id and hasattr(interaction, 'message'):
       try:
         original_message = await interaction.channel.fetch_message(self.original_message_id)
-        self.logger.log_only('debug', ' embed after modal with an original message')
+        self.logger.log_only('debug', 'embed after modal with an original message')
         new_message = await original_message.edit(content='', embed=embed, view=None)
         self.original_message_id = None
         self.was_a_modal = False
@@ -102,7 +102,7 @@ class InteractionHandler:
 
     if self.was_a_modal:
       try:
-        self.logger.log_only('debug', ' embed after modal with no original message')
+        self.logger.log_only('debug', 'embed after modal with no original message')
         self.was_a_modal = False
         return await interaction.followup.send(content='', embed=embed, view=None)        
       except Exception as e:
@@ -122,7 +122,7 @@ class InteractionHandler:
     if self.original_message_id and hasattr(interaction, 'message'):
       try:
         original_message = await interaction.channel.fetch_message(self.original_message_id)
-        self.logger.log_only('debug', ' embed&view after modal with an original message')
+        self.logger.log_only('debug', 'embed&view after modal with an original message')
         new_message = await original_message.edit(content='', embed=embed, view=view)
         self.original_message_id = None
         self.was_a_modal = False
@@ -132,9 +132,9 @@ class InteractionHandler:
 
     if self.was_a_modal:
       try:
-        self.logger.log_only('debug', ' embed&view after modal with no original message')
+        self.logger.log_only('debug', 'embed&view after modal with no original message')
         self.was_a_modal = False
-        return await interaction.followup.send(content='', embed=embed, view=view)       
+        return await interaction.followup.send(content='', embed=embed, view=view)
       except Exception as e:
         self.logger.log_only('debug', f'erreur : {e}')
 
@@ -177,6 +177,6 @@ class InteractionHandler:
       embed = discord.Embed(title='Session expirée ⏰', description=f'La commande a été annulée après {inactivity_time} :shrug:\nMerci de réitérer la commande :wink:', color=get_discord_color('red'))
       self.logger.log_only('debug', 'command timeout')
     else:
-      self.logger.log_only('warning', ' foirage de paramètres :)')
+      self.logger.log_only('warning', 'foirage de paramètres :)')
       return None
     return embed
