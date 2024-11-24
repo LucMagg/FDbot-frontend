@@ -1,16 +1,12 @@
 import typing
-from typing import Optional
-
 import discord
 from discord.ext import commands
 from discord import app_commands
 from discord.ui import Button
 import emoji
 import re
-
 from service.command import CommandService
 from service.interaction_handler import InteractionHandler
-
 
 class Level(commands.Cog):
   def __init__(self, bot):
@@ -26,23 +22,19 @@ class Level(commands.Cog):
     self.global_selected_rewards = []
     self.current_reward_name = ''
     self.view = None
-    
 
   class ChoiceView(discord.ui.View):
-    def __init__(self, outer, button_data: 'Level.ButtonData'):
+    def __init__(self, outer, selectable_choices):
       super().__init__(timeout=180)
       self.outer = outer
-      self.button_data = button_data
-      self.selectable_choices = button_data.selectable_choices
-      
+      self.selectable_choices = selectable_choices
       for choice in self.selectable_choices:
         icon = choice.get('icon') or ''
         label = choice.get('name')
         grade = choice.get('grade', 0)
         has_quantity = choice.get('has_quantity', None)
         is_selected = choice.get('name') in self.selectable_choices
-        self.add_item(self.outer.ChoiceButton(outer=self.outer, icon=icon, label=label, button_data=button_data, grade=grade, has_quantity=has_quantity, is_selected=is_selected))
-
+        self.add_item(self.outer.ChoiceButton(outer=self.outer, icon=icon, label=label, selectable_choices=self.selectable_choices, grade=grade, has_quantity=has_quantity, is_selected=is_selected))
       self.outer.current_rewards = []
     
     def check_choice(self, list_to_check) -> bool:
@@ -67,17 +59,15 @@ class Level(commands.Cog):
             return button
       return False
     
-    def add_submit(self, submit_button, next_button):
-      if not submit_button:
-        self.add_item(self.outer.ValidateButton(outer=self.outer, button_data=self.button_data, label='submit'))
-      if next_button:
-        self.remove_item(next_button)
-    
-    def add_next(self, submit_button, next_button):
-      if not next_button:
-        self.add_item(self.outer.ValidateButton(outer=self.outer, button_data=self.button_data, label='next'))
-      if submit_button:
-        self.remove_item(submit_button)
+    def add_button(self, submit_button, next_button, label):
+      if label == 'Valider' and not submit_button:
+        self.add_item(self.outer.ValidateButton(outer=self.outer, label=label, selectable_choices=self.selectable_choices))
+        if next_button:
+          self.remove_item(next_button)
+      if label == 'Suivant' and not next_button:
+        self.add_item(self.outer.ValidateButton(outer=self.outer, label=label, selectable_choices=self.selectable_choices))
+        if submit_button:
+          self.remove_item(submit_button)
 
     def remove_both_buttons(self, submit_button, next_button):
       if submit_button:
@@ -86,40 +76,29 @@ class Level(commands.Cog):
         self.remove_item(next_button)
   
     async def manage_validate_buttons(self, interaction):
-      submit_button = self.return_validate_buttons('submit')
-      next_button = self.return_validate_buttons('next')
-
+      submit_button = self.return_validate_buttons('Valider')
+      next_button = self.return_validate_buttons('Suivant')
       if len(self.outer.current_rewards) > 0 :
-        if self.are_all_choices_done():
-          self.add_submit(submit_button, next_button)
-        else:
-          self.add_next(submit_button, next_button)
+        self.add_button(submit_button, next_button, 'Valider' if self.are_all_choices_done() else 'Suivant')
       else:
         self.remove_both_buttons(submit_button, next_button)
-
       await self.outer.interaction_handler.handle_response(interaction=interaction, view=self)
 
-      
   class ChoiceButton(Button):
-    def __init__(self, outer, icon: str, label: str, button_data:'Level.ButtonData', grade: int = None, has_quantity: bool = None, is_selected: bool = False):
+    def __init__(self, outer, icon: str, label: str, selectable_choices, grade: int = None, has_quantity: bool = None, is_selected: bool = False):
       style = discord.ButtonStyle.primary if is_selected else discord.ButtonStyle.secondary
       super().__init__(label=label, style=style, custom_id=label)
-
       if not outer.current_reward_name == '':
         emoji = self.get_emoji_from_icon(icon)
         if emoji is not None:
           super().__init__(emoji=emoji)      
-
       self.outer = outer
       self.has_quantity = has_quantity
       self.icon = icon
       self.grade = grade
-      self.selectable_choices = button_data.selectable_choices
-      self.button_data = button_data
+      self.selectable_choices = selectable_choices
       self.is_selected = is_selected
       self.label = label
-
-      
 
     async def callback(self, interaction: discord.Interaction):
       self.is_selected = not self.is_selected
@@ -131,12 +110,10 @@ class Level(commands.Cog):
         to_check['remaining_choices'] = len(found_reward.get('choices'))
       else:
         to_check['remaining_choices'] = 0
-
       if self.is_selected:
         self.outer.current_rewards.append(to_check)
       else:
         self.outer.current_rewards.remove(to_check)
-
       await self.outer.ChoiceView.manage_validate_buttons(self.outer.view, interaction)
 
     def get_emoji_from_icon(self, icon):
@@ -148,25 +125,20 @@ class Level(commands.Cog):
       return emoji.emojize(icon)
 
   class ValidateButton(Button):
-    def __init__(self, outer, button_data:'Level.ButtonData', label):
+    def __init__(self, outer, selectable_choices, label):
       super().__init__(label=label, style=discord.ButtonStyle.success, custom_id=label)
       self.outer = outer
-      self.selectable_choices = button_data.selectable_choices
-      self.button_data = button_data
+      self.selectable_choices = selectable_choices
       self.label = label
 
     async def callback(self, interaction: discord.Interaction):
-      if self.label == 'submit':
-        await self.submit_new_level(interaction)
-      else:
-        await self.display_next_view(interaction)
+      await self.submit_new_level(interaction) if self.label == 'Valider' else await self.display_next_view(interaction)
 
     async def display_next_view(self, interaction):
       self.append_current_choices()
       next_view_choices = self.select_next_view()
       next_choices_content = f'\n### Choix des {next_view_choices.get('name')} pour le type de reward {self.outer.current_reward_name} : ###'
-      
-      self.outer.view = self.outer.ChoiceView(outer=self.outer, button_data=self.outer.ButtonData(selectable_choices=next_view_choices.get('choices')))
+      self.outer.view = self.outer.ChoiceView(outer=self.outer, selectable_choices=next_view_choices.get('choices'))
       await self.outer.interaction_handler.handle_response(interaction=interaction, content=next_choices_content, view=self.outer.view)
     
     def append_main_view_choices(self):
@@ -199,7 +171,6 @@ class Level(commands.Cog):
       item['choices'][choices_iter] = {'name': gr_choices[choices_iter].get('name'), 'icon': gr_choices[choices_iter].get('icon'), 'grade': gr_choices[choices_iter].get('grade'), 'choices': []}
       if len(gr_choices) == 1 and item.get('remaining_choices') == 1:
         return
-      
       for cr in self.outer.current_rewards:
         del cr['remaining_choices']
         item['choices'][choices_iter]['choices'].append(cr)
@@ -231,15 +202,11 @@ class Level(commands.Cog):
         
     async def submit_new_level(self, interaction):
       self.append_current_choices()
+      print('there')
       await self.outer.create_level()
       response = {'title': '', 'description': f"# Le niveau {self.outer.name} a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
       await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('level')
-     
-
-  class ButtonData:
-    def __init__(self, selectable_choices):
-      self.selectable_choices = selectable_choices
 
   async def level_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await CommandService.return_autocompletion(self.levelname_choices, current)
@@ -256,14 +223,11 @@ class Level(commands.Cog):
       self.logger.log_only('debug', f"user {author} non autorisé")
       self.logger.ok_log('level')
       return
-    
     await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
-  
     self.name = name
     self.standard_energy_cost = standard_energy_cost
     self.coop_energy_cost = coop_energy_cost
     self.interaction = interaction
-
     await self.get_level_response(interaction)
 
   async def get_level_response(self, interaction):
@@ -273,36 +237,35 @@ class Level(commands.Cog):
       await self.interaction_handler.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('level')
       return
-    
     if self.standard_energy_cost is None and self.coop_energy_cost is None:
       self.logger.log_only('debug', f"paramètres manquants")
       response = {'title': '', 'description': f"# Erreur #\nUn level doit avoir au moins un coût en énergie (standard ou coop)", 'color': 'red'}
       await self.interaction_handler.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('level')
       return
-
     await self.build_initial_view(interaction)
   
   async def build_initial_view(self, interaction):
     self.current_rewards = []
     self.global_selected_rewards = []
     self.current_reward_name = ''
-    self.view = self.ChoiceView(self, button_data=self.ButtonData(selectable_choices=self.reward_types))
+    self.view = self.ChoiceView(self, selectable_choices=self.reward_types)
     await self.interaction_handler.handle_response(interaction=interaction, content="\n ### Choississez le(s) type(s) de reward ###", view=self.view)
 
   async def create_level(self):
+    print('here')
     gear = next((g for g in self.global_selected_rewards if g.get('name') == 'gear'), None)
+    print(gear)
     if gear is not None:
       types = ','.join([hero_type.get('name') for hero_type in gear.get('choices')[0].get('choices')])
       positions = ','.join([gear_position.get('name') for gear_position in gear.get('choices')[2].get('choices')])
       items = await self.bot.back_requests.call('getUniqueGearByTypeAndPosition', False, [types, positions])
+      print(items)
       items = sorted(items, key=lambda i: i.get('name'))
-
       item_choices = []
       for i in range(len(items)):
         item_choices.append({'name': items[i].get('name'), 'icon': '', 'grade': i})
       gear['choices'] = [gear.get('choices')[1], {'name': 'Item', 'icon': '', 'grade': 3, 'choices': item_choices}]
-      
     data = {
       "name": self.name,
       "standard_energy_cost": self.standard_energy_cost,
@@ -310,10 +273,9 @@ class Level(commands.Cog):
       "reward_choices": self.global_selected_rewards
     }
     await self.bot.back_requests.call('addLevel', False, [data])
-    await self.bot.update_service.command_setup_updater(['level'], False)
+    await self.bot.update_service.command_setup_updater(['level'], False) 
       
-      
-  async def setup(self, param_list):
+  async def setup(self, param_list=None):
     if param_list is None:
       choices = await self.bot.back_requests.call('getAllLevels', False)
     else:
