@@ -475,10 +475,10 @@ class Spire(commands.Cog):
 
     add_channel_data = {'date': datetime.now(tz=timezone.utc).isoformat(), 'channel_id': interaction.channel_id, 'guild': self.spire_data.get('guild')}
     await self.bot.back_requests.call('addChannelToSpire', False, [add_channel_data])
-    
+    await self.setup()
     self.logger.ok_log('spire')
 
-  async def setup(self, param_list):
+  async def setup(self, param_list=None):
     try:
       if param_list is None:
         guilds = await self.bot.back_requests.call('getAllExistingGuilds', False)

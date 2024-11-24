@@ -278,7 +278,8 @@ class Reward(commands.Cog):
       self.outer.selected_reward['times'] = int(self.outer.times)
       response = await self.outer.bot.level_service.add_reward(emojis=interaction.guild.emojis, level_name=self.outer.current_level.get('name'), reward_data=self.outer.selected_reward)
       await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
-      self.logger.ok_log('reward')
+      await self.outer.setup()
+      self.outer.logger.ok_log('reward')
 
   
 ##### COMMANDE
@@ -359,7 +360,7 @@ class Reward(commands.Cog):
     content += '. Voulez-vous valider ?'
     return content
    
-  async def setup(self, param_list):
+  async def setup(self, param_list=None):
     if param_list is None:
       self.levels = await self.bot.back_requests.call('getAllLevels', False)
     else:
