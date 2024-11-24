@@ -149,11 +149,10 @@ class Reward(commands.Cog):
 
     async def callback(self, interaction: discord.Interaction):
       self.outer.last_interaction = interaction
+      self.outer.view._timeout_expiry = None
       if self.label == 'Valider':
-        self.outer.view._timeout_expiry = None
         await self.outer.build_validation_view(interaction)
       elif self.label == 'Suivant':
-        self.outer.view._timeout_expiry = None
         await self.display_next_view(interaction)
 
     async def display_next_view(self, interaction):
