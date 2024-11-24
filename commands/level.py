@@ -202,7 +202,6 @@ class Level(commands.Cog):
         
     async def submit_new_level(self, interaction):
       self.append_current_choices()
-      print('there')
       await self.outer.create_level()
       response = {'title': '', 'description': f"# Le niveau {self.outer.name} a été ajouté#\nMerci d'avoir ajouté ce niveau ! :kissing_heart:", 'color': 'blue'}
       await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
@@ -253,14 +252,11 @@ class Level(commands.Cog):
     await self.interaction_handler.handle_response(interaction=interaction, content="\n ### Choississez le(s) type(s) de reward ###", view=self.view)
 
   async def create_level(self):
-    print('here')
     gear = next((g for g in self.global_selected_rewards if g.get('name') == 'gear'), None)
-    print(gear)
     if gear is not None:
       types = ','.join([hero_type.get('name') for hero_type in gear.get('choices')[0].get('choices')])
       positions = ','.join([gear_position.get('name') for gear_position in gear.get('choices')[2].get('choices')])
       items = await self.bot.back_requests.call('getUniqueGearByTypeAndPosition', False, [types, positions])
-      print(items)
       items = sorted(items, key=lambda i: i.get('name'))
       item_choices = []
       for i in range(len(items)):
