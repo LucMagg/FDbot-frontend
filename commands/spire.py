@@ -171,11 +171,12 @@ class Spire(commands.Cog):
     def __init__(self, outer):
       outer.logger.log_only('debug', 'init next button')
       self.outer = outer
-      super().__init__(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
+      super().__init__(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit', disabled=False if self.outer.selected_tier else True)
 
     async def callback(self, interaction: discord.Interaction):
-      self.outer.spire_data['tier'] = self.outer.selected_tier
-      await self.outer.build_climb_modification_view(interaction)
+      if self.outer.selected_tier:
+        self.outer.spire_data['tier'] = self.outer.selected_tier
+        await self.outer.build_climb_modification_view(interaction)
 
   class ClimbModificationView(discord.ui.View):
   ##### VIEW DE VALIDATION DU CLIMB
