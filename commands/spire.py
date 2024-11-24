@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from discord.ui import Button
 
@@ -195,7 +195,7 @@ class Spire(commands.Cog):
         self.outer = outer
         options = []
         for t in range(1,5):
-          options.append(discord.SelectOption(label=t, value=t))
+          options.append(discord.SelectOption(label=t, value=int(t)))
         placeholder = self.outer.selected_climb
         super().__init__(custom_id='selector', placeholder=placeholder, options=options)
 
@@ -206,7 +206,7 @@ class Spire(commands.Cog):
     async def callback(self, interaction: discord.Interaction):
       try:
         print(f'select: {self.values[0]}')
-        self.outer.selected_climb = self.values[0]
+        self.outer.selected_climb = int(self.values[0])
         await self.outer.build_climb_modification_view(interaction)
       except Exception as e:
         print(f'climb selector erreur: {e}')
@@ -437,7 +437,7 @@ class Spire(commands.Cog):
       print(self.guilds)
       self.guilds = sorted(self.guilds)
 
-    add_channel_data = {'date': datetime.now(datetime.timezone.utc).isoformat(), 'channel_id': interaction.channel_id, 'guild': self.spire_data.get('guild')}
+    add_channel_data = {'date': datetime.now(tz=timezone.utc).isoformat(), 'channel_id': interaction.channel_id, 'guild': self.spire_data.get('guild')}
     await self.bot.back_requests.call('addChannelToSpire', False, [add_channel_data])
     
     self.logger.ok_log('spire')
