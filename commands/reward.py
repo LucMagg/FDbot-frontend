@@ -107,7 +107,7 @@ class Reward(commands.Cog):
         
       await self.outer.interaction_handler.handle_response(interaction=interaction, view=self)
 
-    async def on_timeout(self) :
+    async def on_timeout(self):
       await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
 
   class ChoiceButton(Button):
@@ -229,7 +229,8 @@ class Reward(commands.Cog):
       self.outer.selected_reward['quantity'] = quantity
       await self.outer.build_validation_view(interaction)
 
-    async def on_timeout(self) :
+    async def on_timeout(self):
+      self.stop()
       await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
                             
   class ValidationView(discord.ui.View):
@@ -241,7 +242,7 @@ class Reward(commands.Cog):
       self.add_item(self.outer.CancelButton(outer=self.outer))
       self.add_item(self.outer.SubmitRewardButton(outer=self.outer))
     
-    async def on_timeout(self) :
+    async def on_timeout(self):
       await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
   
   class ManyTimesSelector(discord.ui.Select):
