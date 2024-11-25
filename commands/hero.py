@@ -54,7 +54,11 @@ class Hero(commands.Cog):
     return self.print_header(hero) + self.print_stats(hero) + self.print_lead(hero) + self.print_talents(hero) + self.print_gear(hero) + await self.print_pet(hero, pet) + self.print_comments(hero, Message(self.bot).message('nocomment'))
   
   def print_header(self, hero):	
-    return f"# {hero['name']}   {stars(hero['stars'])} #\n{hero['color']} {str.lower(hero['species'])} {str.lower(hero['heroclass'])}\n"
+    to_return = f'# {hero['name']}   {stars(hero['stars'])} #\n'
+    if 'exclusive' in hero.keys() and hero.get('exclusive') is not None:
+      to_return += f'## {hero.get('exclusive')} Exclusive ##\n'
+    to_return += f'{hero['color']} {str.lower(hero['species'])} {str.lower(hero['heroclass'])}\n'
+    return to_return
 
   def print_stats(self, hero):
     to_return = f"### Attributs max (A{hero['ascend']} - lvl {hero['lvl_max']}) : ###\n"
