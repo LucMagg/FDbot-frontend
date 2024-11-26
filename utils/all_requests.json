@@ -244,5 +244,16 @@
     "url": "spire/del_message_id",
     "type": "delete",
     "param0": "json"
+  },
+  {
+    "name": "getExclusiveHeroes",
+    "url": "hero/exclusive",
+    "type": "get",
+    "param0": "json"
+  },
+  {
+    "name": "getExclusiveTypes",
+    "url": "hero/exclusives",
+    "type": "get"
   }
 ]

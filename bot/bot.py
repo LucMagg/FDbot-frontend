@@ -80,6 +80,7 @@ class MyBot(commands.Bot):
       'commands.reward',
       'commands.xp',
       'commands.spire',
+      'commands.exclusive'
       #'commands.testcommand'
     ]
 
