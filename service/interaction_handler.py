@@ -18,6 +18,7 @@ class InteractionHandler:
     self.last_content = None
 
   async def handle_response(self, interaction: discord.Interaction, response=None, content='', view=None, modal=None, wait_msg=False, more_response='', generic_error_msg=False, timeout=None):
+    self.logger.log_only('debug', f'interactionId: {interaction.id}')
     for attempt in range(max_attempts):
       try:
         if modal is not None:
