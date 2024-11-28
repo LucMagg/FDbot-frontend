@@ -255,5 +255,11 @@
     "name": "getExclusiveTypes",
     "url": "hero/exclusives",
     "type": "get"
+  },
+  {
+    "name": "getLevelsByGear",
+    "url": "levels/gear",
+    "type": "get",
+    "param0": "json"
   }
 ]
