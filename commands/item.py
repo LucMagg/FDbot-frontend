@@ -67,7 +67,6 @@ class Item(commands.Cog):
     json_param = {'item': item.get('item')}
     if item.get('quality') is not None:
       json_param['quality'] = item.get('quality').get('name')
-    print(json_param)
     levels = await self.bot.back_requests.call('getLevelsByGear', False, [json_param])
     if levels:
       return levels
@@ -91,7 +90,6 @@ class Item(commands.Cog):
   def print_sorted_list(self, list) -> str:
     list = sorted(list, key = lambda l: (l.get('stars'), l.get('name')))
     to_return = '### Héros pouvant équiper cet objet :###\n'
-
     star = 0
     for l in list:
       if star != l.get('stars'):
@@ -113,7 +111,14 @@ class Item(commands.Cog):
   
   def print_drop_levels(self, item, levels) -> str:
     to_return = '### Où trouver cet objet :###\n'
-
+    if item.get('quality'):
+      to_return += self.drop_levels_with_quality(item, levels)
+    else:
+      to_return += self.drop_levels_without_quality(item, levels)
+    return to_return
+  
+  def drop_levels_with_quality(self, item, levels) -> str:
+    to_return = ''
     for level in levels:
       to_return += f'- {level.get('name')}'
       total_appearances = sum([r.get('total_appearances') for r in level.get('rewards')])
@@ -122,12 +127,35 @@ class Item(commands.Cog):
         found_item = next((r for r in found_quality.get('details') if r.get('item') == item.get('item')), None)
         if found_item:
           loot = ceil(total_appearances / found_item.get('appearances'))
-          to_return += f' : 1 chance sur {loot} (probabilité réelle)'
+          to_return += f' : 1 chance sur {loot} (réel)'
         else:
           gear_reward = next((r for r in level.get('reward_choices') if r.get('name') == 'gear'), None)
           item_reward_count = len(next((r.get('choices') for r in gear_reward.get('choices') if r.get('name') == 'Item'), None))
           loot = ceil(total_appearances / found_quality.get('total_appearances') * item_reward_count)
-          to_return += f' : 1 chance sur {loot} (probabilité calculée)'
+          to_return += f' : 1 chance sur {loot} (calculé)'
+      to_return += '\n'
+    return to_return
+  
+  def drop_levels_without_quality(self, item, levels) -> str:
+    to_return = ''
+    for level in levels:
+      to_return += f'- {level.get('name')}'
+      total_appearances = sum([r.get('total_appearances') for r in level.get('rewards')])
+      found_items = [d for r in level.get('rewards') for d in r.get('details') if r.get('type') == 'gear' and d.get('item') == item.get('item')]
+      if len(found_items) > 0:
+        loot = ceil(total_appearances / sum(f.get('appearances') for f in found_items))
+        to_return += f' : 1 chance sur {loot} (réel)'
+      else:
+        gear_reward = next((r for r in level.get('reward_choices') if r.get('name') == 'gear'), None)
+        item_reward_count = len(next((r.get('choices') for r in gear_reward.get('choices') if r.get('name') == 'Item'), None))
+        if len(level.get('reward_choices')) == 1:
+          to_return += f' : 1 chance sur {item_reward_count} (calculé)'
+        else:
+          items_appearances = [r for r in level.get('rewards') if r.get('type') == 'gear']
+          if len(items_appearances) > 0:
+            items_appearances_count = sum([r.get('total_appearances') for r in items_appearances])
+            loot = ceil(total_appearances / items_appearances_count * item_reward_count)
+            to_return += f' : 1 chance sur {loot} (calculé)'
       to_return += '\n'
     return to_return
 
