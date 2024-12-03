@@ -22,30 +22,33 @@ class Reward(commands.Cog):
     CommandService.init_command(self.reward_app_command, self.reward_command)
     self.levels = None
     self.levelname_choices = None
-    
-    self.current_level = None
-    self.current_reward_choice = None
-    self.selected_reward = None
-    self.view = None
-    self.modal = None
-    self.times = None
-    self.last_interaction = None
-    self.handle_timeout = False
+
+  class CommandSharedData():
+    def __init__(self):
+      self.current_level = None
+      self.current_reward_choice = None
+      self.selected_reward = None
+      self.view = None
+      self.modal = None
+      self.times = None
+      self.last_interaction = None
+      self.handle_timeout = False
 
   class ChoiceView(discord.ui.View):
 ###### VUES DES CHOIX
-    def __init__(self, outer, selectable_choices):
+    def __init__(self, outer, selectable_choices, command_shared_data):
       super().__init__(timeout=180)
       self.outer = outer
       self.selectable_choices = selectable_choices
+      self.command_shared_data = command_shared_data
       
       for choice in self.selectable_choices:
-        icon = choice.get('icon') if self.outer.current_reward_choice != 'type' else ''
+        icon = choice.get('icon') if self.command_shared_data.current_reward_choice != 'type' else ''
         label = choice.get('name')
         grade = choice.get('grade', 0)
         has_quantity = choice.get('has_quantity', None)
         is_selected = choice.get('name') in self.selectable_choices
-        self.add_item(self.outer.ChoiceButton(outer=self.outer, icon=icon, label=label, grade=grade, has_quantity=has_quantity, is_selected=is_selected))     
+        self.add_item(self.outer.ChoiceButton(outer=self.outer, icon=icon, label=label, grade=grade, has_quantity=has_quantity, is_selected=is_selected, command_shared_data=self.command_shared_data))     
 
     def has_one_selected(self) -> bool:
       for button in self.children:
@@ -55,13 +58,13 @@ class Reward(commands.Cog):
       return False
     
     def are_all_choices_done(self) -> bool:
-      if not 'type' in self.outer.selected_reward.keys():
+      if not 'type' in self.command_shared_data.selected_reward.keys():
         return False # rien n'est encore saisi -> False
-      selected_choice = next((c for c in self.outer.current_level.get('reward_choices') if c.get('name') == self.outer.selected_reward.get('type')), None)
+      selected_choice = next((c for c in self.command_shared_data.current_level.get('reward_choices') if c.get('name') == self.command_shared_data.selected_reward.get('type')), None)
       if selected_choice.get('has_quantity'):
         return False # il y a encore des quantités à saisir -> False
       last_choice = selected_choice.get('choices')[len(selected_choice.get('choices')) - 1]
-      if self.outer.current_reward_choice != last_choice.get('name').lower():
+      if self.command_shared_data.current_reward_choice != last_choice.get('name').lower():
         return False # il y a encore des choix à faire -> False
       return True
 
@@ -74,11 +77,11 @@ class Reward(commands.Cog):
     
     def add_button(self, submit_button, next_button, label):
       if label == 'Valider' and not submit_button:
-        self.add_item(self.outer.ValidateButton(outer=self.outer, label=label))
+        self.add_item(self.outer.ValidateButton(outer=self.outer, label=label, command_shared_data=self.command_shared_data))
         if next_button:
           self.remove_item(next_button)
       if label == 'Suivant' and not next_button:
-        self.add_item(self.outer.ValidateButton(outer=self.outer, label=label))
+        self.add_item(self.outer.ValidateButton(outer=self.outer, label=label, command_shared_data=self.command_shared_data))
         if submit_button:
           self.remove_item(submit_button)
 
@@ -88,8 +91,9 @@ class Reward(commands.Cog):
       if next_button:
         self.remove_item(next_button)
   
-    async def manage_validate_buttons(self, interaction):
-      self.outer.last_interaction = interaction
+    async def manage_validate_buttons(self, interaction: discord.Interaction, command_shared_data):
+      self.command_shared_data = command_shared_data
+      self.command_shared_data.last_interaction = interaction
       submit_button = self.return_validate_buttons('Valider')
       next_button = self.return_validate_buttons('Suivant')
       if self.has_one_selected():
@@ -99,12 +103,12 @@ class Reward(commands.Cog):
       await self.outer.interaction_handler.handle_response(interaction=interaction, view=self)
 
     async def on_timeout(self):
-      if self.outer.handle_timeout:
+      if self.command_shared_data.handle_timeout:
         self.outer.logger.log_only('debug', 'choice view timeout')
-        await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.handle_response(interaction=self.command_shared_data.last_interaction, timeout=self.timeout)
 
   class ChoiceButton(Button):
-    def __init__(self, outer, icon: str, label: str, grade: int = None, has_quantity: bool = None, is_selected: bool = False):
+    def __init__(self, outer, icon: str, label: str, command_shared_data, grade: int = None, has_quantity: bool = None, is_selected: bool = False):
       style = discord.ButtonStyle.primary if is_selected else discord.ButtonStyle.secondary
       super().__init__(label=label, style=style, custom_id=str_to_slug(label))
       emoji = self.get_emoji_from_icon(icon)
@@ -116,21 +120,22 @@ class Reward(commands.Cog):
       self.grade = grade
       self.is_selected = is_selected
       self.label = label
+      self.command_shared_data = command_shared_data
 
     async def callback(self, interaction: discord.Interaction):
-      self.outer.last_interaction = interaction
+      self.command_shared_data.last_interaction = interaction
       self.is_selected = not self.is_selected
       self.style = discord.ButtonStyle.primary if self.is_selected else discord.ButtonStyle.secondary
       if self.is_selected:
-        self.outer.selected_reward[self.outer.current_reward_choice] = self.label
+        self.command_shared_data.selected_reward[self.command_shared_data.current_reward_choice] = self.label
         self.unselect_all_others(self.custom_id)
       else:
-        if self.outer.current_reward_choice in self.outer.selected_reward.keys():
-          del self.outer.selected_reward[self.outer.current_reward_choice]
-      await self.outer.ChoiceView.manage_validate_buttons(self.outer.view, interaction)
+        if self.command_shared_data.current_reward_choice in self.command_shared_data.selected_reward.keys():
+          del self.command_shared_data.selected_reward[self.command_shared_data.current_reward_choice]
+      await self.outer.ChoiceView.manage_validate_buttons(self.command_shared_data.view, interaction, self.command_shared_data)
 
     def unselect_all_others(self, selected_id):
-      for button in self.outer.view.children:
+      for button in self.command_shared_data.view.children:
         if isinstance(button, discord.ui.Button):
           if button.custom_id not in [selected_id, 'Valider', 'Suivant']:
             button.is_selected = False
@@ -145,58 +150,60 @@ class Reward(commands.Cog):
       return emoji.emojize(icon)
 
   class ValidateButton(Button):
-    def __init__(self, outer, label):
+    def __init__(self, outer, label, command_shared_data):
       super().__init__(label=label, style=discord.ButtonStyle.success, custom_id=label)
       self.outer = outer
       self.label = label
+      self.command_shared_data = command_shared_data
 
     async def callback(self, interaction: discord.Interaction):
-      self.outer.last_interaction = interaction
-      self.outer.view.stop()
+      self.command_shared_data.last_interaction = interaction
+      self.command_shared_data.view.stop()
       if self.label == 'Valider':
-        await self.outer.build_validation_view(interaction)
+        await self.outer.build_validation_view(interaction=interaction, command_shared_data=self.command_shared_data)
       elif self.label == 'Suivant':
-        await self.display_next_view(interaction)
+        await self.display_next_view(interaction=interaction)
 
     async def display_next_view(self, interaction):
       next_view_choices = self.select_next_view()
       if next_view_choices:
-        next_choices_content = f'\n### Choix {self.outer.current_reward_choice} pour le type de reward {self.outer.selected_reward.get('type')} : ###'
-        self.outer.view = self.outer.ChoiceView(outer=self.outer, selectable_choices=next_view_choices)
-        await self.outer.interaction_handler.handle_response(interaction=interaction, content=next_choices_content, view=self.outer.view)
+        next_choices_content = f'\n### Choix {self.command_shared_data.current_reward_choice} pour le type de reward {self.command_shared_data.selected_reward.get('type')} : ###'
+        self.command_shared_data.view = self.outer.ChoiceView(outer=self.outer, selectable_choices=next_view_choices, command_shared_data=self.command_shared_data)
+        await self.outer.interaction_handler.handle_response(interaction=interaction, content=next_choices_content, view=self.command_shared_data.view)
         return
-      await self.outer.build_quantity_modal(interaction)
+      await self.outer.build_quantity_modal(interaction=interaction, command_shared_data=self.command_shared_data)
 
     def select_next_view(self):
-      current_reward = next((c for c in self.outer.current_level.get('reward_choices') if c.get('name') == self.outer.selected_reward.get('type')), None)
-      if self.outer.current_reward_choice == 'type':
-        self.outer.current_reward_choice = current_reward.get('choices')[0].get('name').lower()
+      current_reward = next((c for c in self.command_shared_data.current_level.get('reward_choices') if c.get('name') == self.command_shared_data.selected_reward.get('type')), None)
+      if self.command_shared_data.current_reward_choice == 'type':
+        self.command_shared_data.current_reward_choice = current_reward.get('choices')[0].get('name').lower()
         return sorted(current_reward.get('choices')[0].get('choices'), key=lambda x:x['grade']) 
       else:
         current_choices = current_reward.get('choices')
         next_choices = []
         try:
           for i, choice in enumerate(current_choices):
-            if choice.get('name').lower() == self.outer.current_reward_choice:
+            if choice.get('name').lower() == self.command_shared_data.current_reward_choice:
               next_choices = current_choices[i + 1]
               break
         except:
           if len(next_choices) == 0:
             return False
-        self.outer.current_reward_choice = next_choices.get('name').lower()
+        self.command_shared_data.current_reward_choice = next_choices.get('name').lower()
         return sorted(next_choices.get('choices'), key=lambda x: x['grade'])
 
   class InputModal(discord.ui.Modal):
 ##### MODALE DE QUANTITÉ
-    def __init__(self, outer, title:str):
+    def __init__(self, outer, title:str, command_shared_data):
       super().__init__(title=title, timeout=180)
       self.outer = outer
+      self.command_shared_data = command_shared_data
       self.input_quantity = discord.ui.TextInput(label='Entrez une quantité', custom_id='input', required=True)
       self.add_item(self.input_quantity)
 
     async def on_submit(self, interaction: discord.Interaction):
       self.stop()
-      self.outer.last_interaction = interaction
+      self.command_shared_data.last_interaction = interaction
       quantity = str_to_int(self.input_quantity.value)
       failed_because_of_bahabulle = False
       if quantity is None:
@@ -206,68 +213,72 @@ class Reward(commands.Cog):
           failed_because_of_bahabulle = True
       if failed_because_of_bahabulle:
         response = {'title': 'Erreur', 'description': f"{self.input_quantity.value} n'est pas une quantité valide, merci de recommencer :rolling_eyes:", 'color': 'red'}
-        self.outer.handle_timeout = False
+        self.command_shared_data.handle_timeout = False
         await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
         self.logger.ok_log('reward')
         return
-      self.outer.selected_reward['quantity'] = quantity
-      await self.outer.build_validation_view(interaction)
+      self.command_shared_data.selected_reward['quantity'] = quantity
+      await self.outer.build_validation_view(interaction=interaction, command_shared_data=self.command_shared_data)
 
     async def on_timeout(self):
-      if self.outer.handle_timeout:
+      if self.command_shared_data.handle_timeout:
         self.outer.logger.log_only('debug', 'input modal timeout')
         self.stop()
-        await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.handle_response(interaction=self.command_shared_data.last_interaction, timeout=self.timeout)
                             
   class ValidationView(discord.ui.View):
 ##### VUE FINALE DE VALIDATION DE LA REWARD
-    def __init__(self, outer):
+    def __init__(self, outer, command_shared_data):
       super().__init__(timeout=180)
       self.outer = outer
-      self.add_item(self.outer.ManyTimesSelector(outer=self.outer))
-      self.add_item(self.outer.CancelButton(outer=self.outer))
-      self.add_item(self.outer.SubmitRewardButton(outer=self.outer))
+      self.command_shared_data = command_shared_data
+      self.add_item(self.outer.ManyTimesSelector(outer=self.outer, command_shared_data=self.command_shared_data))
+      self.add_item(self.outer.CancelButton(outer=self.outer, command_shared_data=self.command_shared_data))
+      self.add_item(self.outer.SubmitRewardButton(outer=self.outer, command_shared_data=self.command_shared_data))
     
     async def on_timeout(self):
-      if self.outer.handle_timeout:
+      if self.command_shared_data.handle_timeout:
         self.outer.logger.log_only('debug', 'validation view timeout')
-        await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.handle_response(interaction=self.command_shared_data.last_interaction, timeout=self.timeout)
   
   class ManyTimesSelector(discord.ui.Select):
-    def __init__(self, outer):
+    def __init__(self, outer, command_shared_data):
       self.outer = outer
-      super().__init__(custom_id='selector', placeholder=self.outer.times)
+      self.command_shared_data = command_shared_data
+      super().__init__(custom_id='selector', placeholder=self.command_shared_data.times)
       for i in range(1,6):
         self.add_option(label=i, value=i)
 
     async def callback(self, interaction: discord.Interaction):
-      self.outer.last_interaction = interaction
-      self.outer.times = self.values[0]
-      await self.outer.build_validation_view(interaction)
+      self.command_shared_data.last_interaction = interaction
+      self.command_shared_data.times = self.values[0]
+      await self.outer.build_validation_view(interaction=interaction, command_shared_data=self.command_shared_data)
   
   class CancelButton(Button):
-    def __init__(self, outer):
+    def __init__(self, outer, command_shared_data):
       super().__init__(style=discord.ButtonStyle.red, label='Annuler', custom_id='annuler')
       self.outer = outer
+      self.command_shared_data = command_shared_data
 
     async def callback(self, interaction: discord.Interaction):
-      self.outer.view.stop()
-      self.outer.handle_timeout = False
-      description = f'# {self.outer.current_level.get('name')} # \nRécompense annulée :)'
+      self.command_shared_data.view.stop()
+      self.command_shared_data.handle_timeout = False
+      description = f'# {self.command_shared_data.current_level.get('name')} # \nRécompense annulée :)'
       response = {'title': '', 'description': description, 'color': 'red'}
       await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
       self.outer.logger.ok_log('reward')
 
   class SubmitRewardButton(Button):
-    def __init__(self, outer):
+    def __init__(self, outer, command_shared_data):
       self.outer = outer
-      super().__init__(style=discord.ButtonStyle.success, label=f'Ajouter {self.outer.times} fois', custom_id='submit')
+      self.command_shared_data = command_shared_data
+      super().__init__(style=discord.ButtonStyle.success, label=f'Ajouter {self.command_shared_data.times} fois', custom_id='submit')
       
     async def callback(self, interaction: discord.Interaction):
-      self.outer.view.stop()
-      self.outer.handle_timeout = False
-      self.outer.selected_reward['times'] = int(self.outer.times)
-      response = await self.outer.bot.level_service.add_reward(emojis=interaction.guild.emojis, level_name=self.outer.current_level.get('name'), reward_data=self.outer.selected_reward)
+      self.command_shared_data.view.stop()
+      self.command_shared_data.handle_timeout = False
+      self.command_shared_data.selected_reward['times'] = int(self.command_shared_data.times)
+      response = await self.outer.bot.level_service.add_reward(emojis=interaction.guild.emojis, level_name=self.command_shared_data.current_level.get('name'), reward_data=self.command_shared_data.selected_reward)
       await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
       await self.outer.setup()
       self.outer.logger.ok_log('reward')
@@ -284,64 +295,65 @@ class Reward(commands.Cog):
     await self.get_response(interaction, level)
 
   async def get_response(self, interaction, level_name):
-    self.times = 1
-    self.last_interaction = interaction
-    self.handle_timeout = True
+    command_shared_data = self.CommandSharedData()
+    command_shared_data.times = 1
+    command_shared_data.last_interaction = interaction
+    command_shared_data.handle_timeout = True
     if level_name not in [cl.name for cl in self.levelname_choices]:
       self.logger.log_only('debug', 'level inexistant')
       response = {'title': 'Erreur', 'description': f'Le level {level_name} n\'existe pas.\nMerci de vérifier et/ou de contacter Spirou ou Prep pour la création du level si besoin :wink:', 'color': 'red'}
       await self.interaction_handler.handle_response(interaction=interaction, response=response)
       self.logger.ok_log('reward')
       return
-    self.current_level = next((l for l in self.levels if str_to_slug(level_name) == l.get('name_slug')), None)
-    await self.build_initial_view(interaction)
+    command_shared_data.current_level = next((l for l in self.levels if str_to_slug(level_name) == l.get('name_slug')), None)
+    await self.build_initial_view(interaction=interaction, command_shared_data=command_shared_data)
 
-  async def initial_view_with_multiple_choices(self, interaction: discord.Interaction):
-    self.current_reward_choice = 'type'
-    self.selected_reward = {}
-    choices = sorted(self.current_level.get('reward_choices'), key=lambda x:x['grade'])
-    self.view = self.ChoiceView(self, selectable_choices=choices)
-    await self.interaction_handler.handle_response(interaction=interaction, content="\n ### Choississez le type de reward ###", view=self.view)
+  async def initial_view_with_multiple_choices(self, interaction: discord.Interaction, command_shared_data: CommandSharedData):
+    command_shared_data.current_reward_choice = 'type'
+    command_shared_data.selected_reward = {}
+    choices = sorted(command_shared_data.current_level.get('reward_choices'), key=lambda x:x['grade'])
+    command_shared_data.view = self.ChoiceView(self, selectable_choices=choices, command_shared_data=command_shared_data)
+    await self.interaction_handler.handle_response(interaction=interaction, content="\n ### Choississez le type de reward ###", view=command_shared_data.view)
 
-  async def initial_view_with_single_choice(self, interaction: discord.Interaction):
-    self.current_reward_choice = self.current_level.get('reward_choices')[0].get('choices')[0].get('name').lower()
-    choices = sorted(self.current_level.get('reward_choices')[0].get('choices')[0].get('choices'), key=lambda x:x['grade'])
-    initial_view_content = f'\n### Choix {self.current_reward_choice} pour le type de reward {self.selected_reward.get('type')} : ###'
-    self.view = self.ChoiceView(self, selectable_choices=choices)
-    await self.interaction_handler.handle_response(interaction=interaction, content=initial_view_content, view=self.view)
+  async def initial_view_with_single_choice(self, interaction: discord.Interaction, command_shared_data: CommandSharedData):
+    command_shared_data.current_reward_choice = command_shared_data.current_level.get('reward_choices')[0].get('choices')[0].get('name').lower()
+    choices = sorted(command_shared_data.current_level.get('reward_choices')[0].get('choices')[0].get('choices'), key=lambda x:x['grade'])
+    initial_view_content = f'\n### Choix {command_shared_data.current_reward_choice} pour le type de reward {command_shared_data.selected_reward.get('type')} : ###'
+    self.view = self.ChoiceView(self, selectable_choices=choices, command_shared_data=command_shared_data)
+    await self.interaction_handler.handle_response(interaction=interaction, content=initial_view_content, view=command_shared_data.view)
 
-  async def build_initial_view(self, interaction: discord.Interaction):
-    if len(self.current_level.get('reward_choices')) > 1:
-      await self.initial_view_with_multiple_choices(interaction)
+  async def build_initial_view(self, interaction: discord.Interaction, command_shared_data: CommandSharedData):
+    if len(command_shared_data.current_level.get('reward_choices')) > 1:
+      await self.initial_view_with_multiple_choices(interaction=interaction, command_shared_data=command_shared_data)
       return
-    self.selected_reward = {'type' : self.current_level.get('reward_choices')[0].get('name')}
-    if 'choices' in self.current_level.get('reward_choices')[0].keys():
-      if len(self.current_level.get('reward_choices')[0].get('choices')[0].get('choices')) > 1:
-        await self.initial_view_with_single_choice(interaction)
+    command_shared_data.selected_reward = {'type' : command_shared_data.current_level.get('reward_choices')[0].get('name')}
+    if 'choices' in command_shared_data.current_level.get('reward_choices')[0].keys():
+      if len(command_shared_data.current_level.get('reward_choices')[0].get('choices')[0].get('choices')) > 1:
+        await self.initial_view_with_single_choice(interaction=interaction, command_shared_data=command_shared_data)
         return
       else:
-        self.selected_reward['quality'] = self.current_level.get('reward_choices')[0].get('choices')[0].get('choices')[0].get('name')
-    await self.build_quantity_modal(interaction)
+        command_shared_data.selected_reward['quality'] = command_shared_data.current_level.get('reward_choices')[0].get('choices')[0].get('choices')[0].get('name')
+    await self.build_quantity_modal(interaction=interaction, command_shared_data=command_shared_data)
     
-  async def build_quantity_modal(self, interaction: discord.Interaction):
-    quantity_content = f'Choix de la quantité de {self.selected_reward.get('type')}'
-    self.modal = self.InputModal(outer=self, title=quantity_content)
-    await self.interaction_handler.handle_response(interaction=interaction, modal=self.modal)
+  async def build_quantity_modal(self, interaction: discord.Interaction, command_shared_data: CommandSharedData):
+    quantity_content = f'Choix de la quantité de {command_shared_data.selected_reward.get('type')}'
+    command_shared_data.modal = self.InputModal(outer=self, title=quantity_content, command_shared_data=command_shared_data)
+    await self.interaction_handler.handle_response(interaction=interaction, modal=command_shared_data.modal)
 
-  async def build_validation_view(self, interaction:discord.Interaction):
-    self.view = self.ValidationView(outer=self)
-    await self.interaction_handler.handle_response(interaction=interaction, content=self.build_final_content(), view=self.view)
+  async def build_validation_view(self, interaction:discord.Interaction, command_shared_data: CommandSharedData):
+    command_shared_data.view = self.ValidationView(outer=self, command_shared_data=command_shared_data)
+    await self.interaction_handler.handle_response(interaction=interaction, content=self.build_final_content(command_shared_data=command_shared_data), view=command_shared_data.view)
 
-  def build_final_content(self):
-    content = f'# {self.current_level.get('name')} #\n'
-    content += f'Vous êtes sur le point d\'ajouter {self.times} fois '
-    if 'quantity' in self.selected_reward.keys():
-      content += str(int_to_str(self.selected_reward.get('quantity')))
-      if 'quality' in self.selected_reward.keys():
-        content += f' {self.selected_reward.get('quality')}'
-      content += f' {self.selected_reward.get('type')}'
+  def build_final_content(self, command_shared_data: CommandSharedData):
+    content = f'# {command_shared_data.current_level.get('name')} #\n'
+    content += f'Vous êtes sur le point d\'ajouter {command_shared_data.times} fois '
+    if 'quantity' in command_shared_data.selected_reward.keys():
+      content += str(int_to_str(command_shared_data.selected_reward.get('quantity')))
+      if 'quality' in command_shared_data.selected_reward.keys():
+        content += f' {command_shared_data.selected_reward.get('quality')}'
+      content += f' {command_shared_data.selected_reward.get('type')}'
     else:
-      content += f'{self.selected_reward.get('quality')} {self.selected_reward.get('item')}'
+      content += f'{command_shared_data.selected_reward.get('quality')} {command_shared_data.selected_reward.get('item')}'
     content += '. Voulez-vous valider ?'
     return content   
    
