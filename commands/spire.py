@@ -4,7 +4,7 @@ from discord import app_commands
 from typing import Optional
 from datetime import datetime, timezone
 
-from discord.ui import Button
+from discord.ui import Button, Select, button
 
 from service.interaction_handler import InteractionHandler
 from service.command import CommandService
@@ -23,7 +23,6 @@ class Spire(commands.Cog):
     self.tiers = ['Platinum','Gold','Silver','Bronze','Hero','Adventurer']
     self.selected_guild = None
     self.selected_tier = None
-    self.spire_data = None
     self.last_interaction = None
     self.handle_timeout = False
 
@@ -33,57 +32,35 @@ class Spire(commands.Cog):
       outer.logger.log_only('debug', 'init guild modification view')
       super().__init__(timeout=180)
       self.outer = outer
+      self.selected_guild = None
+
+      options = [discord.SelectOption(label='Ajouter une nouvelle guilde', value='Ajouter une nouvelle guilde')]
+      for g in self.outer.guilds:
+        options.append(discord.SelectOption(label=g, value=g))
+      placeholder = self.outer.selected_guild if self.outer.selected_guild else 'Ajouter une nouvelle guilde'
+      selector = Select(row=0, custom_id='selector', options=options, placeholder=placeholder)
+
+      async def guild_selected(interaction: discord.Interaction, select: discord.ui.Select):
+        self.selected_guild = select.values[0]
+      selector.callback = guild_selected
       try:
-        self.add_item(self.outer.GuildSelector(outer=self.outer))
+        self.add_item(selector)
         self.add_item(self.outer.GuildNextButton(outer=self.outer))
       except Exception as e:
         outer.logger.log_only('warning', f'guild modification view error: {e}')
+
+    @discord.ui.button(row=1, style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
+    async def go_to_guild_creation_or_tier_modification(self, interaction: discord.Interaction, button: discord.ui.Button):
+      if self.selected_guild == 'Ajouter une nouvelle guilde':
+        await self.outer.build_guild_creation_modal(interaction)
+      else:
+        interaction.extras['guild'] = self.selected_guild
+        await self.outer.build_tier_modification_view(interaction)
 
     async def on_timeout(self):
       if self.outer.handle_timeout:
         self.outer.logger.log_only('debug', 'guild modification view timeout')
         await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
-
-  class GuildSelector(discord.ui.Select):
-    def __init__(self, outer):
-      outer.logger.log_only('debug', 'init guild selector')
-      try:
-        self.outer = outer
-        options = [discord.SelectOption(label='Ajouter une nouvelle guilde', value='Ajouter une nouvelle guilde')]
-        for g in self.outer.guilds:
-          options.append(discord.SelectOption(label=g, value=g))
-        if self.outer.selected_guild is not None:
-          guild = self.outer.selected_guild
-          if guild != 'Ajouter une nouvelle guilde' and guild not in self.outer.guilds:
-            options.append(discord.SelectOption(label=guild, value=guild))
-        placeholder = self.outer.selected_guild if self.outer.selected_guild else 'Ajouter une nouvelle guilde'
-        self.outer.selected_guild = placeholder
-        super().__init__(custom_id='selector', placeholder=placeholder, options=options)
-      except Exception as e:
-        outer.logger.log_only('warning', f'guildselector error: {e}')
-
-    async def callback(self, interaction: discord.Interaction):
-      try:
-        self.outer.logger.log_only('debug', f'select: {self.values[0]}')
-        self.outer.selected_guild = self.values[0]
-        await self.outer.build_guild_modification_view(interaction)
-      except Exception as e:
-        self.outer.logger.log_only('warning', f'guildselector error: {e}')
-
-  class GuildNextButton(discord.ui.Button):
-    def __init__(self, outer):
-      outer.logger.log_only('debug', 'init next button')
-      self.outer = outer
-      super().__init__(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
-
-    async def callback(self, interaction: discord.Interaction):
-      if self.outer.selected_guild == 'Ajouter une nouvelle guilde':
-        self.outer.logger.log_only('debug', 'nouvelle guilde')
-        await self.outer.build_guild_creation_modal(interaction)
-      else:
-        self.outer.spire_data['guild'] = self.outer.selected_guild
-        self.outer.logger.log_only('debug',f'guild: {self.outer.spire_data.get('guild')}')
-        await self.outer.build_tier_modification_view(interaction)
 
   class GuildCreationModal(discord.ui.Modal):
 ##### MODALE DE CREATION DE GUILDE
@@ -103,12 +80,8 @@ class Spire(commands.Cog):
         await self.outer.build_tier_modification_view(interaction)
 
     def does_guild_already_exist(self):
-      for g in self.outer.guilds:
-        if self.input_guild.value.lower() == g.lower():
-          self.outer.selected_guild = g
-          return True
-      return False
-    
+      return any(g.lower() == self.input_guild.value.lower() for g in self.outer.guilds)
+
     async def on_timeout(self):
       if self.outer.handle_timeout:
         self.outer.logger.log_only('debug', 'guild creation modal timeout')
@@ -124,70 +97,49 @@ class Spire(commands.Cog):
     def __init__(self, outer):
       outer.logger.log_only('debug', 'init guild already exists view')
       super().__init__(timeout=180)
-      no_button = Button(style=discord.ButtonStyle.danger, label='Non', custom_id='no')
-      no_button.callback = outer.build_guild_modification_view
-      yes_button = Button(style=discord.ButtonStyle.success, label='Oui', custom_id='yes')
-      async def yes_callback(interaction: discord.Interaction):  # Use default parameter to capture the message
-        outer.spire_data['guild'] = outer.selected_guild
-        await outer.build_tier_modification_view(interaction)
-      yes_button.callback = yes_callback
-      yes_button.callback = outer.build_tier_modification_view
-      self.add_item(no_button)
-      self.add_item(yes_button)
-    
-    async def on_timeout(self):
+      self.outer = outer
+
+    @discord.ui.button(style=discord.ButtonStyle.danger, label='Non', custom_id='no')
+    async def no_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+      self.outer.build_guild_modification_view(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.success, label='Oui', custom_id='yes')
+    async def no_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+      self.outer.build_tier_modification_view(interaction)
+
+  async def on_timeout(self):
       if self.outer.handle_timeout:
         self.outer.logger.log_only('debug', 'guild already exists view timeout')
         await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
 
   class TierModificationView(discord.ui.View):
 ##### VIEW DE VALIDATION DU TIER
+    tiers = ['Platinum', 'Gold', 'Silver', 'Bronze', 'Hero', 'Adventurer']
+
     def __init__(self, outer):
       outer.logger.log_only('debug', 'init tier modification view')
       super().__init__(timeout=180)
       self.outer = outer
-      try:
-        self.add_item(self.outer.TierSelector(outer=self.outer))
-        self.add_item(self.outer.TierNextButton(outer=self.outer))
-      except Exception as e:
-        outer.logger.log_only('warning', f'tier modification view error: {e}')
-    
+      self.selected_tier = None
+
+    @discord.ui.select(
+      row=0,
+      options=[discord.SelectOption(label=t, value=t) for t in tiers],
+      placeholder="Sélectionne le tier"
+    )
+    async def tier_selected(self, interaction: discord.Interaction, select: discord.ui.Select):
+      self.selected_tier = select.values[0]
+
+    @discord.ui.button(row=1, style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
+    async def go_to_climb_modification(self, interaction: discord.Interaction, button: discord.ui.Button):
+      if self.selected_tier:
+        interaction.extras['tier']=self.selected_tier
+        await self.outer.build_climb_modification_view(interaction)
+
     async def on_timeout(self):
       if self.outer.handle_timeout:
         self.outer.logger.log_only('debug', 'tier modification view timeout')
         await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
-
-  class TierSelector(discord.ui.Select):
-    def __init__(self, outer):
-      outer.logger.log_only('debug', 'init tier selector')
-      try:
-        self.outer = outer
-        options = []
-        for t in self.outer.tiers:
-          options.append(discord.SelectOption(label=t, value=t))
-        placeholder = self.outer.selected_tier
-        super().__init__(custom_id='selector', placeholder=placeholder, options=options)
-      except Exception as e:
-        outer.logger.log_only('warning', f'tier selector error: {e}')
-
-    async def callback(self, interaction: discord.Interaction):
-      try:
-        self.outer.logger.log_only('debug', f'select: {self.values[0]}')
-        self.outer.selected_tier = self.values[0]
-        await self.outer.build_tier_modification_view(interaction)
-      except Exception as e:
-        self.outer.logger.log_only('warning', f'tier selector error: {e}')
-
-  class TierNextButton(discord.ui.Button):
-    def __init__(self, outer):
-      outer.logger.log_only('debug', 'init next button')
-      self.outer = outer
-      super().__init__(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit', disabled=False if self.outer.selected_tier else True)
-
-    async def callback(self, interaction: discord.Interaction):
-      if self.outer.selected_tier:
-        self.outer.spire_data['tier'] = self.outer.selected_tier
-        await self.outer.build_climb_modification_view(interaction)
 
   class ClimbModificationView(discord.ui.View):
   ##### VIEW DE VALIDATION DU CLIMB
@@ -195,47 +147,21 @@ class Spire(commands.Cog):
       outer.logger.log_only('debug', 'init climb modification view')
       super().__init__(timeout=180)
       self.outer = outer
-      try:
-        self.add_item(self.outer.ClimbSelector(outer=self.outer))
-        self.add_item(self.outer.ClimbNextButton(outer=self.outer))
-      except Exception as e:
-        outer.logger.log_only('warning', f'climb modification view error: {e}')
+      self.selected_climb = 0
+
+    @discord.ui.select(row=0, options=[discord.SelectOption(label=i, value=i) for i in range(1, 5)], placeholder="Sélectionne la montée")
+    async def climb_selected(self, interaction: discord.Interaction, select: discord.ui.Select):
+      self.selected_climb = select.values[0]
+
+    @discord.ui.button(row=1, style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
+    async def go_to_score_modification(self, interaction: discord.Interaction, button: discord.ui.Button):
+      interaction.extras['climb'] = self.selected_climb
+      await self.outer.build_score_modification_modal(interaction)
 
     async def on_timeout(self):
       if self.outer.handle_timeout:
         self.outer.logger.log_only('debug', 'climb modification view timeout')
         await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
-
-  class ClimbSelector(discord.ui.Select):
-    def __init__(self, outer):
-      outer.logger.log_only('debug', 'init climb selector')
-      try:
-        self.outer = outer
-        options = []
-        for t in range(1,5):
-          options.append(discord.SelectOption(label=t, value=int(t)))
-        placeholder = self.outer.selected_climb
-        super().__init__(custom_id='selector', placeholder=placeholder, options=options)
-      except Exception as e:
-        outer.logger.log_only('warning', f'climb selector error: {e}')
-
-    async def callback(self, interaction: discord.Interaction):
-      try:
-        self.outer.logger.log_only('debug',f'select: {self.values[0]}')
-        self.outer.selected_climb = int(self.values[0])
-        await self.outer.build_climb_modification_view(interaction)
-      except Exception as e:
-        self.outer.logger.log_only('warning', f'climb selector error: {e}')
-
-  class ClimbNextButton(discord.ui.Button):
-    def __init__(self, outer):
-      outer.logger.log_only('debug', 'init next button')
-      self.outer = outer
-      super().__init__(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
-
-    async def callback(self, interaction: discord.Interaction):
-      self.outer.spire_data['climb'] = self.outer.selected_climb
-      await self.outer.build_score_modification_modal(interaction)
 
   class ScoreModificationModal(discord.ui.Modal):
 ##### MODALE DE MODIFICATION DU SCORE
@@ -264,7 +190,7 @@ class Spire(commands.Cog):
       except Exception as e:
         self.outer.logger.log_only('warning', f'modal submit error: {e}')
       if not None in self.outer.spire_data.values():
-        await self.outer.build_validation_view(interaction)
+        await self.outer.build_validation_view(interaction, spire_data)
       else:
         alert_message = '# Erreur ! #\n'
         if self.outer.spire_data.get('floors') is None:
@@ -330,21 +256,20 @@ class Spire(commands.Cog):
 
   class ValidationView(discord.ui.View):
 ##### VIEW DE VALIDATION FINALE
-    def __init__(self, outer):
+    def __init__(self, outer, data):
       outer.logger.log_only('debug', 'init validation view')
       super().__init__(timeout=180)
       self.outer = outer
-      try:
-        validation_modif_button = Button(style=discord.ButtonStyle.danger, label='Modifier', custom_id='modif')
-        validation_modif_button.callback = outer.build_guild_modification_view
-        validation_ok_button = Button(style=discord.ButtonStyle.success, label='Valider', custom_id='valid')
-        validation_ok_button.callback = outer.send_validation_message
-        self.add_item(validation_modif_button)
-        self.add_item(validation_ok_button)
-      except Exception as e:
-        outer.logger.log_only('warning', f'validation view error: {e}')
 
-    async def on_timeout(self):
+    @discord.ui.button(style=discord.ButtonStyle.danger, label='Modifier', custom_id='modif')
+    async def validation_modif(self, interation: discord.Interaction, button: discord.ui.Button):
+      self.outer.build_guild_modification_view(interation)
+
+    @discord.ui.button(style=discord.ButtonStyle.success, label='Valider', custom_id='valid')
+    async def validation_ok(self, interation: discord.Interaction, button: discord.ui.Button):
+      self.outer.send_validation_message(interation)
+
+  async def on_timeout(self):
       if self.outer.handle_timeout:
         self.outer.logger.log_only('debug', 'validation view timeout')
         await self.outer.interaction_handler.handle_response(interaction=self.outer.last_interaction, timeout=self.timeout)
@@ -354,28 +279,26 @@ class Spire(commands.Cog):
   async def spire_app_command(self, interaction: discord.Interaction, screenshot: discord.Attachment):
     self.logger.command_log('spire', interaction)
     self.logger.log_only('debug', f"arg : {screenshot.url}")
+    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
     await self.get_response(screenshot.url, interaction)
 
   async def get_response(self, image_url, interaction: discord.Interaction):
     self.last_interaction = interaction
     self.handle_timeout = True
-    self.spire_data = self.get_user_and_guildname(interaction)
-    self.spire_data['image_url'] = image_url
-    self.spire_data = await self.bot.back_requests.call('extractSpireData', False, [self.spire_data])
-    self.logger.log_only('debug', f'spire_data: {self.spire_data}')
-    self.selected_guild = self.spire_data.get('guild')
-    self.selected_tier = self.spire_data.get('tier')
-    self.selected_climb = self.spire_data.get('climb')
-    if self.spire_data.get('guild') is not None and self.spire_data.get('guild') not in self.guilds:
-      self.guilds.append(self.spire_data.get('guild'))
+    extract_input = self.get_extract_input(interaction, image_url)
+    spire_data = await self.bot.back_requests.call('extractSpireData', False, [extract_input])
+    interaction.extras['spire_data'] = spire_data
+    self.logger.log_only('debug', f'spire_data: {spire_data}')
+    guild = spire_data.get('guild')
+    if guild is not None and guild not in self.guilds:
+      self.guilds.append(guild)
       self.guilds = sorted(self.guilds)
-    if None in self.spire_data.values():
+    if None in spire_data.values():
       await self.build_guild_modification_view(interaction)
     else:
-      await self.build_validation_view(interaction)
+      await self.build_validation_view(interaction, spire_data)
 
-  def get_user_and_guildname(self, interaction: discord.Interaction):
-    self.spire_data = None
+  def get_extract_input(self, interaction: discord.Interaction, image_url):
     user = interaction.user.display_name
     self.logger.log_only('debug', f'user: {user}')
     if '[' in user and ']' in user:
@@ -391,10 +314,10 @@ class Spire(commands.Cog):
         guild = f'[{guild}'
       self.logger.log_only('debug', f'username: {username}')
       self.logger.log_only('debug', f'guild: {guild}')
-      return {'username': username, 'guild': guild}
+      return {'username': username, 'guild': guild, 'image_url': image_url}
     else:
       self.logger.log_only('debug', 'user only')
-      return {'username': user, 'guild': None}
+      return {'username': user, 'guild': None, 'image_url': image_url}
 
   async def build_guild_modification_view(self, interaction: discord.Interaction):
     self.view = self.GuildModificationView(self)
@@ -441,42 +364,44 @@ class Spire(commands.Cog):
     self.last_interaction = interaction
     await self.interaction_handler.handle_response(interaction=interaction, content=message, view=self.view)
 
-  async def build_validation_view(self, interaction: discord.Interaction):
+  async def build_validation_view(self, interaction: discord.Interaction, data):
     self.view.stop()
-    self.logger.log_only('debug', f'spire_data: {self.spire_data}')
-    self.view = self.ValidationView(self)
-    content = self.build_validation_content()
+    self.logger.log_only('debug', f'spire_data: {data}')
+    self.view = self.ValidationView(self, data)
+    content = self.build_validation_content(data)
     self.last_interaction = interaction
     await self.interaction_handler.handle_response(interaction=interaction, content=content, view=self.view)
 
-  def build_validation_content(self):
-    self.spire_data['score'] = self.spire_data.get('floors') * 50000 - self.spire_data.get('loss') * 1000 - self.spire_data.get('turns') * 100 + self.spire_data.get('bonus') * 250
+  def build_validation_content(self, data):
+    score = data.get('floors') * 50000 - data.get('loss') * 1000 - data.get('turns') * 100 + data.get('bonus') * 250
     to_return = '# Validation du score #\n'
     to_return += f'Vous êtes sur le point de valider votre score de spire avec les informations suivantes :\n'
-    to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• Guilde : {self.spire_data.get('guild')}\n'
-    to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• Tier : {self.spire_data.get('tier')}\n'
-    to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• Climb : {self.spire_data.get('climb')}\n'
-    to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• Score : {self.spire_data.get('score')}\n'
+    to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• Guilde : {data.get('guild')}\n'
+    to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• Tier : {data.get('tier')}\n'
+    to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• Climb : {data.get('climb')}\n'
+    to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• Score : {score}\n'
     return to_return
 
   async def send_validation_message(self, interaction: discord.Interaction):
     self.view.stop()
     self.handle_timeout = False
-    post_spire = await self.bot.back_requests.call('addSpireData', False, [self.spire_data])
+    spire_data = interaction.extras.get('spire_data')
+    print(f"Spire data from interaction extra: {spire_data}")
+    post_spire = await self.bot.back_requests.call('addSpireData', False, [spire_data])
     if not post_spire:
       await self.interaction_handler.handle_response(interaction=interaction, response={'title': 'Erreur !', 'description': 'Ton score n\'a pas pu être ajouté :cry:\nMerci de réitérer la commande :innocent:', 'color': 'red'})
       self.logger.ok_log('spire')
       return
     description = '# Score validé ! #\n'
-    description += f'Merci pour ta participation {self.spire_data.get('username')} :wink:\n\n'
-    description += await self.bot.spire_service.display_scores_after_posting_spire(tier=self.spire_data.get('tier'))
-    response = {'title': '', 'description': description, 'color': 'blue', 'image': self.spire_data.get('image_url')}
+    description += f'Merci pour ta participation {spire_data.get('username')} :wink:\n\n'
+    description += await self.bot.spire_service.display_scores_after_posting_spire(tier=spire_data.get('tier'))
+    response = {'title': '', 'description': description, 'color': 'blue', 'image': spire_data.get('image_url')}
     await self.interaction_handler.handle_response(interaction=interaction, response=response)
-    if self.spire_data.get('guild') not in self.guilds:
+    if spire_data.get('guild') not in self.guilds:
       self.logger.log_only('debug', 'add new guild to self.guilds')
-      self.guilds.append(self.spire_data.get('guild'))
+      self.guilds.append(spire_data.get('guild'))
       self.guilds = sorted(self.guilds)
-    add_channel_data = {'date': datetime.now(tz=timezone.utc).isoformat(), 'channel_id': interaction.channel_id, 'guild': self.spire_data.get('guild')}
+    add_channel_data = {'date': datetime.now(tz=timezone.utc).isoformat(), 'channel_id': interaction.channel_id, 'guild': spire_data.get('guild')}
     await self.bot.back_requests.call('addChannelToSpire', False, [add_channel_data])
     await self.setup()
     self.logger.ok_log('spire')
