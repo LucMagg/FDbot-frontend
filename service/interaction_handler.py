@@ -61,6 +61,7 @@ class InteractionHandler:
         original_message = await interaction.channel.fetch_message(self.original_message_id)
         self.logger.log_only('debug', 'view after modal with an original message')
         new_message = await original_message.edit(content=content, embed=None, view=view)
+        self.last_content = content
         self.original_message_id = None
         self.was_a_modal = False
         return new_message
