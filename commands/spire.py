@@ -12,7 +12,7 @@ class Spire(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.interaction_handler = InteractionHandler(self.bot)
+    self.interaction_handler = None
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'spire'), None)
     CommandService.init_command(self.spire_app_command, self.command)
     self.tiers = ['Platinum','Gold','Silver','Bronze','Hero','Adventurer']
@@ -293,6 +293,7 @@ class Spire(commands.Cog):
   
   @app_commands.command(name='spire')
   async def spire_app_command(self, interaction: discord.Interaction, screenshot: discord.Attachment):
+    self.interaction_handler = InteractionHandler(self.bot)
     self.logger.command_log('spire', interaction)
     self.logger.log_only('debug', f"arg : {screenshot.url}")
     await self.get_response(screenshot.url, interaction)
