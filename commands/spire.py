@@ -62,7 +62,7 @@ class Spire(commands.Cog):
     async def on_timeout(self):
       if self.request_spire_data.handle_timeout:
         self.outer.logger.log_only('debug', 'guild modification view timeout')
-        await self.outer.interaction_handler.handle_response(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.send_timeout_message(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
 
   class GuildCreationModal(discord.ui.Modal, title='Création de guilde'):
 ##### MODALE DE CREATION DE GUILDE
@@ -93,7 +93,7 @@ class Spire(commands.Cog):
       if self.request_spire_data.handle_timeout:
         self.outer.logger.log_only('debug', 'guild creation modal timeout')
         self.stop()
-        await self.outer.interaction_handler.handle_response(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.send_timeout_message(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
   class GuildAlreadyExistsView(discord.ui.View):
 ##### VIEW DE VALIDATION DE LA GUILDE DEJA EXISTANTE
     def __init__(self, outer, request_spire_data):
@@ -116,7 +116,7 @@ class Spire(commands.Cog):
     async def on_timeout(self):
       if self.request_spire_data.handle_timeout:
         self.outer.logger.log_only('debug', 'guild already exists view timeout')
-        await self.outer.interaction_handler.handle_response(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.send_timeout_message(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
 
   class TierModificationView(discord.ui.View):
 ##### VIEW DE VALIDATION DU TIER
@@ -139,7 +139,7 @@ class Spire(commands.Cog):
       self.tier_selector.placeholder = self.request_spire_data.selected_tier
       self.go_to_climb_modification.disabled = False
       self.request_spire_data.last_interaction = interaction
-      await self.outer.interaction_handler.handle_response(interaction=interaction, view=self)
+      await self.outer.interaction_handler.send_view(interaction=interaction, view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
     async def go_to_climb_modification(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -151,7 +151,7 @@ class Spire(commands.Cog):
     async def on_timeout(self):
       if self.request_spire_data.handle_timeout:
         self.outer.logger.log_only('debug', 'tier modification view timeout')
-        await self.outer.interaction_handler.handle_response(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)      
+        await self.outer.interaction_handler.send_timeout_message(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)      
 
   class ClimbModificationView(discord.ui.View):
   ##### VIEW DE VALIDATION DU CLIMB
@@ -169,7 +169,7 @@ class Spire(commands.Cog):
       self.climb_selector.placeholder = str(self.request_spire_data.selected_climb)
       self.go_to_score_modification.disabled = False
       self.request_spire_data.last_interaction = interaction
-      await self.outer.interaction_handler.handle_response(interaction=interaction, view=self)
+      await self.outer.interaction_handler.send_view(interaction=interaction, view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.success, label='Suivant', custom_id='submit')
     async def go_to_score_modification(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -180,7 +180,7 @@ class Spire(commands.Cog):
     async def on_timeout(self):
       if self.request_spire_data.handle_timeout:
         self.outer.logger.log_only('debug', 'climb modification view timeout')
-        await self.outer.interaction_handler.handle_response(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.send_timeout_message(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
 
   class ScoreModificationModal(discord.ui.Modal):
 ##### MODALE DE MODIFICATION DU SCORE
@@ -240,7 +240,7 @@ class Spire(commands.Cog):
       if self.request_spire_data.handle_timeout:
         self.stop()
         self.outer.logger.log_only('debug', 'score modification modal timeout')
-        await self.outer.interaction_handler.handle_response(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.send_timeout_message(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
 
   class ErrorView(discord.ui.View):
 ##### VIEW D'ERREUR
@@ -260,14 +260,14 @@ class Spire(commands.Cog):
       response = {'title': 'Abandon',
                   'description': 'La saisie de ton score de spire a bien été annulée :cry:\nN\'hésite pas à recommencer pour soutenir ta guilde :grin:',
                   'color': 'red'}
-      await self.outer.interaction_handler.handle_response(interaction=interaction, response=response)
+      await self.outer.interaction_handler.send_embed(interaction=interaction, response=response)
       self.outer.logger.ok_log('spire')
       
     async def on_timeout(self):
       if self.request_spire_data.handle_timeout:
         self.stop()
         self.outer.logger.log_only('debug', 'error view timeout')
-        await self.outer.interaction_handler.handle_response(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.send_timeout_message(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
 
   class ValidationView(discord.ui.View):
 ##### VIEW DE VALIDATION FINALE
@@ -289,7 +289,7 @@ class Spire(commands.Cog):
       if self.request_spire_data.handle_timeout:
         self.stop()
         self.outer.logger.log_only('debug', 'validation view timeout')
-        await self.outer.interaction_handler.handle_response(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
+        await self.outer.interaction_handler.send_timeout_message(interaction=self.request_spire_data.last_interaction, timeout=self.timeout)
   
   @app_commands.command(name='spire')
   async def spire_app_command(self, interaction: discord.Interaction, screenshot: discord.Attachment):
@@ -343,47 +343,47 @@ class Spire(commands.Cog):
     request_spire_data.last_interaction = interaction
     view = self.GuildModificationView(outer=self, request_spire_data=request_spire_data)
     content = '# Guilde #\nVeuillez choisir votre guilde ou en créer une nouvelle si la vôtre n\'est pas dans la liste :'
-    await self.interaction_handler.handle_response(interaction=interaction, content=content, view=view)
+    await self.interaction_handler.send_view(interaction=interaction, content=content, view=view)
 
   async def build_guild_creation_modal(self, interaction: discord.Interaction, request_spire_data: CommandData):
     request_spire_data.last_interaction = interaction
     modal = self.GuildCreationModal(outer=self, request_spire_data=request_spire_data)
-    await self.interaction_handler.handle_response(interaction=interaction, modal=modal)
+    await self.interaction_handler.send_modal(interaction=interaction, modal=modal)
 
   async def build_guild_already_exists_view(self, interaction: discord.Interaction, request_spire_data: CommandData):
     request_spire_data.last_interaction = interaction
     view = self.GuildAlreadyExistsView(outer=self, request_spire_data=request_spire_data)
     content = f'# {request_spire_data.selected_guild} #\nCette guilde existe déjà...\nVoulez-vous valider ?'
-    await self.interaction_handler.handle_response(interaction=interaction, content=content, view=view)
+    await self.interaction_handler.send_view(interaction=interaction, content=content, view=view)
 
   async def build_tier_modification_view(self, interaction: discord.Interaction, request_spire_data: CommandData):
     request_spire_data.last_interaction = interaction
     view = self.TierModificationView(outer=self, request_spire_data=request_spire_data)
     content = '# Dragonspire Tier #\nChoisissez votre niveau de spire parmi les suivants :'
-    await self.interaction_handler.handle_response(interaction=interaction, content=content, view=view)
+    await self.interaction_handler.send_view(interaction=interaction, content=content, view=view)
 
   async def build_climb_modification_view(self, interaction: discord.Interaction, request_spire_data: CommandData):
     request_spire_data.last_interaction = interaction
     view = self.ClimbModificationView(outer=self, request_spire_data=request_spire_data)
     content = '# Climb #\nChoisissez le climb parmi les suivants :'
-    await self.interaction_handler.handle_response(interaction=interaction, content=content, view=view)
+    await self.interaction_handler.send_view(interaction=interaction, content=content, view=view)
 
   async def build_score_modification_modal(self, interaction: discord.Interaction, request_spire_data: CommandData):
     request_spire_data.last_interaction = interaction
     modal = self.ScoreModificationModal(outer=self, request_spire_data=request_spire_data)
-    await self.interaction_handler.handle_response(interaction=interaction, modal=modal)
+    await self.interaction_handler.send_modal(interaction=interaction, modal=modal)
 
   async def build_error_view(self, interaction: discord.Interaction, message: str, request_spire_data: CommandData):
     request_spire_data.last_interaction = interaction
     view = self.ErrorView(outer=self, request_spire_data=request_spire_data)
-    await self.interaction_handler.handle_response(interaction=interaction, content=message, view=view)
+    await self.interaction_handler.send_view(interaction=interaction, content=message, view=view)
 
   async def build_validation_view(self, interaction: discord.Interaction, request_spire_data: CommandData):
     request_spire_data.last_interaction = interaction
     self.logger.log_only('debug', f'spire_data: {request_spire_data.spire_data}')
     view = self.ValidationView(outer=self, request_spire_data=request_spire_data)
     content = self.build_validation_content(request_spire_data=request_spire_data)
-    await self.interaction_handler.handle_response(interaction=interaction, content=content, view=view)
+    await self.interaction_handler.send_view(interaction=interaction, content=content, view=view)
 
   def build_validation_content(self, request_spire_data: CommandData):
     request_spire_data.spire_data['score'] = request_spire_data.spire_data.get('floors') * 50000 - request_spire_data.spire_data.get('loss') * 1000 - request_spire_data.spire_data.get('turns') * 100 + request_spire_data.spire_data.get('bonus') * 250
@@ -399,14 +399,14 @@ class Spire(commands.Cog):
     request_spire_data.handle_timeout = False
     post_spire = await self.bot.back_requests.call('addSpireData', False, [request_spire_data.spire_data])
     if not post_spire:
-      await self.interaction_handler.handle_response(interaction=interaction, response={'title': 'Erreur !', 'description': 'Ton score n\'a pas pu être ajouté :cry:\nMerci de réitérer la commande :innocent:', 'color': 'red'})
+      await self.interaction_handler.send_embed(interaction=interaction, response={'title': 'Erreur !', 'description': 'Ton score n\'a pas pu être ajouté :cry:\nMerci de réitérer la commande :innocent:', 'color': 'red'})
       self.logger.ok_log('spire')
       return
     description = '# Score validé ! #\n'
     description += f'Merci pour ta participation {request_spire_data.spire_data.get('username')} :wink:\n\n'
     description += await self.bot.spire_service.display_scores_after_posting_spire(tier=request_spire_data.spire_data.get('tier'))
     response = {'title': '', 'description': description, 'color': 'blue', 'image': request_spire_data.spire_data.get('image_url')}
-    await self.interaction_handler.handle_response(interaction=interaction, response=response)
+    await self.interaction_handler.send_embed(interaction=interaction, response=response)
     if request_spire_data.spire_data.get('guild') not in self.guilds:
       self.logger.log_only('debug', 'add new guild to self.guilds')
       self.guilds.append(request_spire_data.spire_data.get('guild'))
