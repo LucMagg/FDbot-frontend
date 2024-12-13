@@ -16,7 +16,6 @@ class Item(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.interaction_handler = InteractionHandler(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'item'), None)
     self.help_msg = Message(bot).help('item')
     self.qualities = bot.static_data.qualities
@@ -33,10 +32,11 @@ class Item(commands.Cog):
   async def item_app_command(self, interaction: discord.Interaction, item: str):
     self.logger.command_log('item', interaction)
     self.logger.log_only('debug', f"arg : {item}")
-    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
+    self.interaction_handler = InteractionHandler(self.bot)
+    await self.interaction_handler.send_wait_message(interaction=interaction)
     response = await self.get_response(item, interaction)
     if response:
-      await self.interaction_handler.handle_response(interaction=interaction, response=response)
+      await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.ok_log('item')
 
   async def get_response(self, item, interaction):
