@@ -15,7 +15,6 @@ class Hero(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.interaction_handler = InteractionHandler(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'hero'), None)
     self.help_msg = Message(bot).help('hero')
   
@@ -30,9 +29,10 @@ class Hero(commands.Cog):
   async def hero_app_command(self, interaction: discord.Interaction, héros: str):
     self.logger.command_log('hero', interaction)
     self.logger.log_only('debug', f"arg : {héros}")
-    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
+    self.interaction_handler = InteractionHandler(self.bot)
+    await self.interaction_handler.send_wait_message(interaction=interaction)
     response = await self.get_response(héros, interaction)
-    await self.interaction_handler.handle_response(interaction=interaction, response=response)
+    await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.ok_log('hero')
   
   async def get_response(self, héros, interaction=None):
