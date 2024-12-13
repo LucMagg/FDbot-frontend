@@ -20,8 +20,8 @@ class Bothelp(commands.Cog):
   @app_commands.command(name='bothelp')
   async def bothelp_app_command(self, interaction: discord.Interaction):
     self.logger.command_log('bothelp', interaction)
-    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
-    await self.interaction_handler.handle_response(interaction=interaction, response=self.help_msg)
+    await self.interaction_handler.send_wait_message(interaction=interaction)
+    await self.interaction_handler.send_embed(interaction=interaction, response=self.help_msg)
     self.logger.ok_log('bothelp')
 
   
