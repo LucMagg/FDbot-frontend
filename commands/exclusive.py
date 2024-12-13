@@ -14,7 +14,6 @@ class Exclusive(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.interaction_handler = InteractionHandler(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'exclusive'), None)
     CommandService.init_command(self.exclusive_app_command, self.command)
     self.choices = None
@@ -27,10 +26,11 @@ class Exclusive(commands.Cog):
   async def exclusive_app_command(self, interaction: discord.Interaction, type: str):
     self.logger.command_log('exclusive', interaction)
     self.logger.log_only('debug', f"arg : {type}")
-    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
+    self.interaction_handler = InteractionHandler(self.bot)
+    await self.interaction_handler.send_wait_message(interaction=interaction)
     response = await self.get_response(type, interaction)
     if response:
-      await self.interaction_handler.handle_response(interaction=interaction, response=response)
+      await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.ok_log('exclusive')
 
   async def get_response(self, type, interaction):
