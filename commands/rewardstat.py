@@ -11,7 +11,6 @@ class Rewardstat(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.interaction_handler = InteractionHandler(self.bot)
     self.reward_stat_command = next((c for c in bot.static_data.commands if c['name'] == 'rewardstat'), None)
 
     CommandService.init_command(self.reward_stat_app_command, self.reward_stat_command)
@@ -25,17 +24,18 @@ class Rewardstat(commands.Cog):
   async def reward_stat_app_command(self, interaction: discord.Interaction, level: str):
     self.logger.command_log('rewardstat', interaction)
     self.logger.log_only('debug', f"level : {level}")
-    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
+    self.interaction_handler = InteractionHandler(self.bot)
+    await self.interaction_handler.send_wait_message(interaction=interaction)
 
     if level not in [c.name for c in self.choices]:
       self.logger.log_only('debug', f"level inexistant")
       response = {'title': 'Erreur !', 'description': 'Ce niveau n\'existe pas.\nVeuillez choisir un niveau dans la liste ou contacter Prep ou Spirou.', 'color': 'red'}
-      await self.interaction_handler.handle_response(interaction=interaction, response=response)
+      await self.interaction_handler.send_embed(interaction=interaction, response=response)
       self.logger.ok_log('rewardstat')
       return
 
     response = await self.bot.level_service.display_rewards(interaction.guild.emojis, level)
-    await self.interaction_handler.handle_response(interaction, response)
+    await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.ok_log('rewardstat')
 
   async def setup(self, param_list):
