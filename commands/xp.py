@@ -14,7 +14,6 @@ class Xp(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     self.logger = bot.logger
-    self.interaction_handler = InteractionHandler(self.bot)
     self.command = next((c for c in bot.static_data.commands if c['name'] == 'xp'), None)
     self.xp_data = bot.static_data.xp_data
     self.thresholds = bot.static_data.xp_thresholds
@@ -25,10 +24,11 @@ class Xp(commands.Cog):
   @app_commands.command(name='xp')
   async def xp_app_command(self, interaction: discord.Interaction, stars: int, current_ascend: str, current_level: int, target_ascend: str, target_level: int):
     self.logger.command_log('xp', interaction)
-    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
+    self.interaction_handler = InteractionHandler(self.bot)
+    await self.interaction_handler.send_wait_message(interaction=interaction)
     response = await self.get_response(stars, current_ascend, current_level, target_ascend, target_level)
     if response:
-      await self.interaction_handler.handle_response(interaction=interaction, response=response)
+      await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.ok_log('xp')
 
   async def get_response(self, stars, current_ascend, current_level, target_ascend, target_level):
