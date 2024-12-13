@@ -16,7 +16,7 @@ class TestCommand(commands.Cog):
   @app_commands.command(name='testcommand')
   async def testcommand_app_command(self, interaction: discord.Interaction):
     self.logger.command_log('testcommand', interaction)
-    await self.interaction_handler.handle_response(interaction=interaction, wait_msg=True)
+    await self.interaction_handler.send_wait_message(interaction=interaction)
     date = (datetime.now() - timedelta(days=0)).isoformat()
     print(date)
     message = await self.bot.spire_ranking_service.display_scores(date=date, interaction=interaction)
