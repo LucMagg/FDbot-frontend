@@ -320,7 +320,7 @@ class Reward(commands.Cog):
     request_reward_data.current_reward_choice = request_reward_data.current_level.get('reward_choices')[0].get('choices')[0].get('name').lower()
     choices = sorted(request_reward_data.current_level.get('reward_choices')[0].get('choices')[0].get('choices'), key=lambda x:x['grade'])
     initial_view_content = f'\n### Choix {request_reward_data.current_reward_choice} pour le type de reward {request_reward_data.selected_reward.get('type')} : ###'
-    self.view = self.ChoiceView(self, selectable_choices=choices, request_reward_data=request_reward_data)
+    request_reward_data.view = self.ChoiceView(self, selectable_choices=choices, request_reward_data=request_reward_data)
     await self.interaction_handler.send_view(interaction=interaction, content=initial_view_content, view=request_reward_data.view)
 
   async def build_initial_view(self, interaction: discord.Interaction, request_reward_data: CommandData):
