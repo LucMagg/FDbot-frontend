@@ -131,7 +131,7 @@ class Spire(commands.Cog):
         self.tier_selector.options.append(discord.SelectOption(label=t, value=t))
       self.tier_selector.placeholder = self.request_spire_data.selected_tier if self.request_spire_data.selected_tier else 'Choisis ton tier'
 
-      self.go_to_climb_modification.disabled = False if self.request_spire_data.selected_tier else True
+      self.go_to_climb_modification.disabled = False if self.request_spire_data.selected_tier in self.outer.tiers else True
 
     @discord.ui.select(cls=discord.ui.Select)
     async def tier_selector(self, interaction: discord.Interaction, select: discord.ui.Select): 
@@ -161,7 +161,7 @@ class Spire(commands.Cog):
       self.outer = outer
       self.request_spire_data = request_spire_data
       self.climb_selector.placeholder = str(self.request_spire_data.selected_climb) if self.request_spire_data.selected_climb else 'Choisis ton climb'
-      self.go_to_score_modification.disabled = False if self.request_spire_data.selected_climb else True
+      self.go_to_score_modification.disabled = False if self.request_spire_data.selected_climb in range(1, 5) else True
 
     @discord.ui.select(cls=discord.ui.Select, options=[discord.SelectOption(label=str(t), value=str(t)) for t in range(1, 5)])
     async def climb_selector(self, interaction: discord.Interaction, select: discord.ui.Select):
@@ -209,7 +209,7 @@ class Spire(commands.Cog):
         self.request_spire_data.spire_data['score'] = self.request_spire_data.spire_data.get('floors') * 50000 - self.request_spire_data.spire_data.get('loss') * 1000 - self.request_spire_data.spire_data.get('turns') * 100 + self.request_spire_data.spire_data.get('bonus') * 250
       except Exception as e:
         self.outer.logger.log_only('warning', f'modal submit error: {e}')
-      if not None in self.request_spire_data.spire_data.values():
+      if self.outer.is_request_spire_data_valid(spire_data=self.request_spire_data.spire_data):
         await self.outer.build_validation_view(interaction=interaction, request_spire_data=self.request_spire_data)
       else:
         alert_message = '# Erreur ! #\n'
@@ -296,6 +296,7 @@ class Spire(commands.Cog):
     self.interaction_handler = InteractionHandler(self.bot)
     self.logger.command_log('spire', interaction)
     self.logger.log_only('debug', f"arg : {screenshot.url}")
+    await self.interaction_handler.send_wait_message(interaction=interaction)
     await self.get_response(screenshot.url, interaction)
 
   async def get_response(self, image_url, interaction: discord.Interaction):
@@ -305,17 +306,30 @@ class Spire(commands.Cog):
     temp_spire_data = self.get_user_and_guildname(interaction=interaction)
     temp_spire_data['image_url'] = image_url
     request_spire_data.spire_data = await self.bot.back_requests.call('extractSpireData', False, [temp_spire_data])
-    self.logger.log_only('debug', f'spire_data: {self.spire_data}')
+    self.logger.log_only('debug', f'spire_data: {request_spire_data.spire_data}')
     request_spire_data.selected_guild = request_spire_data.spire_data.get('guild')
     request_spire_data.selected_tier = request_spire_data.spire_data.get('tier')
     request_spire_data.selected_climb = request_spire_data.spire_data.get('climb')
     if request_spire_data.spire_data.get('guild') is not None and request_spire_data.spire_data.get('guild') not in self.guilds:
       self.guilds.append(request_spire_data.spire_data.get('guild'))
       self.guilds = sorted(self.guilds)
-    if None in request_spire_data.spire_data.values():
+    if not self.is_request_spire_data_valid(spire_data=request_spire_data.spire_data):
       await self.build_guild_modification_view(interaction=interaction, request_spire_data=request_spire_data)
     else:
       await self.build_validation_view(interaction=interaction, request_spire_data=request_spire_data)
+
+  def is_request_spire_data_valid(self, spire_data) -> bool:
+    if None in spire_data.values():
+      return False
+    if not spire_data.get('tier') in self.tiers:
+      return False
+    if not spire_data.get('climb') in range(1,5):
+      return False
+    try:
+      score = spire_data.get('floors') * 50000 - spire_data.get('loss') * 1000 - spire_data.get('turns') * 100 + spire_data.get('bonus') * 250
+    except:
+      return False
+    return True
 
   def get_user_and_guildname(self, interaction: discord.Interaction):
     self.spire_data = None
@@ -380,13 +394,13 @@ class Spire(commands.Cog):
 
   async def build_validation_view(self, interaction: discord.Interaction, request_spire_data: CommandData):
     request_spire_data.last_interaction = interaction
+    request_spire_data.spire_data['score'] = request_spire_data.spire_data.get('floors') * 50000 - request_spire_data.spire_data.get('loss') * 1000 - request_spire_data.spire_data.get('turns') * 100 + request_spire_data.spire_data.get('bonus') * 250
     self.logger.log_only('debug', f'spire_data: {request_spire_data.spire_data}')
     view = self.ValidationView(outer=self, request_spire_data=request_spire_data)
     content = self.build_validation_content(request_spire_data=request_spire_data)
     await self.interaction_handler.send_view(interaction=interaction, content=content, view=view)
 
   def build_validation_content(self, request_spire_data: CommandData):
-    request_spire_data.spire_data['score'] = request_spire_data.spire_data.get('floors') * 50000 - request_spire_data.spire_data.get('loss') * 1000 - request_spire_data.spire_data.get('turns') * 100 + request_spire_data.spire_data.get('bonus') * 250
     to_return = '# Validation du score #\n'
     to_return += f'Vous êtes sur le point de valider votre score de spire avec les informations suivantes :\n'
     to_return += f'\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0• Guilde : {request_spire_data.spire_data.get('guild')}\n'
