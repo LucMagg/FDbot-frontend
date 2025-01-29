@@ -156,7 +156,8 @@ class SpireRankingService:
     print(channels)
     await self.unpin_old_messages(channels)
 
-    await self.bot.back_requests.call("getSpireByDate", False, [{'date': datetime.now(tz=timezone.utc)}])
+    spire_start = datetime.now(tz=timezone.utc).isoformat()
+    await self.bot.back_requests.call("getSpireByDate", False, [{'date': spire_start}])
     description = '# Début de la bataille des guildes ! # \nQue les bonus et l\'absence de moves foireux soient avec vous :grin:\nBon courage à tous :wink:'
     self.response = discord.Embed(title='', description=description, color=get_discord_color('blue'))
     for channel_data in channels:
