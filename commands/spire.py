@@ -418,7 +418,7 @@ class Spire(commands.Cog):
       return
     description = '# Score validé ! #\n'
     description += f'Merci pour ta participation {request_spire_data.spire_data.get('username')} :wink:\n\n'
-    description += await self.bot.spire_service.display_scores_after_posting_spire(tier=request_spire_data.spire_data.get('tier'))
+    description += await self.bot.spire_service.display_scores_after_posting_spire(tier=request_spire_data.spire_data.get('tier'), climb=request_spire_data.spire_data.get('climb'))
     response = {'title': '', 'description': description, 'color': 'blue', 'image': request_spire_data.spire_data.get('image_url')}
     await self.interaction_handler.send_embed(interaction=interaction, response=response)
     if request_spire_data.spire_data.get('guild') not in self.guilds:
