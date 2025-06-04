@@ -13,6 +13,7 @@ from service.level import LevelService
 from service.update import UpdateService
 from service.spire import SpireService
 from service.spireranking import SpireRankingService
+from service.map import MapService
 
 
 status = cycle(['faire plaisir à Spirou'])
@@ -30,6 +31,7 @@ class MyBot(commands.Bot):
     self.level_service = None
     self.update_service = None
     self.spire_service = None
+    self.map_service = None
     self.logger = Logger(log_file=f'logs/{LOG_FILE}')
 
   async def on_ready(self):
@@ -40,6 +42,8 @@ class MyBot(commands.Bot):
     self.status_loop.start()
     self.logger.bot_log(f'Bot loggé sous {self.user}')
     self.logger.bot_log('Commandes slash synchronisées')
+    await self.map_service.check_maps_in_repos()
+    self.logger.bot_log('Check maps ok')
 
 
   async def setup_hook(self):
@@ -60,7 +64,8 @@ class MyBot(commands.Bot):
     self.logger.bot_log('Initialisation du service Spire')
     self.spire_ranking_service = SpireRankingService(self)
     self.logger.bot_log('Initialisation du service SpireRanking')
-    
+    self.map_service = await MapService.create(self)
+    self.logger.bot_log('Initialisation du service Map')  
 
   async def load_all_commands(self):
     commands = [
@@ -80,7 +85,8 @@ class MyBot(commands.Bot):
       'commands.reward',
       'commands.xp',
       'commands.spire',
-      'commands.exclusive'
+      'commands.exclusive',
+      'commands.spiredetails'
       #'commands.testcommand'
     ]
 
@@ -100,6 +106,9 @@ class MyBot(commands.Bot):
   async def setup_command(self, command, param_list=None):
     cog_name = command.split('.')[1].capitalize()
     cog = self.get_cog(cog_name)
+    if cog and hasattr(cog, 'setup_with_bot'):
+      await cog.setup_with_bot(self)
+      self.logger.log_only('debug', f'Setup de la commande {command} avec bot ok')
     if cog and hasattr(cog, 'setup'):
       await cog.setup(param_list)
       self.logger.log_only('debug', f'Setup de la commande {command} ok')
@@ -114,6 +123,10 @@ class MyBot(commands.Bot):
     if message.author.id == 617661648173268993 and 'paf' in str_to_slug(message.content):
       await message.reply(content='CONTREPAF!!! :rofl:')
       self.logger.bot_log('Contre-pafé :D')
+    """if message.author.id == 570897451238817793 and message.content[0] != '/':
+      embed = discord.Embed(description='# Je suis un gros nul ! #')
+      embed.set_image(url='https://media1.tenor.com/m/9jP6PFL71MoAAAAd/shame-box.gif')
+      await message.edit(embed=embed)"""
 
     """if message.author.id == 504814725020909578:
       gif_url = 'https://tenor.com/fr/view/gloves-on-im-ready-lets-do-this-glove-doctor-gif-15313441'

@@ -261,5 +261,38 @@
     "url": "levels/gear",
     "type": "get",
     "param0": "json"
+  },
+  {
+    "name": "getAllMaps",
+    "url": "map",
+    "type": "get"
+  },
+  {
+    "name": "getOneMap",
+    "url": "map/[[param0]]",
+    "type": "get",
+    "param0": "slug"
+  },
+  {
+    "name": "getAllChannels",
+    "url": "channel",
+    "type": "get"
+  },
+  {
+    "name": "updateMap",
+    "url": "map",
+    "type": "put",
+    "param0": "json"
+  },
+  {
+    "name": "getMapBonuses",
+    "url": "map_bonus",
+    "type": "get"
+  },
+  {
+    "name": "addClimbDetails",
+    "url": "spire/add_climb_details",
+    "type": "post",
+    "param0": "json"
   }
 ]

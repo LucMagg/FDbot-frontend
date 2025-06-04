@@ -124,7 +124,7 @@ class SpireRankingService:
             message = await channel.fetch_message(channel_data.get('ranking_message_id'))
             if message and message.pinned:
               await message.unpin()
-              await self.bot.back_requests.call("deleteMessageId", False, [{'date': self.date_to_get, 'channel_id': channel_data.get('discord_channel_id')}])
+              await self.bot.back_requests.call("deleteMessageId", False, [{'date': self.date_to_get, 'channel_id': channel_data.get('discord_channel_id'), 'ranking_message_id': message.id}])
     except Exception as e:
       print(e)
   
@@ -138,7 +138,7 @@ class SpireRankingService:
       for channel_data in channels:
         channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
         message = await channel.send(embed=self.response, view=self.view)
-        pinned = await self.bot.back_requests.call("addMessageId", False, [{'date': self.date_to_get, 'channel_id': channel_data.get('discord_channel_id'), 'message_id': message.id}])
+        pinned = await self.bot.back_requests.call("addMessageId", False, [{'date': self.date_to_get, 'channel_id': channel_data.get('discord_channel_id'), 'ranking_message_id': message.id}])
         if pinned:
           await message.pin()
     except Exception as e:
