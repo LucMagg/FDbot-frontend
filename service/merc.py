@@ -29,7 +29,7 @@ class MercService:
   def print_merc(self, heroes, merc):
     hero = next((h for h in heroes if h.get('name_slug') == merc.get('name_slug')), None)
     if hero :
-      to_return = f'{stars(hero.get('stars'))} {hero.get('name')}'
+      to_return = f'- {hero.get('name')}'
     else:
       to_return = f'{merc.get('name')}'
 
