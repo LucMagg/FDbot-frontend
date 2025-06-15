@@ -294,5 +294,33 @@
     "url": "spire/add_climb_details",
     "type": "post",
     "param0": "json"
+  },
+  {
+    "name": "getAllMercUsers",
+    "url": "merc",
+    "type": "get"
+  },
+  {
+    "name": "getAllUniqueMercs",
+    "url": "mercs",
+    "type": "get"
+  },
+  {
+    "name": "getAllMercsByUser",
+    "url": "merc",
+    "type": "get",
+    "param0": "json"
+  },
+  {
+    "name": "addMerc",
+    "url": "merc",
+    "type": "post",
+    "param0": "json"
+  },
+  {
+    "name": "getMerc",
+    "url": "merc",
+    "type": "get",
+    "param0": "json"
   }
 ]

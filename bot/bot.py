@@ -14,6 +14,7 @@ from service.update import UpdateService
 from service.spire import SpireService
 from service.spireranking import SpireRankingService
 from service.map import MapService
+from service.merc import MercService
 
 
 status = cycle(['faire plaisir à Spirou'])
@@ -32,6 +33,7 @@ class MyBot(commands.Bot):
     self.update_service = None
     self.spire_service = None
     self.map_service = None
+    self.merc_service = None
     self.logger = Logger(log_file=f'logs/{LOG_FILE}')
 
   async def on_ready(self):
@@ -65,7 +67,9 @@ class MyBot(commands.Bot):
     self.spire_ranking_service = SpireRankingService(self)
     self.logger.bot_log('Initialisation du service SpireRanking')
     self.map_service = await MapService.create(self)
-    self.logger.bot_log('Initialisation du service Map')  
+    self.logger.bot_log('Initialisation du service Map')
+    self.merc_service = MercService(self)
+    self.logger.bot_log('Initialisation du service Merc')
 
   async def load_all_commands(self):
     commands = [
@@ -86,7 +90,10 @@ class MyBot(commands.Bot):
       'commands.xp',
       'commands.spire',
       'commands.exclusive',
-      'commands.spiredetails'
+      'commands.spiredetails',
+      'commands.merclist',
+      'commands.mercregister',
+      'commands.mercask'
       #'commands.testcommand'
     ]
 
