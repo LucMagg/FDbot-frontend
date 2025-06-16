@@ -37,7 +37,6 @@ class MyBot(commands.Bot):
     self.logger = Logger(log_file=f'logs/{LOG_FILE}')
 
   async def on_ready(self):
-    await self.wait_until_ready()
     if not self.synced:
       await self.tree.sync()
       self.synced = True

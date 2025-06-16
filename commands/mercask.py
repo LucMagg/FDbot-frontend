@@ -27,23 +27,18 @@ class Mercask(commands.Cog):
 
   @app_commands.autocomplete(héros=héros_autocomplete)
   @app_commands.command(name='mercask')
-  async def mercask_app_command(self, interaction: discord.Interaction, héros: str, ascend: str|None = None, pet: str|None = None):
+  async def mercask_app_command(self, interaction: discord.Interaction, héros: str):
     self.logger.command_log('mercask', interaction)
     self.interaction_handler = InteractionHandler(self.bot)
     await self.interaction_handler.send_wait_message(interaction=interaction)
-    response = await self.get_response(nick(interaction), interaction.user.id, héros, ascend, pet)
+    response = await self.get_response(nick(interaction), interaction.user.id, héros)
     if response:
       await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.ok_log('mercask')
 
-  async def get_response(self, user_name, user_id, hero, ascend, has_pet):
-    if has_pet == 'Non':
-      has_pet = False
-    if has_pet == 'Oui':
-      has_pet = True
-    print(f'username: {user_name} / user_id: {user_id} / hero: {hero} / ascend: {ascend} / pet: {has_pet}')
-    user_list = await self.get_users_by_merc(user_name, user_id, hero, ascend, has_pet)
-      
+  async def get_response(self, user_name, user_id, hero):
+    print(f'username: {user_name} / user_id: {user_id} / hero: {hero}')
+    user_list = await self.get_users_by_merc(user_name, user_id, hero)
     if user_list:
       hero = await self.bot.back_requests.call('getHeroByName', False, [str_to_slug(hero)])
       if hero:
@@ -51,59 +46,36 @@ class Mercask(commands.Cog):
       return user_list
     return {'title': '', 'description': 'Une erreur s\'est produite lors de l\'envoi de la commande :shrug:\nMerci de réitérer la commande :wink:', 'color': 'red'}
   
-  async def get_users_by_merc(self, user_name, user_id, hero, ascend, has_pet):
+  async def get_users_by_merc(self, user_name, user_id, hero):
     found_hero = any(str_to_slug(hero) == str_to_slug(m.value) for m in self.choices)
     print(f'found_hero : {found_hero}')
     if not found_hero:
       return {'title': '', 'description': 'Le héros demandé n\'est pas recensé dans la liste des mercenaires disponibles :shrug:\nMerci de réitérer la commande :wink:', 'color': 'red'}
     
-    user_list = await self.find_users(hero, ascend, has_pet)
+    to_find = {'merc': {'name': hero}}
+    print(f'to_find: {to_find}')
+    user_list = await self.bot.back_requests.call('getMerc', False, [to_find])
     if not user_list:
-      user_list = []
-
-      found_users = await self.find_users(hero, None, has_pet)
-      if found_users:
-        user_list = found_users
-        print(f'user_list: {user_list}')
-
-      found_users = await self.find_users(hero, ascend, None)
-      if found_users:
-        user_list = list(set(found_users + user_list))
-
-      header = f'Le héros {hero} n\'est pas disponible'
-      if ascend:
-        header += f' {ascend}'
-      if has_pet:
-        header += ' avec son pet'
-      header += '.\n'
-
-      user_list = [i for i in user_list if i.get('user_id') != user_id]      
-      if len(user_list) > 0:
-        return self.print_user_list(user_list, user_name, hero, header)
-      else:
-        return f'Personne d\'autre que toi ne possède {hero} dans les mercenaires recensés, désolé :shrug:'
-    
+      return None
     user_list = [i for i in user_list if i.get('user_id') != user_id]      
     if len(user_list) > 0:
       return self.print_user_list(user_list, user_name, hero)
     else:
       return f'Personne d\'autre que toi ne possède {hero} dans les mercenaires recensés, désolé :shrug:'
   
-  async def find_users(self, hero, ascend, has_pet):
-    to_find = {'merc': {'name': hero}}
-    if ascend is not None:
-      to_find['merc']['ascend'] = ascend
-    if has_pet is not None:
-      to_find['merc']['pet'] = has_pet
-    return await self.bot.back_requests.call('getMerc', False, [to_find])
-  
-  def print_user_list(self, found_users, user_name, hero, optional_header = ''):
-    description = optional_header
-    for user in found_users:
-      description += f'<@{user.get('user_id')}> '
-    description += f' si possible, merci de mettre {hero} en mercenaire pour {user_name}, merci pour lui :wink:'
+  def print_user_list(self, user_list, user_name, hero):
+    description = f'# Besoin de {hero} pour {user_name} # \n'
+    for user in user_list:
+      print(user)
+      if len(user_list) > 1:
+        description += '- '
+      description += f'<@{user.get('user_id')}>'
+      merc = user.get('merc')
+      if merc.get('a2_talent') or merc.get('a3_talent') or merc.get('ascend') or merc.get('merge') or merc.get('pet'):
+        description += f'({self.bot.merc_service.print_merc_details(merc)})'
+      description += '\n'
+    description += 'Merci pour lui :kissing_heart:'
     return description
-      
     
   async def setup(self, param_list):
     if param_list is None:

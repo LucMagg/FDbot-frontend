@@ -23,27 +23,30 @@ class MercService:
     description = f'# Liste des mercs de {user_doc.get('user')} : # \n'
     mercs = sorted(user_doc.get('mercs'), key=lambda x: x['name'])
     for merc in mercs:
-      description += self.print_merc(heroes, merc)
+      hero = next((h for h in heroes if h.get('name_slug') == merc.get('name_slug')), None)
+      description += f'- {hero.get('name') if hero else merc.get('name')}'
+      details = self.print_merc_details(merc)
+      if details != '':
+        description += f' ({details})'
+      description += '\n'
     return {'title': '', 'description': description, 'color': 'blue'}
   
-  def print_merc(self, heroes, merc):
-    hero = next((h for h in heroes if h.get('name_slug') == merc.get('name_slug')), None)
-    if hero :
-      to_return = f'- {hero.get('name')}'
-    else:
-      to_return = f'{merc.get('name')}'
-
+  def print_merc_details(self, merc):
+    to_return = ' '
     if merc.get('ascend'):
-      to_return += f' ({merc.get('ascend')}'
-    
+      to_return += f'{merc.get('ascend')} '
+    if merc.get('merge'):
+      print('merge!')
+      to_return += f'M{merc.get('merge')} '
     if merc.get('pet'):
-      if not merc.get('ascend'):
-        to_return += ' (avec son pet'
+      to_return += f'avec son pet '
+    if (merc.get('talent_a2') and merc.get('ascend') != 'A3') or merc.get('talent_a3'):
+      if merc.get('pet'):
+        to_return += 'et '
       else:
-        to_return += ' avec son pet'
-    
-    if merc.get('pet') or merc.get('ascend'):
-      to_return += ')\n'
-    else:
-      to_return += '\n'
-    return to_return
+        to_return += 'avec '
+      if merc.get('talent_a3'):
+        to_return += 'son talent A3 '
+      else:
+        to_return += 'son talent A2 '
+    return to_return.strip()
