@@ -334,6 +334,7 @@ class Spire(commands.Cog):
   def get_user_and_guildname(self, interaction: discord.Interaction):
     self.spire_data = None
     user = interaction.user.display_name
+    user_id = interaction.user.id
     self.logger.log_only('debug', f'user: {user}')
     if '[' in user and ']' in user:
       self.logger.log_only('debug', 'user & guild ok')
@@ -348,10 +349,11 @@ class Spire(commands.Cog):
         guild = f'[{guild}'
       self.logger.log_only('debug', f'username: {username}')
       self.logger.log_only('debug', f'guild: {guild}')
-      return {'username': username, 'guild': guild}
+      self.logger.log_only('debug', f'user_id: {user_id}')
+      return {'username': username, 'guild': guild, 'user_id': user_id}
     else:
       self.logger.log_only('debug', 'user only')
-      return {'username': user, 'guild': None}
+      return {'username': user, 'guild': None, 'user_id': user_id}
 
   async def build_guild_modification_view(self, interaction: discord.Interaction, request_spire_data: CommandData):
     request_spire_data.last_interaction = interaction

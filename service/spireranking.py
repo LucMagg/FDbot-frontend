@@ -16,6 +16,7 @@ class SpireRankingService:
     self.spire_start_time = datetime.fromisoformat("2024-11-06T11:00:00+00:00")
     self.spire_length = 14
     self.send_spire_results.start()
+    self.send_spire_reminder.start()
     self.date_to_get = None
 
   class RankingsView(discord.ui.View):
@@ -163,6 +164,56 @@ class SpireRankingService:
     for channel_data in channels:
       channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
       await channel.send(embed=self.response)
+
+  def compare_spire_scores(self, actual_scores):
+    current_climb_user_ids = {player.get('user_id') for tier in actual_scores.get('current_climb').values() for player in tier}
+    missing_user_ids = [player.get('user_id') for tier in actual_scores.get('current_spire').values() for player in tier if player.get('user_id') not in current_climb_user_ids]
+    return missing_user_ids
+  
+  async def get_users_in_guild(self, channel, all_users):
+    if not channel or not channel.guild:
+      return []
+    guild = channel.guild
+    members_in_guild = []
+    for user_id in all_users:
+      if user_id is None:
+        continue 
+      try:
+        member = await guild.fetch_member(user_id)
+        if member:
+          members_in_guild.append(user_id)
+      except (discord.NotFound, discord.HTTPException):
+        continue        
+    return members_in_guild
+
+  async def send_reminder_message(self):
+    channels = await self.get_channels()
+    print(channels)
+    actual_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player', 'date': self.date_to_get}])
+    all_users_to_remind = self.compare_spire_scores(actual_scores)
+    for channel_data in channels:
+      channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
+      users_by_channel = await self.get_users_in_guild(channel, all_users_to_remind)
+      if len(users_by_channel) > 0:
+        description = f'# Climb {actual_scores.get('climb')} # \n'
+        for user in users_by_channel:
+          description += f'<@{str(user)}> '
+        description += 'il vous reste 1 heure pour poster votre score et soutenir votre guilde :kissing_heart:'
+        self.response = discord.Embed(title='', description=description, color=get_discord_color('blue'))
+        await channel.send(embed=self.response)
+
+  @tasks.loop(time=datetime.now(tz=timezone.utc).replace(hour=10, minute=0, second=0, microsecond=0).time())
+  async def send_spire_reminder(self):
+    try:
+      now = datetime.now(tz=timezone.utc)
+      diff = now - self.spire_start_time
+      days = diff.days % self.spire_length
+      print(f'{now} || loop: {days}')
+      if days % 3 == 0 and days > 3:
+        self.date_to_get = (now - timedelta(minutes=1)).isoformat()
+        await self.send_reminder_message()
+    except Exception as e:
+      print(f'Erreur de loop : {e}')
 
   @tasks.loop(time=datetime.now(tz=timezone.utc).replace(hour=11, minute=0, second=0, microsecond=0).time())
   async def send_spire_results(self):
