@@ -21,22 +21,15 @@ class SpireRankingService:
 
   class RankingsView(discord.ui.View):
     def __init__(self, outer):
-      print('init rankings view begin')
       super().__init__(timeout=60*60*24*3)
       self.outer = outer
       self.add_item(self.outer.RankingsButton(outer=outer, label='Précédent', custom_id='previous'))
-      print('previous add')
       self.add_item(self.outer.RankingsButton(outer=outer, label='Suivant', custom_id='next'))
-      print('next add')
-      print('init rankings view end')
     
   class RankingsButton(discord.ui.Button):
     def __init__(self, outer, label, custom_id):
-      print(f'{custom_id} button init begin')
       self.outer = outer
-      print('here')
       self.id = custom_id
-      print('there')
 
       if (self.outer.current_page > 0 and self.id == 'previous') or (self.outer.current_page < len(self.outer.rankings) - 1 and self.id == 'next'):
         style = discord.ButtonStyle.primary
@@ -127,7 +120,7 @@ class SpireRankingService:
               await message.unpin()
               await self.bot.back_requests.call("deleteMessageId", False, [{'date': self.date_to_get, 'channel_id': channel_data.get('discord_channel_id'), 'ranking_message_id': message.id}])
     except Exception as e:
-      print(e)
+      self.logger.error(e)
   
   async def build_response(self):
     self.rankings = await self.get_rankings()
@@ -143,18 +136,16 @@ class SpireRankingService:
         if pinned:
           await message.pin()
     except Exception as e:
-      print(e)
+      self.logger.error_log(f'Erreur de unpin_old_message : {e}')
 
   async def send_spire_rankings(self):
     channels = await self.get_channels()
-    print(channels)
     await self.unpin_old_messages(channels)
     await self.build_response()
     await self.post_messages(channels)
 
   async def send_spire_start(self):
     channels = await self.get_channels()
-    print(channels)
     await self.unpin_old_messages(channels)
 
     spire_start = datetime.now(tz=timezone.utc).isoformat()
@@ -164,31 +155,35 @@ class SpireRankingService:
     for channel_data in channels:
       channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
       await channel.send(embed=self.response)
+  
+  def get_player_id_or_name(self, player):
+    return ('id', player.get('user_id')) if player.get('user_id') is not None else ('username', player.get('username'))
 
   def compare_spire_scores(self, actual_scores):
-    current_climb_user_ids = {player.get('user_id') for tier in actual_scores.get('current_climb').values() for player in tier}
-    missing_user_ids = [player.get('user_id') for tier in actual_scores.get('current_spire').values() for player in tier if player.get('user_id') not in current_climb_user_ids]
-    return missing_user_ids
+    current_climb_users = {self.get_player_id_or_name(player) for tier in actual_scores.get('current_climb').values() for player in tier}
+    self.logger.long_only('info', f'current_climb_users: {current_climb_users}')
+    missing_climb_users = [{"username": player.get('username'), "user_id": player.get('user_id')} for tier in actual_scores.get('current_spire').values() for player in tier if self.get_player_id_or_name(player) not in current_climb_users]
+    self.logger.long_only('info', f'missing_climb_users: {missing_climb_users}')
+    return missing_climb_users
   
   async def get_users_in_guild(self, channel, all_users):
     if not channel or not channel.guild:
       return []
     guild = channel.guild
     members_in_guild = []
-    for user_id in all_users:
-      if user_id is None:
-        continue 
-      try:
-        member = await guild.fetch_member(user_id)
-        if member:
-          members_in_guild.append(user_id)
-      except (discord.NotFound, discord.HTTPException):
-        continue        
+    for user in all_users:
+      user_id = user.get('user_id')
+      if user_id is not None:
+        try:
+          member = await guild.fetch_member(user_id)
+          if member:
+            members_in_guild.append(user_id)
+        except (discord.NotFound, discord.HTTPException):
+          continue        
     return members_in_guild
 
   async def send_reminder_message(self):
     channels = await self.get_channels()
-    print(channels)
     actual_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player', 'date': self.date_to_get}])
     all_users_to_remind = self.compare_spire_scores(actual_scores)
     for channel_data in channels:
@@ -207,13 +202,13 @@ class SpireRankingService:
     try:
       now = datetime.now(tz=timezone.utc)
       diff = now - self.spire_start_time
-      days = diff.days % self.spire_length
-      print(f'{now} || loop: {days}')
+      days = diff.days % self.spire_length + 1
+      self.logger.bot_log(f'reminder loop {now} || loop: {days}')
       if days % 3 == 0 and days > 3:
         self.date_to_get = (now - timedelta(minutes=1)).isoformat()
         await self.send_reminder_message()
     except Exception as e:
-      print(f'Erreur de loop : {e}')
+      self.logger.error_log(f'Erreur de reminder loop : {e}')
 
   @tasks.loop(time=datetime.now(tz=timezone.utc).replace(hour=11, minute=0, second=0, microsecond=0).time())
   async def send_spire_results(self):
@@ -221,7 +216,7 @@ class SpireRankingService:
       now = datetime.now(tz=timezone.utc)
       diff = now - self.spire_start_time
       days = diff.days % self.spire_length
-      print(f'{now} || loop: {days}')
+      self.logger.bot_log(f'score loop {now} || loop: {days}')
       if days % 3 == 0 and days > 0:
         self.date_to_get = (now - timedelta(minutes=1)).isoformat()
         await self.send_spire_rankings()
@@ -229,8 +224,12 @@ class SpireRankingService:
         self.date_to_get = (now - timedelta(days=2, minutes=1)).isoformat()
         await self.send_spire_start()
     except Exception as e:
-      print(f'Erreur de loop : {e}')
+      self.logger.error_log(f'Erreur de score loop : {e}')
 
   @send_spire_results.before_loop
+  async def before_loop(self):
+    await self.bot.wait_until_ready()
+
+  @send_spire_reminder.before_loop
   async def before_loop(self):
     await self.bot.wait_until_ready()
