@@ -37,7 +37,7 @@ class Mercask(commands.Cog):
     self.logger.ok_log('mercask')
 
   async def get_response(self, user_name, user_id, hero):
-    print(f'username: {user_name} / user_id: {user_id} / hero: {hero}')
+    self.logger.log_only('info', f'username: {user_name} / user_id: {user_id} / hero: {hero}')
     user_list = await self.get_users_by_merc(user_name, user_id, hero)
     if user_list:
       hero = await self.bot.back_requests.call('getHeroByName', False, [str_to_slug(hero)])
@@ -48,12 +48,12 @@ class Mercask(commands.Cog):
   
   async def get_users_by_merc(self, user_name, user_id, hero):
     found_hero = any(str_to_slug(hero) == str_to_slug(m.value) for m in self.choices)
-    print(f'found_hero : {found_hero}')
+    self.logger.log_only('info', f'found_hero : {found_hero}')
     if not found_hero:
       return {'title': '', 'description': 'Le héros demandé n\'est pas recensé dans la liste des mercenaires disponibles :shrug:\nMerci de réitérer la commande :wink:', 'color': 'red'}
     
     to_find = {'merc': {'name': hero}}
-    print(f'to_find: {to_find}')
+    self.logger.log_only('info', f'to_find: {to_find}')
     user_list = await self.bot.back_requests.call('getMerc', False, [to_find])
     if not user_list:
       return None
@@ -66,7 +66,6 @@ class Mercask(commands.Cog):
   def print_user_list(self, user_list, user_name, hero):
     description = f'# Besoin de {hero} pour {user_name} # \n'
     for user in user_list:
-      print(user)
       if len(user_list) > 1:
         description += '- '
       description += f'<@{user.get('user_id')}>'

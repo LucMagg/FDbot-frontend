@@ -36,7 +36,6 @@ class MercService:
     if merc.get('ascend'):
       to_return += f'{merc.get('ascend')} '
     if merc.get('merge'):
-      print('merge!')
       to_return += f'M{merc.get('merge')} '
     if merc.get('pet'):
       to_return += f'avec son pet '

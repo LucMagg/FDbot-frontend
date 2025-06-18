@@ -49,7 +49,7 @@ class Mercregister(commands.Cog):
       talent_a3 = False
     if talent_a3 == 'Oui':
       talent_a3 = True
-    print(f'username: {user_name} / user_id: {user_id} / hero: {hero} / ascend: {ascend} / pet: {has_pet} / talent_a2: {talent_a2} / talent_a3: {talent_a3} / merge: {merge} ')
+    self.logger.log_only('info', f'username: {user_name} / user_id: {user_id} / hero: {hero} / ascend: {ascend} / pet: {has_pet} / talent_a2: {talent_a2} / talent_a3: {talent_a3} / merge: {merge} ')
     user = await self.add_merc_to_user(user_name, user_id, hero, ascend, has_pet, talent_a2, talent_a3, merge)
     if user:
       merclist_cog = self.bot.get_cog('Merclist')
@@ -85,7 +85,7 @@ class Mercregister(commands.Cog):
       to_add['mercs'][0]['talent_a3'] = talent_a3
     if merge is not None:
       to_add['mercs'][0]['merge'] = merge
-    print(to_add)
+    self.logger.log_only('info', f'merc to_add: {to_add}')
     return await self.bot.back_requests.call('addMerc', False, [to_add])
     
   async def setup(self, param_list):
