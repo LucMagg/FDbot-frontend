@@ -8,6 +8,7 @@ from utils.misc_utils import get_discord_color
 class SpireRankingService:
   def __init__(self, bot):
     self.bot = bot
+    self.logger = bot.logger
     self.current_page = 0
     self.message = None
     self.view = None
@@ -120,7 +121,7 @@ class SpireRankingService:
               await message.unpin()
               await self.bot.back_requests.call("deleteMessageId", False, [{'date': self.date_to_get, 'channel_id': channel_data.get('discord_channel_id'), 'ranking_message_id': message.id}])
     except Exception as e:
-      self.logger.error(e)
+      self.logger.error_log(f'Erreur de unpin_old_message : {e}')
   
   async def build_response(self):
     self.rankings = await self.get_rankings()
@@ -136,7 +137,7 @@ class SpireRankingService:
         if pinned:
           await message.pin()
     except Exception as e:
-      self.logger.error_log(f'Erreur de unpin_old_message : {e}')
+      self.logger.error_log(f'Erreur de post_messages : {e}')
 
   async def send_spire_rankings(self):
     channels = await self.get_channels()
@@ -203,7 +204,7 @@ class SpireRankingService:
       now = datetime.now(tz=timezone.utc)
       diff = now - self.spire_start_time
       days = diff.days % self.spire_length + 1
-      self.logger.bot_log(f'reminder loop {now} || loop: {days}')
+      self.logger.log_only('info', f'reminder loop {now} || loop: {days}')
       if days % 3 == 0 and days > 3:
         self.date_to_get = (now - timedelta(minutes=1)).isoformat()
         await self.send_reminder_message()
@@ -216,7 +217,7 @@ class SpireRankingService:
       now = datetime.now(tz=timezone.utc)
       diff = now - self.spire_start_time
       days = diff.days % self.spire_length
-      self.logger.bot_log(f'score loop {now} || loop: {days}')
+      self.logger.log_only('info', f'score loop {now} || loop: {days}')
       if days % 3 == 0 and days > 0:
         self.date_to_get = (now - timedelta(minutes=1)).isoformat()
         await self.send_spire_rankings()
