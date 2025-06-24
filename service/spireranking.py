@@ -162,9 +162,9 @@ class SpireRankingService:
 
   def compare_spire_scores(self, actual_scores):
     current_climb_users = {self.get_player_id_or_name(player) for tier in actual_scores.get('current_climb').values() for player in tier}
-    self.logger.long_only('info', f'current_climb_users: {current_climb_users}')
+    self.logger.log_only('info', f'current_climb_users: {current_climb_users}')
     missing_climb_users = [{"username": player.get('username'), "user_id": player.get('user_id')} for tier in actual_scores.get('current_spire').values() for player in tier if self.get_player_id_or_name(player) not in current_climb_users]
-    self.logger.long_only('info', f'missing_climb_users: {missing_climb_users}')
+    self.logger.log_only('info', f'missing_climb_users: {missing_climb_users}')
     return missing_climb_users
   
   async def get_users_in_guild(self, channel, all_users):
@@ -187,9 +187,11 @@ class SpireRankingService:
     channels = await self.get_channels()
     actual_scores = await self.bot.back_requests.call("getSpireDataScores", False, [{'type': 'player', 'date': self.date_to_get}])
     all_users_to_remind = self.compare_spire_scores(actual_scores)
+    self.logger.log_only(f'all_users_to_remind: {all_users_to_remind}')
     for channel_data in channels:
       channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
       users_by_channel = await self.get_users_in_guild(channel, all_users_to_remind)
+      self.logger.log_only(f'channel: {channel} / users_by_channel: {users_by_channel}')
       if len(users_by_channel) > 0:
         description = f'# Climb {actual_scores.get('climb')} # \n'
         for user in users_by_channel:
