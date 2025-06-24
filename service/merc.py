@@ -46,7 +46,7 @@ class MercService:
     to_return += '\n'.join(details)
     return to_return
 
-  def print_merc_details(self, merc, hero):
+  def print_merc_details(self, merc, hero=None):
     name = f'- {hero.get('name') if hero else merc.get('name')}'
     details = ''
     if merc.get('ascend'):
