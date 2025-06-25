@@ -71,7 +71,7 @@ class Mercask(commands.Cog):
       description += f'<@{user.get('user_id')}>'
       merc = user.get('merc')
       if merc.get('a2_talent') or merc.get('a3_talent') or merc.get('ascend') or merc.get('merge') or merc.get('pet'):
-        description += f'({self.bot.merc_service.print_merc_details(merc)})'
+        description += self.bot.merc_service.print_merc_details(merc)
       description += '\n'
     description += 'Merci pour lui :kissing_heart:'
     return description

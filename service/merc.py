@@ -41,13 +41,13 @@ class MercService:
       hero = next((h for h in mercsH if h.get('name_slug') == merc.get('name_slug')), None)
       if not hero:
         continue
-      details.append(self.print_merc_details(merc, hero))
+      name = hero.get('name') if hero else merc.get('name')
+      details.append(f'- {name} {self.print_merc_details(merc)}')
 
     to_return += '\n'.join(details)
     return to_return
 
-  def print_merc_details(self, merc, hero=None):
-    name = f'- {hero.get('name') if hero else merc.get('name')}'
+  def print_merc_details(self, merc):
     details = ''
     if merc.get('ascend'):
       details += f'{merc.get('ascend')} '
@@ -65,5 +65,5 @@ class MercService:
       else:
         details += 'son talent A2 '
     if not details:
-      return name
-    return f'{name} ({details.strip()})'
+      return ''
+    return f'({details.strip()})'
