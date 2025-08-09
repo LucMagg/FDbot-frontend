@@ -107,6 +107,8 @@ class Hero(commands.Cog):
           print_lead += f"{str.lower(lead['color'])} "
         if lead['species'] is not None:
           print_lead += f"{str.lower(lead['species'])} "
+        if lead['extra'] is not None:
+          print_lead += f"or {lead['extra']} "
         print_lead += 'heroes'
         to_return += f"{print_lead}\n"
 
