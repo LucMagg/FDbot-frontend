@@ -51,7 +51,7 @@ class AddReplay(commands.Cog):
     self.logger.error_log('addreplay', f"Couldn't regex {link}")
 
   async def get_add_replay_response(self, interaction):
-    response = {'title': '', 'description': f"# Merci d'avoir ajouter ce replay :wink:", 'color': 'blue'}
+    response = {'title': '', 'description': f"# Merci d'avoir ajouté ce replay :wink:", 'color': 'blue'}
     await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.ok_log('addreplay')
     await self.bot.update_service.command_setup_updater(['replay'], False)
