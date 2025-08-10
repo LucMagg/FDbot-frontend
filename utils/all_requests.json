@@ -322,5 +322,27 @@
     "url": "merc",
     "type": "get",
     "param0": "json"
+  },
+  {
+    "name": "addReplay",
+    "url": "replays",
+    "type": "post",
+    "param0": "json"
+  },
+  {
+    "name": "replay",
+    "url": "replays",
+    "type": "get",
+    "param0": "json"
+  },
+  {
+    "name": "getReplayEvents",
+    "url": "replays",
+    "type": "get"
+  },
+  {
+    "name": "getReplayEventLevels",
+    "url": "replays/levels",
+    "type": "get"
   }
 ]

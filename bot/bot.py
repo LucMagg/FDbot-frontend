@@ -92,7 +92,9 @@ class MyBot(commands.Bot):
       'commands.spiredetails',
       'commands.merclist',
       'commands.mercregister',
-      'commands.mercask'
+      'commands.mercask',
+      'commands.addreplay',
+      'commands.replay'
       #'commands.testcommand'
     ]
 

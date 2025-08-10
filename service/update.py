@@ -34,6 +34,8 @@ class UpdateService:
             await self.bot.setup_command(command_location, pets)
           case 'level':
             await self.bot.setup_command(command_location, levels)
+          case 'replay':
+            await self.bot.setup_command(command_location)
           case _:
             await self.bot.setup_command(command_location)
 
