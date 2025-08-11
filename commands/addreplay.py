@@ -49,15 +49,20 @@ class AddReplay(commands.Cog):
     await self.interaction_handler.send_wait_message(interaction=interaction)
 
     await self.bot.back_requests.call('addReplay', False, [to_add], interaction)
-    await self.get_add_replay_response(interaction)
+    message = f'Event : {event}\nLevel : {level}'
+    await self.get_add_replay_response(interaction, event, level, author)
 
   async def get_add_replay_error_response(self, interaction, link):
     response = {'title': '', 'description': f'# Le replay n\'a pas pu être ajouté', 'color': 'red'}
     await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.error_log('addreplay', f"Couldn't regex {link}")
 
-  async def get_add_replay_response(self, interaction):
-    response = {'title': '', 'description': f'# Merci d\'avoir ajouté ce replay :wink:', 'color': 'blue'}
+  async def get_add_replay_response(self, interaction, event, level, author):
+    description = '# Replay ajouté # \n'
+    description += f'Merci pour ta participation {author} :thumbsup:\n'
+    description += f'* Event : {event} \n'
+    description += f'* Level : {level} \n'
+    response = {'title': '', 'description': description, 'color': 'blue'}
     await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.ok_log('addreplay')
     await self.bot.update_service.command_setup_updater(['replay'], False)
