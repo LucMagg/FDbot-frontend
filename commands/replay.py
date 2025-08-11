@@ -51,7 +51,7 @@ class Replay(commands.Cog):
     description = f"# Voici les replays pour le level {level} de l'event {event}\n"
     lines = [f"- {r.get('player')}: {r.get('link')}" for r in resp]
     for r in resp:
-      await interaction.followup.send(f"{r.get('link')}`")
+      await interaction.followup.send(f"{r.get('link')} ")
     description += '\n'.join(lines)
 
     response = {'title': '', 'description': description, 'color': 'blue'}
@@ -61,7 +61,7 @@ class Replay(commands.Cog):
     self.logger.ok_log('addreplay')
 
   async def get_error_response(self, interaction, event, level):
-    response = {'title': '', 'description': f"# Les replays pour le level {level} de l'event {event} n'ont pas pu être trouvé", 'color': 'red'}
+    response = {'title': '', 'description': f"# Les replays pour le level {level} de l'event {event} n'ont pas pu être trouvés", 'color': 'red'}
     await self.interaction_handler.send_embed(interaction=interaction, response=response)
     self.logger.ok_log('addreplay')
 
