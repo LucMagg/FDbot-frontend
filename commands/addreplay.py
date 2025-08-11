@@ -22,16 +22,15 @@ class AddReplay(commands.Cog):
   async def replay_app_command(self, interaction: discord.Interaction, link: str):
     self.logger.command_log('addreplay', interaction)
     author = nick(interaction)
-
-    txt, replay_link = link.rsplit('fnd://', 1)
-    print(txt)
-    print(replay_link)
+    
+    txt, replay_link = link.replace('\n', '').rsplit('<fnd://', 1)
+    self.logger.log('debug', f'txt : {txt}')
     match = re.match(self.pattern, txt)
-    print(match)
     if not match:
       await self.get_add_replay_error_response(interaction, link)
       return
-    replay_link = f'fnd://{replay_link}'
+    replay_link = f'fnd://{replay_link}'.replace('>','')
+    self.logger.log('debug', f'replay_link : {replay_link}')
 
     event_level = match.group(1).strip()
     event, level = event_level.rsplit(' ', 1)
@@ -39,8 +38,8 @@ class AddReplay(commands.Cog):
       event = 'Dragonspire'
       level = f'Floor {level}'
 
-    print(event)
-    print(level)
+    self.logger.log('debug', f'event : {event}')
+    self.logger.log('debug', f'level : {level}')
     to_add = {
       'event': event.strip(),
       'level': level.strip(),
