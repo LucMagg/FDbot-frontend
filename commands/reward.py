@@ -34,42 +34,75 @@ class Reward(commands.Cog):
       self.last_interaction = None
       self.handle_timeout = False
 
-  class ChoiceView(discord.ui.View):
-###### VUES DES CHOIX
+  class ButtonChoiceView(discord.ui.View):
+###### VUES DES CHOIX AVEC BOUTONS
     def __init__(self, outer, selectable_choices, request_reward_data):
       super().__init__(timeout=180)
-      outer.logger.log_only('debug', 'init choice view')
+      outer.logger.log_only('debug', 'init button choice view')
       self.outer = outer
       self.selectable_choices = selectable_choices
       self.request_reward_data = request_reward_data
-      for choice in self.selectable_choices:       
-        choice_button = discord.ui.Button(
-          label=choice.get('name'),
-          style=discord.ButtonStyle.blurple if choice.get('name') in self.selectable_choices else discord.ButtonStyle.grey,
-          custom_id=str_to_slug(choice.get('name'))
-        )
-        if self.request_reward_data.current_reward_choice != 'type':
-          choice_button.emoji = self.get_emoji_from_icon(choice.get('icon'))
-        choice_button.callback = self.create_choice_callback(choice_button=choice_button)
-        self.add_item(choice_button)
+
+      if self.request_reward_data.current_reward_choice == 'type': ## Choix entre dust et gear -> on mix quality et type pour créer des boutons
+        print('quality & type choice')
+        for i in range(len(self.selectable_choices)):
+          type_choice = self.selectable_choices[i]
+          quality_choices = type_choice['choices'][0]
+          for j in range(len(quality_choices['choices'])):
+            quality_choice = quality_choices['choices'][j]
+            choice_button = discord.ui.Button(
+              label=f'{quality_choice.get('name')} {type_choice.get('name')}',
+              style=discord.ButtonStyle.blurple if type_choice.get('name') in self.selectable_choices else discord.ButtonStyle.grey,
+              custom_id=str_to_slug(f'{quality_choice.get('name')} {type_choice.get('name')}')
+            )
+            choice_button.emoji = self.get_emoji_from_icon(quality_choice.get('icon'))
+            choice_button.callback = self.create_choice_callback(choice_button=choice_button, type='double')
+            self.add_item(choice_button)
+      else: ## Choix gear uniquement -> on propose directement la quality
+        print('quality choice')
+        for choice in self.selectable_choices:       
+          choice_button = discord.ui.Button(
+            label=choice.get('name'),
+            style=discord.ButtonStyle.blurple if choice.get('name') in self.selectable_choices else discord.ButtonStyle.grey,
+            custom_id=str_to_slug(choice.get('name'))
+          )
+          if self.request_reward_data.current_reward_choice != 'type':
+            choice_button.emoji = self.get_emoji_from_icon(choice.get('icon'))
+          choice_button.callback = self.create_choice_callback(choice_button=choice_button, type='single')
+          self.add_item(choice_button)
       self.add_validation_button()
 
-    def create_choice_callback(self, choice_button: discord.ui.Button):
+    def create_choice_callback(self, choice_button: discord.ui.Button, type: str):
       async def callback(interaction: discord.Interaction):
         self.request_reward_data.last_interaction = interaction
         choice_button.style = discord.ButtonStyle.grey if choice_button.style == discord.ButtonStyle.blurple else discord.ButtonStyle.blurple
+        print('button check')
         if choice_button.style == discord.ButtonStyle.blurple:
-          self.request_reward_data.selected_reward[self.request_reward_data.current_reward_choice] = choice_button.label
+          if type == 'double':
+            print('here')
+            self.request_reward_data.selected_reward['type'] = choice_button.label.split(' ')[1]
+            self.request_reward_data.selected_reward['quality'] = choice_button.label.split(' ')[0]
+            print('there')
+            print(f'type : {self.request_reward_data.selected_reward['type']}')
+            print(f'quality : {self.request_reward_data.selected_reward['quality']}')
+          else:
+            self.request_reward_data.selected_reward[self.request_reward_data.current_reward_choice] = choice_button.label
           await self.unselect_all_others(choice_button.custom_id)
         else:
           if self.request_reward_data.current_reward_choice in self.request_reward_data.selected_reward.keys():
-            del self.request_reward_data.selected_reward[self.request_reward_data.current_reward_choice]
+            if type == 'double':
+              del self.request_reward_data.selected_reward['type']
+              del self.request_reward_data.selected_reward['quality']
+            else:
+              del self.request_reward_data.selected_reward[self.request_reward_data.current_reward_choice]
         await self.update_validation_button_state(interaction=interaction)
       return callback
     
     async def update_validation_button_state(self, interaction: discord.Interaction):
+      print('update validation button state')
       validation_button = discord.utils.get(self.children, custom_id='submit' if self.are_all_choices_done() else 'next')
       if validation_button:
+        print('validation_button found')
         validation_button.disabled = not self.has_one_selected()
         await self.outer.interaction_handler.send_view(interaction=interaction, view=self)
 
@@ -98,30 +131,24 @@ class Reward(commands.Cog):
       self.request_reward_data.view.stop()
       next_view_choices = self.select_next_view()
       if next_view_choices:
+        print('next view')
+        print(next_view_choices)
         next_choices_content = f'\n### Choix {self.request_reward_data.current_reward_choice} pour le type de reward {self.request_reward_data.selected_reward.get('type')} : ###'
-        self.request_reward_data.view = self.outer.ChoiceView(outer=self.outer, selectable_choices=next_view_choices, request_reward_data=self.request_reward_data)
+        print(next_choices_content)
+        self.request_reward_data.view = self.outer.SelectorChoiceView(outer=self.outer, selectable_choices=next_view_choices, request_reward_data=self.request_reward_data, current_choices_list_begin=0)
         await self.outer.interaction_handler.send_view(interaction=interaction, content=next_choices_content, view=self.request_reward_data.view)
         return
       await self.outer.build_quantity_modal(interaction=interaction, request_reward_data=self.request_reward_data)
 
     def select_next_view(self):
+      print('select next view')
       current_reward = next((c for c in self.request_reward_data.current_level.get('reward_choices') if c.get('name') == self.request_reward_data.selected_reward.get('type')), None)
-      if self.request_reward_data.current_reward_choice == 'type':
-        self.request_reward_data.current_reward_choice = current_reward.get('choices')[0].get('name').lower()
-        return sorted(current_reward.get('choices')[0].get('choices'), key=lambda x:x['grade']) 
+      if self.request_reward_data.selected_reward['type'] == 'gear':
+        print('quality & gear ok')
+        self.request_reward_data.current_reward_choice = 'item'
+        return sorted(current_reward.get('choices')[1].get('choices'), key=lambda x:x['grade']) 
       else:
-        current_choices = current_reward.get('choices')
-        next_choices = []
-        try:
-          for i, choice in enumerate(current_choices):
-            if choice.get('name').lower() == self.request_reward_data.current_reward_choice:
-              next_choices = current_choices[i + 1]
-              break
-        except:
-          if len(next_choices) == 0:
-            return False
-        self.request_reward_data.current_reward_choice = next_choices.get('name').lower()
-        return sorted(next_choices.get('choices'), key=lambda x: x['grade'])
+        return False
     
     def get_emoji_from_icon(self, icon):
       if 'customIcon' in icon or icon == '':
@@ -159,6 +186,66 @@ class Reward(commands.Cog):
       if self.request_reward_data.handle_timeout:
         self.outer.logger.log_only('debug', 'choice view timeout')
         await self.outer.interaction_handler.send_timeout_message(interaction=self.request_reward_data.last_interaction, timeout=self.timeout)      
+
+
+  class SelectorChoiceView(discord.ui.View):
+###### VUES DES CHOIX AVEC SELECTEUR
+    def __init__(self, outer, selectable_choices: list, request_reward_data, current_choices_list_begin: int):
+      super().__init__(timeout=180)
+      outer.logger.log_only('debug', 'init selector choice view')
+      self.outer = outer
+      self.selectable_choices = selectable_choices
+      self.request_reward_data = request_reward_data
+      self.current_choices_list_begin = current_choices_list_begin
+      choices_end = len(self.selectable_choices) if self.current_choices_list_begin + 24 > len(self.selectable_choices) else self.current_choices_list_begin + 24
+      for i in range(self.current_choices_list_begin, choices_end):
+        print(i)
+        self.choice_selector.options.append(discord.SelectOption(label=self.selectable_choices[i].get('name'), value=self.selectable_choices[i].get('name')))
+      print(f'Choice list : {self.choice_selector.options}')
+      print(f'len : {len(self.choice_selector.options)}')
+      self.choice_selector.placeholder = 'Choisissez un item'
+      previous_disabled = False
+      next_disabled = False
+      if len(self.selectable_choices) > 25:
+        print('build buttons')
+        if self.current_choices_list_begin == 0:
+          previous_disabled = True
+          print('previous disabled')
+        if self.current_choices_list_begin + 24 > len(self.selectable_choices):
+          next_disabled = True
+          print('next disabled')
+        print('add previous')
+        self.add_list_button(label='Previous', is_disabled=previous_disabled)
+        print('add next')
+        self.add_list_button(label='Next', is_disabled=next_disabled)
+    
+    @discord.ui.select(cls=discord.ui.Select) 
+    async def choice_selector(self, interaction: discord.Interaction, select: discord.ui.Select):
+      self.request_reward_data.last_interaction = interaction
+      self.request_reward_data.selected_reward['item'] = self.choice_selector.values[0]
+      await self.outer.build_validation_view(interaction=interaction, request_reward_data=self.request_reward_data)
+
+    def add_list_button(self, label: str, is_disabled: bool):
+      print(f'build {label} button')
+      button = discord.ui.Button(
+        label=label,
+        custom_id=label,
+        style=discord.ButtonStyle.grey if is_disabled else discord.ButtonStyle.blurple,
+        disabled=is_disabled
+      )
+      button.callback = self.previous_callback if label == 'Previous' else self.next_callback
+      self.add_item(button)
+
+    async def next_callback(self, interaction: discord.Interaction):
+      self.request_reward_data.view = self.outer.SelectorChoiceView(outer=self.outer, selectable_choices=self.selectable_choices, request_reward_data= self.request_reward_data, current_choices_list_begin=self.current_choices_list_begin + 25)
+      await self.outer.interaction_handler.send_view(interaction=interaction, view=self.request_reward_data.view)
+    
+    async def previous_callback(self, interaction: discord.Interaction):
+      self.request_reward_data.view = self.outer.SelectorChoiceView(outer=self.outer, selectable_choices=self.selectable_choices, request_reward_data= self.request_reward_data, current_choices_list_begin=self.current_choices_list_begin - 25)
+      await self.outer.interaction_handler.send_view(interaction=interaction, view=self.request_reward_data.view)
+
+    
+
 
   class InputModal(discord.ui.Modal):
 ##### MODALE DE QUANTITÉ
@@ -198,7 +285,7 @@ class Reward(commands.Cog):
         self.outer.logger.log_only('debug', 'input modal timeout')
         self.stop()
         await self.outer.interaction_handler.send_timeout_message(interaction=self.request_reward_data.last_interaction, timeout=self.timeout)
-                            
+
   class ValidationView(discord.ui.View):
 ##### VUE FINALE DE VALIDATION DE LA REWARD
     def __init__(self, outer, request_reward_data):
@@ -208,9 +295,7 @@ class Reward(commands.Cog):
       self.request_reward_data = request_reward_data
       outer.logger.log_only('debug', f'times value: {self.request_reward_data.times}')
       self.many_times_selector.options = [discord.SelectOption(label=str(i), value=i) for i in range(1,6)]
-      print('here')
       self.many_times_selector.placeholder = str(self.request_reward_data.times)
-      print('there')
       outer.logger.log_only('debug', 'Selector initialized')
 
     @discord.ui.select(cls=discord.ui.Select) 
@@ -242,8 +327,9 @@ class Reward(commands.Cog):
       if self.request_reward_data.handle_timeout:
         self.outer.logger.log_only('debug', 'validation view timeout')
         await self.outer.interaction_handler.send_timeout_message(interaction=self.request_reward_data.last_interaction, timeout=self.timeout)
-    
-##### COMMANDE
+
+
+  ##### COMMANDE
   async def level_autocomplete(self, interaction: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
     return await CommandService.return_autocompletion(self.levelname_choices, current)
 
@@ -274,7 +360,7 @@ class Reward(commands.Cog):
       request_reward_data.current_reward_choice = 'type'
       request_reward_data.selected_reward = {}
       choices = sorted(request_reward_data.current_level.get('reward_choices'), key=lambda x:x['grade'])
-      request_reward_data.view = self.ChoiceView(self, selectable_choices=choices, request_reward_data=request_reward_data)
+      request_reward_data.view = self.ButtonChoiceView(self, selectable_choices=choices, request_reward_data=request_reward_data)
       await self.interaction_handler.send_view(interaction=interaction, content="\n ### Choississez le type de reward ###", view=request_reward_data.view)
     except Exception as e:
       print(f'Erreur: {e}')
@@ -283,7 +369,7 @@ class Reward(commands.Cog):
     request_reward_data.current_reward_choice = request_reward_data.current_level.get('reward_choices')[0].get('choices')[0].get('name').lower()
     choices = sorted(request_reward_data.current_level.get('reward_choices')[0].get('choices')[0].get('choices'), key=lambda x:x['grade'])
     initial_view_content = f'\n### Choix {request_reward_data.current_reward_choice} pour le type de reward {request_reward_data.selected_reward.get('type')} : ###'
-    request_reward_data.view = self.ChoiceView(self, selectable_choices=choices, request_reward_data=request_reward_data)
+    request_reward_data.view = self.ButtonChoiceView(self, selectable_choices=choices, request_reward_data=request_reward_data)
     await self.interaction_handler.send_view(interaction=interaction, content=initial_view_content, view=request_reward_data.view)
 
   async def build_initial_view(self, interaction: discord.Interaction, request_reward_data: CommandData):
