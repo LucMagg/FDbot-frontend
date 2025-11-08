@@ -242,9 +242,7 @@ class Reward(commands.Cog):
     
     async def previous_callback(self, interaction: discord.Interaction):
       self.request_reward_data.view = self.outer.SelectorChoiceView(outer=self.outer, selectable_choices=self.selectable_choices, request_reward_data= self.request_reward_data, current_choices_list_begin=self.current_choices_list_begin - 25)
-      await self.outer.interaction_handler.send_view(interaction=interaction, view=self.request_reward_data.view)
-
-    
+      await self.outer.interaction_handler.send_view(interaction=interaction, view=self.request_reward_data.view)   
 
 
   class InputModal(discord.ui.Modal):
