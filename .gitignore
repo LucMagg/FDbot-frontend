@@ -166,3 +166,7 @@ cython_debug/
 
 #logs
 logs/
+
+#images
+images/maps/
+images/spire/
