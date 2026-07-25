@@ -8,11 +8,9 @@
   {
     "command": "addcomment",
     "name": "addComment",
-    "url": "comment?hero_or_pet=[[param0]]&comment=[[param1]]&author=[[param2]]",
+    "url": "comment",
     "type": "post",
-    "param0": "str",
-    "param1": "default",
-    "param2": "default"
+    "param0": "json"
   },
   {
     "name": "getAllDusts",
@@ -119,10 +117,9 @@
   },
   {
     "name": "addReward",
-    "url": "levels/[[param0]]/reward",
+    "url": "level/reward",
     "type": "post",
-    "param0": "str",
-    "param1": "json"
+    "param0": "json"
   },
   {
     "name": "getAllMessages",
@@ -151,13 +148,19 @@
     "name": "getPetsByClass",
     "url": "pet/class?class=[[param0]]",
     "type": "get",
-    "param0": "slug"
+    "param0": "str"
   },
   {
     "name": "getPetsByHeroname",
     "url": "pet/hero?hero=[[param0]]",
     "type": "get",
     "param0": "str"
+  },
+  {
+    "name": "getExclusivePets",
+    "url": "pet/exclusive",
+    "type": "get",
+    "param0": "json"
   },
   {
     "name": "getAllQualities",
@@ -178,6 +181,11 @@
   {
     "name": "getAllTalents",
     "url": "talent",
+    "type": "get"
+  },
+  {
+    "name": "getHeroesAndPetsTalents",
+    "url": "talents",
     "type": "get"
   },
   {
@@ -343,6 +351,67 @@
   {
     "name": "getReplayEventLevels",
     "url": "replays/levels",
+    "type": "get"
+  },
+  {
+    "name": "getAllLanguages",
+    "url": "language",
+    "type": "get"
+  },
+  {
+    "name": "getLangChannels",
+    "url": "langchannel",
+    "type": "get"
+  },
+  {
+    "name": "addLangChannel",
+    "url": "langchannel",
+    "type": "post",
+    "param0": "json"
+  },
+  {
+    "name": "updateLangChannel",
+    "url": "langchannel",
+    "type": "put",
+    "param0": "json"
+  },
+  {
+    "name": "deleteLangChannel",
+    "url": "langchannel",
+    "type": "delete",
+    "param0": "json"
+  },
+  {
+    "name": "getAllDC",
+    "url": "dcs",
+    "type": "get"
+  },
+  {
+    "name": "addDC",
+    "url": "dc",
+    "type": "post",
+    "param0": "json"
+  },
+  {
+    "name": "getDC",
+    "url": "dc",
+    "type": "get",
+    "param0": "json"
+  },
+  {
+    "name": "clearDC",
+    "url": "dc",
+    "type": "delete"
+  },
+  {
+    "name": "addTrapRole",
+    "url": "traprole",
+    "type": "post",
+    "param0": "json"
+  },
+  {
+    "name": "getAllTrapRoles",
+    "url": "traproles",
     "type": "get"
   }
 ]
