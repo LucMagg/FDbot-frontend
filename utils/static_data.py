@@ -9,6 +9,8 @@ class StaticData:
     self.commands = None
     self.xp_data = None
     self.xp_thresholds = None
+    self.languages = None
+    self.langchannels = None
 
   def load_all_data(self):
     self.load_messages()
@@ -17,13 +19,15 @@ class StaticData:
     self.load_commands()
     self.load_xp_data()
     self.load_xp_thresholds()
+    self.load_languages()
+    self.load_langchannels()
 
   def load_messages(self):
     try:
       response = requests.get(DB_PATH + 'message')
       self.messages = response.json()
     except requests.RequestException as e:
-      print(f"Erreur lors de la récupération des messages: {e}")
+      print(f'Erreur lors de la récupération des messages: {e}')
 
   def get_messages(self):
     if self.messages is None:
@@ -35,7 +39,7 @@ class StaticData:
       response = requests.get(DB_PATH + 'dust')
       self.dusts = response.json()
     except requests.RequestException as e:
-      print(f"Erreur lors de la récupération des dusts: {e}")
+      print(f'Erreur lors de la récupération des dusts: {e}')
 
   def get_dusts(self):
     if self.dusts is None:
@@ -47,7 +51,7 @@ class StaticData:
       response = requests.get(DB_PATH + 'quality')
       self.qualities = response.json()
     except requests.RequestException as e:
-      print(f"Erreur lors de la récupération des qualities: {e}")
+      print(f'Erreur lors de la récupération des qualities: {e}')
 
   def get_qualities(self):
     if self.qualities is None:
@@ -59,7 +63,7 @@ class StaticData:
       response = requests.get(DB_PATH + 'command')
       self.commands = response.json()
     except requests.RequestException as e:
-      print(f"Erreur lors de la récupération des commands: {e}")
+      print(f'Erreur lors de la récupération des commands: {e}')
 
   def get_commands(self):
     if self.commands is None:
@@ -71,7 +75,7 @@ class StaticData:
       response = requests.get(DB_PATH + 'heroXp')
       self.xp_data = response.json()
     except requests.RequestException as e:
-      print(f"Erreur lors de la récupération des heroXp: {e}")
+      print(f'Erreur lors de la récupération des heroXp: {e}')
 
   def get_xp_data(self):
     if self.xp_data is None:
@@ -83,9 +87,33 @@ class StaticData:
       response = requests.get(DB_PATH + 'xpThresholds')
       self.xp_thresholds = response.json()
     except requests.RequestException as e:
-      print(f"Erreur lors de la récupération des heroXp: {e}")
+      print(f'Erreur lors de la récupération des heroXp: {e}')
 
   def get_xp_thresholds(self):
     if self.xp_thresholds is None:
       self.load_xp_thresholds()
     return self.xp_thresholds
+  
+  def load_languages(self):
+    try:
+      response = requests.get(DB_PATH + 'language')
+      self.languages = response.json()
+    except requests.RequestException as e:
+      print(f'Erreur lors de la récupération des languages: {e}')
+
+  def get_languages(self):
+    if self.languages is None:
+      self.load_languages()
+    return self.languages
+  
+  def load_langchannels(self):
+    try:
+      response = requests.get(DB_PATH + 'langchannel')
+      self.langchannels = response.json()
+    except requests.RequestException as e:
+      print(f'Erreur lors de la récupération des canaux avec language fixé : {e}')
+
+  def get_langchannels(self):
+    if self.langchannels is None:
+      self.load_langchannels()
+    return self.langchannels
