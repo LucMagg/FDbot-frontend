@@ -173,13 +173,16 @@ class RewardAddSession:
 
   # Modal validation handler
   async def handle_modal_submit(self, value: str):
-    int_value = str_to_int(value)
-    await self.ui.clear()
-    if int_value:
-      self.state.set_reward('quantity', int_value)
-      return await self.advance()
-    self.state.set_reward('quantity', value)
-    return await self._return_error('not an int')
+    try:
+      int_value = str_to_int(value)
+      await self.ui.clear()
+      if int_value:
+        self.state.set_reward('quantity', int_value)
+        return await self.advance()
+      self.state.set_reward('quantity', value)
+      return await self._return_error('not an int')
+    except Exception as e:
+      self.bot.logger.log_only('warning', f'[REWARD ADD] Error on modal submit : {e}')
 
   # View/modal builders
   #    type choices/content/placeholder
