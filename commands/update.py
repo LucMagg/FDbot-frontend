@@ -4,6 +4,7 @@ from discord import app_commands
 
 from utils.session_decorator import session_command
 from sessions.update import UpdateSession
+from ui.base_ui import BaseUiData
 
 
 class Update(commands.Cog):
