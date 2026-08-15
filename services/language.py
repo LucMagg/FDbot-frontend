@@ -7,7 +7,7 @@ class LangService(app_commands.Translator):
     super().__init__()
     self.bot = bot
     self.languages = self._load_languages(bot.static_data.languages)
-    self.langchannels = bot.static_data.langchannels
+    self.langchannels = self._load_langchannels(bot.static_data.langchannels)
     self.key_dicts = {}
     self.value_dicts = {}
     self._build_all_translation_dicts()
@@ -26,6 +26,12 @@ class LangService(app_commands.Translator):
           for key, value in section_data.items():
             languages[code][key] = value    
     return languages
+
+  def _load_langchannels(self, raw_langchannels):
+    if not isinstance(raw_langchannels, list):
+      self.bot.logger.log_only('warning', f'[LANG] Langchannels invalid or missing')
+      return []
+    return raw_langchannels
   
   def _build_all_translation_dicts(self):
     for lang in self.languages:
