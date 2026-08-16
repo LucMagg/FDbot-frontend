@@ -140,6 +140,10 @@ class CommandService:
   async def _set_merc_user_choices(self):
     collection_by_langcode = {}
     raw_users = await self.bot.back_requests.call('getAllMercUsers')
+    if 'error' in raw_users:
+      for language in self.bot.static_data.languages:
+        collection_by_langcode[language.get('code')] = []
+      return collection_by_langcode
     for language in self.bot.static_data.languages:
       lang = language.get('code')
       collection = defaultdict(list)
@@ -155,6 +159,10 @@ class CommandService:
   async def _set_merc_hero_choices(self):
     collection_by_langcode = {}
     mercs_by_guild = await self.bot.back_requests.call('getAllUniqueMercs')
+    if 'error' in mercs_by_guild:
+      for language in self.bot.static_data.languages:
+        collection_by_langcode[language.get('code')] = []
+      return collection_by_langcode
     for language in self.bot.static_data.languages:
       lang = language.get('code')
       collection = defaultdict(list)
