@@ -28,13 +28,16 @@ class SetbotlanguageSession:
 
   # Get command response
   async def _get_response(self) -> dict:
-    if str_to_slug(self.state.langcode) == self._translate('help'):
-      return self.bot.message.get_help(whichone='setbotlanguage', lang=self.ui.langcode)
-    payload = {'channel_id': self.state.channel_id, 'code': self.state.langcode}
-    self.state.language_set = await self.bot.back_requests.call('addLangChannel', [payload])
-    if 'error' in self.state.language_set:
-      return self._return_error()
-    return {'description': self._build_description(), 'color': self.bot.message.get_message('setbotlanguage').get('color')}
+    try:
+      if str_to_slug(self.state.langcode) == self._translate('help'):
+        return self.bot.message.get_help(whichone='setbotlanguage', lang=self.ui.langcode)
+      payload = {'channel_id': self.state.channel_id, 'code': self.state.langcode}
+      self.state.language_set = await self.bot.back_requests.call('addLangChannel', [payload])
+      if not isinstance(self.state.language_set, dict) or 'error' in self.state.language_set:
+        return self._return_error()
+      return {'description': self._build_description(), 'color': self.bot.message.get_message('setbotlanguage').get('color')}
+    except Exception as e:
+      self.logger.log_only('error', f'[SETBOTLANGUAGE] Error: {e}')
   
   # Error builder
   def _return_error(self) -> dict:
