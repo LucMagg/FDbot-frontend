@@ -26,7 +26,7 @@ class SpireDetailsSession:
 
   # Session entry point
   async def start(self):
-    self.date = datetime.now(tz=timezone.utc) - timedelta(days=1)
+    self.date = datetime.now(tz=timezone.utc)
     self.ui.wait_message = True
     await self.ui.send()
     await self.ui.clear()
@@ -490,14 +490,18 @@ class SpireDetailsSession:
   #    talents helpers
   def _match_talent(self, input: str) -> str:
     try:
-      talent_slugs = [str_to_slug(self._translate(t.get('name'))) for t in self.state.details_data.all_talents]
+      talent_slugs = [str_to_slug(t.get('name')) for t in self.state.details_data.all_talents]
       result = self._get_talent_in_list(input, talent_slugs)
+      if not result:
+        translated_input = self._translate(input)
+        result = self._get_talent_in_list(translated_input, talent_slugs)
       if not result:
         return input
       i = talent_slugs.index(result)
       return self.state.details_data.all_talents[i].get('name')
     except Exception as e:
       self.logger.log_only('error', f'error: {e}')
+      return input
   
   def _normalize(self, input: str) -> str:
     input = re.sub(r'[\U00010000-\U0010ffff]', '', input, flags=re.UNICODE)
