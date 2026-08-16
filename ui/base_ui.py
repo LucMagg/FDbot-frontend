@@ -34,7 +34,7 @@ class BaseUiData:
   modal: Optional[discord.ui.Modal] = None
   files: list[discord.File] = field(default_factory=list)
   timeout_message: bool = False
-  timeout: Optional[int] = 20
+  timeout: Optional[int] = 180
 
   # loop fields
   bot: Optional[discord.Client] = None  # pour from_channel, LoopUi
@@ -51,7 +51,11 @@ class BaseUiData:
     if b is None:
       raise ValueError('[UI] Error : interaction or channel is required')
     self.discord_handler = DiscordHandler(b)
-    self.langcode = b.language.set_language(interaction=self.interaction) if self.interaction else b.language.set_language(channel_id=self.channel.id) if self.channel else 'en'
+    try:
+      self.langcode = b.language.set_language(interaction=self.interaction) if self.interaction else b.language.set_language(channel_id=self.channel.id) if self.channel else 'en'
+    except Exception as e:
+      b.logger.log_only('info', f'[UI] Error while setting langcode : {e} -> fallback to English')
+      self.langcode = 'en'
 
   async def send(self):
     if self.interaction:
@@ -86,7 +90,8 @@ class BaseUiData:
 
   async def _clear_embed(self):
     if self.response or self.wait_message:
-      self.bot.logger.log_only('debug', '[UI] Clear embed')
+      if self.bot:
+        self.bot.logger.log_only('debug', '[UI] Clear embed')
       self.wait_message = False
       self.more_response = ''
       self.generic_error_message = False
@@ -95,7 +100,8 @@ class BaseUiData:
 
   async def _clear_view(self):
     if self.view:
-      self.bot.logger.log_only('debug', '[UI] Clear view')
+      if self.bot:
+        self.bot.logger.log_only('debug', '[UI] Clear view')
       self.view.clear_items()
       self.view.stop()
       self.content = None
@@ -105,7 +111,8 @@ class BaseUiData:
 
   async def _clear_modal(self):
     if self.modal:
-      self.bot.logger.log_only('debug', '[UI] Clear modal')
+      if self.bot:
+        self.bot.logger.log_only('debug', '[UI] Clear modal')
       self.modal.stop()
       self.title = None
       self.modal = None
