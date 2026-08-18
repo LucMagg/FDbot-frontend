@@ -46,6 +46,7 @@ class SpireRankingSession:
       ui = BaseUiData.from_channel(channel, self.bot)
       ui.response = {'description': self.return_msg.get(ui.langcode).get('start message'),'color': self.return_msg.get('color')}
       await ui.send()
+      self.logger.log_only('info', f'[LOOP] Spire ranking loop start sent in channel {channel}')
 
   # Send spire ranking message
   async def _send_spire_rankings(self):
@@ -58,8 +59,10 @@ class SpireRankingSession:
       try:
         channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
         if not channel:
+          self.logger.log_only('warning', f'[LOOP] Spire ranking score channel {channel_data.get('discord_channel_id')} not found')
           continue
         old_message_id = channel_data.get('ranking_message_id')
+        self.logger.log_only('warning', f'[LOOP] Spire ranking old message id {old_message_id}')
         ui = BaseUiData.from_channel(channel, self.bot)
         if old_message_id:
           ui.previous_message = await channel.fetch_message(old_message_id)
@@ -69,9 +72,11 @@ class SpireRankingSession:
         ui.labels = {'previous': self.return_msg.get(ui.langcode).get('previous'), 'next': self.return_msg.get(ui.langcode).get('next')}
         ui.rankings = await self._build_rankings_for_channel(ui)
         if not ui.rankings:
+          self.logger.log_only('warning', f'[LOOP] Spire ranking score | no ui rankings')
           continue
         await self.render_message(ui)
         await self._add_message_id(ui.message)
+        self.logger.log_only('info', f'[LOOP] Spire ranking score sent in channel {channel}')
       except Exception as e:
         self.logger.log_only('error', f'[LOOP] Spire ranking score | error while sending rankings : {e}')
 
