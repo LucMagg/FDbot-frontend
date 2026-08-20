@@ -37,7 +37,7 @@ class Merc(commands.Cog):
   @merc.command(name='ask')
   @session_command(command_name='merc ask')
   async def mercask_app_command(self, interaction: discord.Interaction, hero: str):
-    self.logger.log_only('debug', f'[MERC ASK] Hero : {hero}')
+    self.logger.log('debug', f'[MERC ASK] Hero : {hero}')
     session_data = {
       'cog': self,
       'interaction': interaction,
@@ -50,7 +50,7 @@ class Merc(commands.Cog):
   @merc.command(name='show')
   @session_command(command_name='merc show')
   async def mercshow_app_command(self, interaction: discord.Interaction, user: str):
-    self.logger.log_only('debug', f'[MERC SHOW] User : {user}')
+    self.logger.log('debug', f'[MERC SHOW] User : {user}')
     session_data = {
       'cog': self,
       'interaction': interaction,
@@ -75,7 +75,7 @@ class Merc(commands.Cog):
       merge: Optional[str] = None
     ):
     merc = {'name': hero, 'ascend': ascend, 'a2_talent': a2_talent, 'a3_talent': a3_talent, 'a4_talent': a4_talent, 'merge': merge, 'pet': pet, 'pet_talent': pet_talent}
-    self.logger.log_only('debug', f'[MERC REGISTER] Merc : {merc}')
+    self.logger.log('debug', f'[MERC REGISTER] Merc : {merc}')
     session_data = {
       'cog': self,
       'interaction': interaction,
