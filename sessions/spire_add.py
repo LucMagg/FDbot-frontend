@@ -27,13 +27,15 @@ class SpireAddSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    if self.state.screenshot is None:
-      return await self._return_help()
-    await self._process_screenshot()
-
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      if self.state.screenshot is None:
+        return await self._return_help()
+      await self._process_screenshot()
+    except Exception as e:
+      self.logger.session_exception('Spire Add', e)
   # Return help endpoint
   async def _return_help(self):
     self.ui.response = self.bot.message.get_help(whichone='spire add', lang=self.ui.langcode)
@@ -46,19 +48,19 @@ class SpireAddSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not a pic':
-        self.logger.log_only('error', f'[SPIRE ADD] Screenshot is not a valid picture')
+        self.logger.log('error', f'[SPIRE ADD] Screenshot is not a valid picture')
         description += self.error_msg.get('spire').get('not pic')
       case 'file':
-        self.logger.log_only('error', f'[SPIRE ADD] Error while saving file')
+        self.logger.log('error', f'[SPIRE ADD] Error while saving file')
         description += self.error_msg.get('spire').get('file error')
       case 'post':
         if more == 'add':
-          self.logger.log_only('error', f'[SPIRE ADD] Error while posting score')
+          self.logger.log('error', f'[SPIRE ADD] Error while posting score')
         else:
-          self.logger.log_only('error', f'[SPIRE ADD] Error while getting rankings after posting score')
+          self.logger.log('error', f'[SPIRE ADD] Error while getting rankings after posting score')
         description += self.error_msg.get('generic')
       case 'request error':
-        self.logger.log_only('error', f'[SPIRE ADD] Error while requesting backend')
+        self.logger.log('error', f'[SPIRE ADD] Error while requesting backend')
         description += self.error_msg.get('generic')
     self.ui.response = {'description': description, 'color': self.bot.message.get_message('error').get('color')}
     await self.ui.send()
@@ -98,7 +100,7 @@ class SpireAddSession:
     if 'error' in processed_pic:
       return await self._return_error(error='request error')
     self.state.spire_data.from_dict(processed_pic)
-    self.logger.log_only('debug', f'[SPIRE ADD] Extracted data : {self.state.to_dict()}')
+    self.logger.log('debug', f'[SPIRE ADD] Extracted data : {self.state.to_dict()}')
     guilds = await self.bot.back_requests.call('getAllExistingGuilds')
     if 'error' in guilds:
       return await self._return_error(error='request error')
@@ -114,12 +116,12 @@ class SpireAddSession:
           self.state.step = 'create'
         elif self.state.selection:
           self.state.set_item(self.state.step, self.state.selection)
-          self.logger.log_only('debug', f'[SPIRE ADD] {self.state.step}: {self.state.selection}')
+          self.logger.log('debug', f'[SPIRE ADD] {self.state.step}: {self.state.selection}')
           self.state.step = 'main'
       case 'create':
         if self.state.inputs:
           self.state.set_item('guild', self.state.inputs.get('guild'))
-          self.logger.log_only('debug', f'[SPIRE ADD] {self.state.step}: {self.state.spire_data.guild}')
+          self.logger.log('debug', f'[SPIRE ADD] {self.state.step}: {self.state.spire_data.guild}')
           if not self.state.spire_data.is_guild_valid():
             self.state.spire_data.all_guilds.append(self.state.spire_data.guild)
             self.state.spire_data.all_guilds = sorted(self.state.spire_data.all_guilds)
@@ -129,17 +131,17 @@ class SpireAddSession:
       case 'exists':
         if not self.state.validate:
           self.state.set_item('guild', None)
-          self.logger.log_only('debug', f'[SPIRE ADD] Guild exists but canceled')
+          self.logger.log('debug', f'[SPIRE ADD] Guild exists but canceled')
         else:
           self.state.clear_nav()
         self.state.step = 'main'
       case 'score':
         if self.state.inputs:
           self.state.spire_data.from_dict(self.state.inputs)
-          self.logger.log_only('debug', f'[SPIRE ADD] {self.state.to_dict()}')
+          self.logger.log('debug', f'[SPIRE ADD] {self.state.to_dict()}')
           if self.state.spire_data.is_score_valid():
             self.state.set_item('score', self.state.spire_data.calculate_score())
-            self.logger.log_only('debug', f'[SPIRE ADD] score: {self.state.spire_data.score}')
+            self.logger.log('debug', f'[SPIRE ADD] score: {self.state.spire_data.score}')
             self.state.step = 'main'
           else:
             self.state.step = 'score error'
@@ -165,7 +167,7 @@ class SpireAddSession:
   # Render ui
   #    main view
   async def _render_main_view(self):
-    self.logger.log_only('debug', f'[SPIRE ADD] Render main view')
+    self.logger.log('debug', f'[SPIRE ADD] Render main view')
     self.state.clear_nav()
     self._build_main()
     self.ui.view = MainView(self)
@@ -173,7 +175,7 @@ class SpireAddSession:
 
   #    selector view
   async def _render_selector_view(self):
-    self.logger.log_only('debug', f'[SPIRE ADD] Render {self.state.step} view')
+    self.logger.log('debug', f'[SPIRE ADD] Render {self.state.step} view')
     self.state.clear_nav()
     match self.state.step:
       case 'guild':
@@ -187,7 +189,7 @@ class SpireAddSession:
 
   #    modal
   async def _render_modal(self):
-    self.logger.log_only('debug', f'[SPIRE ADD] Render {self.state.step} modal')
+    self.logger.log('debug', f'[SPIRE ADD] Render {self.state.step} modal')
     self.state.clear_nav()
     match self.state.step:
       case 'create':
@@ -199,21 +201,21 @@ class SpireAddSession:
 
   #    yes/no view
   async def _render_yes_no_view(self):
-    self.logger.log_only('debug', f'[SPIRE ADD] Render {self.state.step} yes/no view')
+    self.logger.log('debug', f'[SPIRE ADD] Render {self.state.step} yes/no view')
     self._build_exists()
     self.ui.view = YesNoView(self)
     await self.ui.send()
 
   #    error view
   async def _render_error_view(self):
-    self.logger.log_only('debug', f'[SPIRE ADD] Render {self.state.step} view')
+    self.logger.log('debug', f'[SPIRE ADD] Render {self.state.step} view')
     self._build_score_error()
     self.ui.view = ErrorView(self)
     await self.ui.send()
 
   #    finish endpoint
   async def _render_finish(self):
-    self.logger.log_only('debug', f'[SPIRE ADD] Render ranking')
+    self.logger.log('debug', f'[SPIRE ADD] Render ranking')
     result = await self.bot.back_requests.call('addSpireData', [self.state.to_dict()])
     if 'error' in result:
       return self._return_error(error='post', more='add')
@@ -235,7 +237,7 @@ class SpireAddSession:
     
   # Timeout handler
   async def handle_timeout(self, whichone: str):
-    self.logger.log_only('debug', f'[SPIRE ADD] {whichone} timeout')
+    self.logger.log('debug', f'[SPIRE ADD] {whichone} timeout')
     await self.ui.clear()
     self.ui.timeout_message = True
     await self.ui.send()
