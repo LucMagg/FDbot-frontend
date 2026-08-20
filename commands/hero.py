@@ -21,7 +21,7 @@ class Hero(commands.Cog):
   @app_commands.command(name='hero')
   @session_command(command_name='hero')
   async def hero_app_command(self, interaction: discord.Interaction, hero: str):
-    self.logger.log_only('debug', f'[HERO] Hero : {hero}')
+    self.logger.log('debug', f'[HERO] Hero : {hero}')
     session_data = {
       'cog': self,
       'interaction': interaction,
