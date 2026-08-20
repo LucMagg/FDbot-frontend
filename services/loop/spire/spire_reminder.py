@@ -19,11 +19,11 @@ class SpireReminderSession:
       self.state.spire_date = datetime.now(tz=timezone.utc)
       diff = self.state.spire_date - self.state.spire_start_time
       days = diff.days % self.state.spire_length + 1
-      self.logger.log_only('info', f'[LOOP] Spire reminder triggered {self.state.spire_date} | days: {days}')
+      self.logger.log('info', f'[LOOP] Spire reminder triggered {self.state.spire_date} | days: {days}')
       if days % 3 == 0 and days > 3:
         await self._send_spire_reminder()
     except Exception as e:
-      self.logger.log_only('error', f'[LOOP] Spire reminder error : {e}')
+      self.logger.log('error', f'[LOOP] Spire reminder error : {e}')
 
   # Send spire reminder message
   async def _send_spire_reminder(self):
@@ -42,7 +42,7 @@ class SpireReminderSession:
         if len(users_in_channel) > 0:
           await self._render_message(ui, users_in_channel)
       except Exception as e:
-        self.logger.log_only('error', f'[LOOP] Spire reminder | error while sending reminder : {e}')
+        self.logger.log('error', f'[LOOP] Spire reminder | error while sending reminder : {e}')
 
   # Render message helper
   async def _render_message(self, ui: BaseUiData, users_in_channel: list):
@@ -70,7 +70,7 @@ class SpireReminderSession:
   async def _set_channels(self) -> bool:
     result = await self.bot.back_requests.call('getSpireByDate', [{'date': self.state.spire_date}])
     if 'error' in result:
-      self.logger.log_only('error', f'[LOOP] Spire reminder : error while getting spire')
+      self.logger.log('error', f'[LOOP] Spire reminder : error while getting spire')
       return False
     self.state.channels = result.get('channels')
     return True
@@ -79,7 +79,7 @@ class SpireReminderSession:
   async def _get_scores(self) -> bool:
     self.state.player_scores = await self.bot.back_requests.call('getSpireDataScores', [{'type': 'player', 'date': self.state.spire_date}])
     if 'error' in self.state.player_scores:
-      self.logger.log_only('error', f'[LOOP] Spire reminder : error while getting scores')
+      self.logger.log('error', f'[LOOP] Spire reminder : error while getting scores')
       return False
     return True
   
