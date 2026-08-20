@@ -38,7 +38,7 @@ class Dc(commands.Cog):
     screenshot_3: Optional[discord.Attachment] = None,
     replay: Optional[str] = None
   ):
-    self.logger.log_only('debug', (
+    self.logger.log('debug', (
       f'[DC ADD] Level : {level} | '
       f'Screenshot1 : {screenshot_1.url if screenshot_1 else 'no screenshot'} | '
       f'Screenshot2 : {screenshot_2.url if screenshot_2 else 'no screenshot'} | '
@@ -59,7 +59,7 @@ class Dc(commands.Cog):
   @dc.command(name='show')
   @session_command(command_name='dc show')
   async def dcshow_app_command(self, interaction: discord.Interaction, level: str):
-    self.logger.log_only('debug', f'[DC SHOW] Level : {level}')
+    self.logger.log('debug', f'[DC SHOW] Level : {level}')
     session_data = {
       'cog': self,
       'interaction': interaction,
