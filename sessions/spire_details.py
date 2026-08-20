@@ -26,11 +26,14 @@ class SpireDetailsSession:
 
   # Session entry point
   async def start(self):
-    self.date = datetime.now(tz=timezone.utc)
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    await self._load_spire_data()
+    try:
+      self.date = datetime.now(tz=timezone.utc)
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      await self._load_spire_data()
+    except Exception as e:
+      self.logger.session_exception('Spire Details', e)
 
   # Spire loader
   async def _load_spire_data(self):
@@ -57,7 +60,7 @@ class SpireDetailsSession:
   async def _return_error(self, error: str):
     match error:
       case 'request error':
-        self.logger.log_only('error', f'[SPIRE DETAILS] Error while requesting backend')
+        self.logger.log('error', f'[SPIRE DETAILS] Error while requesting backend')
         description += self.error_msg.get('generic')
     self.ui.response = {'description': description, 'color': self.bot.message.get_message('error').get('color')}
     await self.ui.send()
@@ -187,77 +190,77 @@ class SpireDetailsSession:
   # Render ui
   #    main view
   async def _render_main_view(self):
-    self.logger.log_only('debug', '[SPIRE DETAILS] Render initial view')
+    self.logger.log('debug', '[SPIRE DETAILS] Render initial view')
     self._build_main()
     self.ui.view = MainView(self)
     await self.ui.send()
 
   #    map view
   async def _render_map_view(self):
-    self.logger.log_only('debug', '[SPIRE DETAILS] Render map view')
+    self.logger.log('debug', '[SPIRE DETAILS] Render map view')
     self._build_map()
     self.ui.view = MapView(self)
     await self.ui.send()
 
   #    water or lava view
   async def _render_water_or_lava_view(self):
-    self.logger.log_only('debug', '[SPIRE DETAILS] Render water or lava view')
+    self.logger.log('debug', '[SPIRE DETAILS] Render water or lava view')
     self._build_water_or_lava()
     self.ui.view = WaterOrLavaView(self)
     await self.ui.send()
 
   #    hero bonus modal
   async def _render_hero_bonus_modal(self):
-    self.logger.log_only('debug', '[SPIRE DETAILS] Render hero bonus modal')
+    self.logger.log('debug', '[SPIRE DETAILS] Render hero bonus modal')
     self._build_bonus()
     self.ui.modal = BonusModal(self)
     await self.ui.send()
 
   #    hero bonus validation view
   async def _render_hero_bonus_validation_view(self):
-    self.logger.log_only('debug', '[SPIRE DETAILS] Render hero bonus validation view')
+    self.logger.log('debug', '[SPIRE DETAILS] Render hero bonus validation view')
     self._build_bonus_validation('hero')
     self.ui.view = BonusValidationView(self)
     await self.ui.send()
 
   #    monster bonus modal
   async def _render_monster_bonus_modal(self):
-    self.logger.log_only('debug', '[SPIRE DETAILS] Render monster bonus modal')
+    self.logger.log('debug', '[SPIRE DETAILS] Render monster bonus modal')
     self._build_bonus()
     self.ui.modal = BonusModal(self)
     await self.ui.send()
 
   #    monster bonus validation view
   async def _render_monster_bonus_validation_view(self):
-    self.logger.log_only('debug', '[SPIRE DETAILS] Render monster bonus validation view')
+    self.logger.log('debug', '[SPIRE DETAILS] Render monster bonus validation view')
     self._build_bonus_validation('monster')
     self.ui.view = BonusValidationView(self)
     await self.ui.send()
 
   #    bracket view
   async def _render_bracket_view(self):
-    self.logger.log_only('debug', '[SPIRE DETAILS] Render bracket view')
+    self.logger.log('debug', '[SPIRE DETAILS] Render bracket view')
     self._build_bracket()
     self.ui.view = BracketView(self)
     await self.ui.send()
 
   #    talents modal
   async def _render_talents_modal(self):
-    self.logger.log_only('debug', f'[SPIRE DETAILS] Render talents modal (step {self.state.talents_step}/3)')
+    self.logger.log('debug', f'[SPIRE DETAILS] Render talents modal (step {self.state.talents_step}/3)')
     self._build_talents()
     self.ui.modal = TalentsModal(self)
     await self.ui.send()
 
   #    talents between view
   async def _render_talents_between_view(self):
-    self.logger.log_only('debug', f'[SPIRE DETAILS] Render talents between view (step {self.state.talents_step}/3)')
+    self.logger.log('debug', f'[SPIRE DETAILS] Render talents between view (step {self.state.talents_step}/3)')
     self._build_talents_between()
     self.ui.view = TalentsBetweenView(self)
     await self.ui.send()
   
   #    cancel view
   async def _render_cancel_view(self):
-    self.logger.log_only('debug', f'[SPIRE DETAILS] Render cancel view')
+    self.logger.log('debug', f'[SPIRE DETAILS] Render cancel view')
     self._build_cancel()
     await self.ui.send()
     self.logger.nok_log('spire details', self.ui.interaction)
@@ -265,7 +268,7 @@ class SpireDetailsSession:
 
   #    final view
   async def _render_finish(self):
-    self.logger.log_only('debug', '[SPIRE DETAILS] Render finish / final view')
+    self.logger.log('debug', '[SPIRE DETAILS] Render finish / final view')
     self._build_main_embed()
     await self._save_and_post()
     self.logger.ok_log('spire details', self.ui.interaction)
@@ -273,7 +276,7 @@ class SpireDetailsSession:
 
   # Timeout handler
   async def handle_timeout(self, whichone: str):
-    self.logger.log_only('debug', f'[SPIRE DETAILS] {whichone} timeout')
+    self.logger.log('debug', f'[SPIRE DETAILS] {whichone} timeout')
     await self.ui.clear()
     self.ui.timeout_message = True
     await self.ui.send()
@@ -500,7 +503,7 @@ class SpireDetailsSession:
       i = talent_slugs.index(result)
       return self.state.details_data.all_talents[i].get('name')
     except Exception as e:
-      self.logger.log_only('error', f'error: {e}')
+      self.logger.log('error', f'error: {e}')
       return input
   
   def _normalize(self, input: str) -> str:
