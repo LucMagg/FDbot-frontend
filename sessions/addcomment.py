@@ -23,11 +23,14 @@ class AddCommentSession:
 
   # Session entry point  
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('AddComment', e)
   
   # Get command response
   async def _get_response(self):
@@ -63,13 +66,13 @@ class AddCommentSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'no hero or pet':
-        self.logger.log_only('debug', f'[ADDCOMMENT] Argument not found in DB : {self.state.hero_or_pet}')
+        self.logger.log('debug', f'[ADDCOMMENT] Argument not found in DB : {self.state.hero_or_pet}')
         description += f'{self.error_msg.get('addcomment').get('part1')}{self.state.hero_or_pet}{self.error_msg.get('addcomment').get('part2')}'
       case 'empty comment':
-        self.logger.log_only('debug', '[ADDCOMMENT] Empty comment')
+        self.logger.log('debug', '[ADDCOMMENT] Empty comment')
         description += self.error_msg.get('addcomment').get('notext')
       case 'request error':
-        self.logger.log_only('error', f'[ADDCOMMENT] Error while requesting backend')
+        self.logger.log('error', f'[ADDCOMMENT] Error while requesting backend')
         description += self.error_msg.get('generic')
     return {'description': description, 'color': self.bot.message.get_message('error').get('color')}
   
