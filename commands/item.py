@@ -21,7 +21,7 @@ class Item(commands.Cog):
   @app_commands.command(name='item')
   @session_command(command_name='item')
   async def item_app_command(self, interaction: discord.Interaction, item: str):
-    self.logger.log_only('debug', f'[ITEM] Item : {item}')
+    self.logger.log('debug', f'[ITEM] Item : {item}')
     session_data = {
       'cog': self,
       'interaction': interaction,
