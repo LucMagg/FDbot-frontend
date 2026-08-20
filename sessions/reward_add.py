@@ -41,7 +41,7 @@ class RewardAddSession:
       self.state.level_name = self.state.level.get('name').get(self.ui.langcode, self.state.level.get('name').get('en'))
       await self.advance()
     except Exception as e:
-      self.logger.log_only('error', f'[REWARD ADD] Error : {e}')
+      self.logger.session_exception('Reward Add', e)
 
   # Return help endpoint
   async def _return_help(self):
@@ -55,13 +55,13 @@ class RewardAddSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not found':
-        self.logger.log_only('debug', f'[REWARD ADD] {self.state.level_name} not found')
+        self.logger.log('debug', f'[REWARD ADD] {self.state.level_name} not found')
         description += f'{self.error_msg.get('reward').get('part1')}{self.state.level_name}{self.error_msg.get('reward').get('part2')}'
       case 'not an int':
-        self.logger.log_only('debug', f'[REWARD ADD] {self.state.selected.get('quantity')} is not an integer')
+        self.logger.log('debug', f'[REWARD ADD] {self.state.selected.get('quantity')} is not an integer')
         description += f'{self.error_msg.get('reward').get('not int1')}{self.state.selected.get('quantity')}{self.error_msg.get('reward').get('not int2')}'
       case 'request error':
-        self.logger.log_only('error', f'[REWARD ADD] Error while requesting backend')
+        self.logger.log('error', f'[REWARD ADD] Error while requesting backend')
         description += self.error_msg.get('generic')
     self.ui.response = {'description': description, 'color': self.bot.message.get_message('error').get('color')}
     await self.ui.send()
@@ -91,7 +91,7 @@ class RewardAddSession:
           self.state.set_reward('quantity', str_to_int(self.state.selection))
         case 'validation':
           self.state.set_reward('times', int(self.state.selection))
-      self.logger.log_only('debug', f'[REWARD ADD] Selected: {self.state.selected}')
+      self.logger.log('debug', f'[REWARD ADD] Selected: {self.state.selected}')
     self.state.next_step()
     match self.state.step:
       case 'type'|'quality'|'item':
@@ -106,7 +106,7 @@ class RewardAddSession:
   # Render ui
   #    selector_view
   async def _render_selector_view(self):
-    self.logger.log_only('debug', f'[REWARD ADD] Render {self.state.step} view')
+    self.logger.log('debug', f'[REWARD ADD] Render {self.state.step} view')
     await self.ui.clear()
     match self.state.step:
       case 'type':
@@ -120,7 +120,7 @@ class RewardAddSession:
   
   #    quantity (input modal)
   async def _render_modal(self):
-    self.logger.log_only('debug', '[REWARD ADD] Render quantity modal')
+    self.logger.log('debug', '[REWARD ADD] Render quantity modal')
     await self.ui.clear()
     self._build_quantity()
     self.ui.modal = QuantityModal(self)
@@ -128,7 +128,7 @@ class RewardAddSession:
 
   #    validation (ok/cancel view)
   async def _render_validation_view(self):
-    self.logger.log_only('debug', '[REWARD ADD] Render validation view')
+    self.logger.log('debug', '[REWARD ADD] Render validation view')
     await self.ui.clear()
     self._build_validation()
     self.ui.view = ValidationView(self)
@@ -136,7 +136,7 @@ class RewardAddSession:
 
   #    cancel endpoint
   async def _render_cancel(self):
-    self.logger.log_only('debug', f'[REWARD ADD] Reward canceled by {self.state.user}')
+    self.logger.log('debug', f'[REWARD ADD] Reward canceled by {self.state.user}')
     await self.ui.clear()
     description = f'## {self.state.level_name} ##\n{self.return_msg.get('cancel message')}'
     self.ui.response = {'description': description, 'color': self.bot.message.get_message('error').get('color')}
@@ -164,7 +164,7 @@ class RewardAddSession:
 
   # Timeout handler
   async def handle_timeout(self, whichone: str):
-    self.logger.log_only('debug', f'[REWARD ADD] {whichone} timeout')
+    self.logger.log('debug', f'[REWARD ADD] {whichone} timeout')
     await self.ui.clear()
     self.ui.timeout_message = True
     await self.ui.send()
@@ -182,7 +182,7 @@ class RewardAddSession:
       self.state.set_reward('quantity', value)
       return await self._return_error('not an int')
     except Exception as e:
-      self.bot.logger.log_only('warning', f'[REWARD ADD] Error on modal submit : {e}')
+      self.bot.logger.log('warning', f'[REWARD ADD] Error on modal submit : {e}')
 
   # View/modal builders
   #    type choices/content/placeholder
@@ -252,7 +252,7 @@ class RewardAddSession:
   
   # Post level helper
   async def _post_reward(self):
-    self.logger.log_only('debug', f'[REWARD ADD] Post reward')
+    self.logger.log('debug', f'[REWARD ADD] Post reward')
     payload = {}
     payload['reward'] = self.state.selected
     payload['level'] = self.state.level.get('name_slug')
