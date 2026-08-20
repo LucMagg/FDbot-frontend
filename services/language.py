@@ -29,7 +29,7 @@ class LangService(app_commands.Translator):
 
   def _load_langchannels(self, raw_langchannels):
     if not isinstance(raw_langchannels, list):
-      self.bot.logger.log_only('warning', f'[LANG] Langchannels invalid or missing')
+      self.bot.logger.log('warning', f'[LANG] Langchannels invalid or missing')
       return []
     return raw_langchannels
   
