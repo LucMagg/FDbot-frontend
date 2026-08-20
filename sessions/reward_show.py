@@ -23,11 +23,14 @@ class RewardShowSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response, self.ui.files = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response, self.ui.files = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Reward Show', e)
 
   # Get response
   async def _get_response(self):
@@ -54,10 +57,10 @@ class RewardShowSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not found':
-        self.logger.log_only('debug', f'[REWARD SHOW] {self.state.level_name} not found')
+        self.logger.log('debug', f'[REWARD SHOW] {self.state.level_name} not found')
         description += f'{self.error_msg.get('reward').get('part1')}{self.state.level_name}{self.error_msg.get('reward').get('part2')}'
       case 'request error':
-        self.logger.log_only('error', f'[REWARD SHOW] Error while requesting backend')
+        self.logger.log('error', f'[REWARD SHOW] Error while requesting backend')
         description += self.error_msg.get('generic')
     return {'description': description, 'color': self.bot.message.get_message('error').get('color')}
 
