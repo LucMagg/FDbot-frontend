@@ -22,7 +22,7 @@ class Setbotlanguage(commands.Cog):
   @app_commands.command(name='setbotlanguage')
   @session_command(command_name='setbotlanguage')
   async def setbotlanguage_app_command(self, interaction: discord.Interaction, language: str):
-    self.logger.log_only('debug', f'[SETBOTLANGUAGE] Language : {language}')
+    self.logger.log('debug', f'[SETBOTLANGUAGE] Language : {language}')
     session_data = {
       'cog': self,
       'interaction': interaction,
