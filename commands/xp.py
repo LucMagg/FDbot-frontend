@@ -17,7 +17,7 @@ class Xp(commands.Cog):
   @app_commands.command(name='xp')
   @session_command(command_name='xp')
   async def xp_app_command(self, interaction: discord.Interaction, stars: int, current_ascend: str, current_level: int, target_ascend: str, target_level: int):
-    self.logger.log_only('debug', f'[XP] stars : {stars} | current_ascend : {current_ascend} | current_level : {current_level} | target_ascend : {target_ascend} | target_level : {target_level}')
+    self.logger.log('debug', f'[XP] stars : {stars} | current_ascend : {current_ascend} | current_level : {current_level} | target_ascend : {target_ascend} | target_level : {target_level}')
     session_data = {
       'cog': self,
       'interaction': interaction,
