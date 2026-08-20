@@ -49,7 +49,7 @@ class PayloadBuilder:
   def _build_wait_embed(self, data: BaseUiData) -> discord.Embed:
     wait_message = self.message.get_message(whichone='wait')
     msg = wait_message.get(data.langcode)
-    self.logger.log_only('debug', f'[IH] Building wait embed')
+    self.logger.log('debug', f'[IH] Building wait embed')
     return discord.Embed(
       description=f'## {msg.get('title')} ##\n{msg.get('description')}{data.more_response}',
       color=self._color(wait_message.get('color')),
@@ -60,7 +60,7 @@ class PayloadBuilder:
     error_msg = self.message.get_message(whichone='error')
     timeout_message = error_msg.get(data.langcode).get('timeout')
     inactivity = self._convert_seconds(data.timeout, timeout_message)
-    self.logger.log_only('debug', f'[IH] Building timeout embed')
+    self.logger.log('debug', f'[IH] Building timeout embed')
     return discord.Embed(
       description=f'## {timeout_message.get('title')} ## \n{timeout_message.get('cancel')} {inactivity}',
       color=self._color(error_msg.get('color')),
@@ -69,7 +69,7 @@ class PayloadBuilder:
   #    Session error message
   def _build_session_error_embed(self, data: BaseUiData) -> discord.Embed:
     session_message = self.message.get_message(whichone='error').get(data.langcode)
-    self.logger.log_only('debug', f'[IH] Building session error embed')
+    self.logger.log('debug', f'[IH] Building session error embed')
     return discord.Embed(
       description=f'## {session_message.get('title')} ## \n{session_message.get('session')}',
       color=self._color(self.message.get_message(whichone='error').get('color')),
@@ -91,7 +91,7 @@ class PayloadBuilder:
     fields = self._validate_fields(response.get('fields', []))
     total = len(description) + sum(len(f.get('name', '')) + len(f.get('value', '')) for f in fields)
     if total > self.max_embed_length:
-      self.logger.log_only('warning', f'[IH] Embed over max limit ({total} chars)')
+      self.logger.log('warning', f'[IH] Embed over max limit ({total} chars)')
     embed = discord.Embed(description=description, color=self._color(response.get('color')))
     for field in fields:
       embed.add_field(name=field.get('name', '\u200b'), value=field.get('value', '\u200b'), inline=field.get('inline', False))
@@ -102,7 +102,7 @@ class PayloadBuilder:
         embed.set_image(url=response.get('image'))
     if 'thumbnail' in response:
       embed.set_thumbnail(url=response.get('thumbnail'))
-    self.logger.log_only('debug', '[IH] Response embed built')
+    self.logger.log('debug', '[IH] Response embed built')
     return embed
 
   # Truncate description (if > max_description_length)
@@ -115,17 +115,17 @@ class PayloadBuilder:
   # Validate fields (checks fields count & lengths)
   def _validate_fields(self, fields: list) -> list:
     if len(fields) > self.max_fields_count:
-      self.logger.log_only('warning', f'[IH] Too many fields ({len(fields)}), truncated to {self.max_fields_count}')
+      self.logger.log('warning', f'[IH] Too many fields ({len(fields)}), truncated to {self.max_fields_count}')
       fields = fields[:self.max_fields_count]
     validated = []
     for field in fields:
       name = field.get('name', '\u200b')
       value = field.get('value', '\u200b')
       if len(name) > self.max_field_name_length:
-        self.logger.log_only('warning', '[IH] Field name too long, truncated')
+        self.logger.log('warning', '[IH] Field name too long, truncated')
         name = name[:self.max_field_name_length]
       if len(value) > self.max_field_value_length:
-        self.logger.log_only('warning', '[IH] Field value too long, truncated')
+        self.logger.log('warning', '[IH] Field value too long, truncated')
         value = value[:self.max_field_value_length]
       validated.append({**field, 'name': name, 'value': value})
     return validated
