@@ -18,12 +18,15 @@ class DhjkSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    self.ui.files = [self.state.file]
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      self.ui.files = [self.state.file]
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Dhjk', e)
 
   # Get command response
   async def _get_response(self) -> dict:
