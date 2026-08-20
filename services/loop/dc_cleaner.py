@@ -14,7 +14,7 @@ class DcCleanerSession:
       date = datetime.now(tz=timezone.utc)
       days = date.day
       delta = date + timedelta(days=1)
-      self.logger.log_only('info', f'[LOOP] DC cleaner loop triggered {date} | days: {days}')
+      self.logger.log('info', f'[LOOP] DC cleaner loop triggered {date} | days: {days}')
       if delta.day == 1:
         self.logger.bot_log(f'[LOOP] DC cleaner loop : delete all previous DC entries')
         result = await self.bot.back_requests.call('clearDC')
@@ -25,4 +25,4 @@ class DcCleanerSession:
           if os.path.isfile(file_path):
             os.remove(file_path)
     except Exception as e:
-      self.logger.log_only('error', f'[LOOP] DC cleaner loop error : {e}')
+      self.logger.log('error', f'[LOOP] DC cleaner loop error : {e}')
