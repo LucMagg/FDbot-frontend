@@ -24,13 +24,13 @@ class SpireRankingSession:
       self.state.spire_date = datetime.now(tz=timezone.utc)
       diff = self.state.spire_date - self.state.spire_start_time
       days = diff.days % self.state.spire_length
-      self.logger.log_only('info', f'[LOOP] Spire ranking loop triggered {self.state.spire_date} | days: {days}')
+      self.logger.log('info', f'[LOOP] Spire ranking loop triggered {self.state.spire_date} | days: {days}')
       if days % 3 == 0 and days > 0:
         await self._send_spire_rankings()
       elif days == 0:
         await self._send_spire_start()
     except Exception as e:
-      self.logger.log_only('error', f'[LOOP] Spire ranking loop error : {e}')
+      self.logger.log('error', f'[LOOP] Spire ranking loop error : {e}')
 
   # Send spire start message
   async def _send_spire_start(self):
@@ -46,7 +46,7 @@ class SpireRankingSession:
       ui = BaseUiData.from_channel(channel, self.bot)
       ui.response = {'description': self.return_msg.get(ui.langcode).get('start message'),'color': self.return_msg.get('color')}
       await ui.send()
-      self.logger.log_only('info', f'[LOOP] Spire ranking loop start sent in channel {channel}')
+      self.logger.log('info', f'[LOOP] Spire ranking loop start sent in channel {channel}')
 
   # Send spire ranking message
   async def _send_spire_rankings(self):
@@ -59,10 +59,10 @@ class SpireRankingSession:
       try:
         channel = self.bot.get_channel(channel_data.get('discord_channel_id'))
         if not channel:
-          self.logger.log_only('warning', f'[LOOP] Spire ranking score channel {channel_data.get('discord_channel_id')} not found')
+          self.logger.log('warning', f'[LOOP] Spire ranking score channel {channel_data.get('discord_channel_id')} not found')
           continue
         old_message_id = channel_data.get('ranking_message_id')
-        self.logger.log_only('warning', f'[LOOP] Spire ranking old message id {old_message_id}')
+        self.logger.log('warning', f'[LOOP] Spire ranking old message id {old_message_id}')
         ui = BaseUiData.from_channel(channel, self.bot)
         if old_message_id:
           ui.previous_message = await channel.fetch_message(old_message_id)
@@ -72,13 +72,13 @@ class SpireRankingSession:
         ui.labels = {'previous': self.return_msg.get(ui.langcode).get('previous'), 'next': self.return_msg.get(ui.langcode).get('next')}
         ui.rankings = await self._build_rankings_for_channel(ui)
         if not ui.rankings:
-          self.logger.log_only('warning', f'[LOOP] Spire ranking score | no ui rankings')
+          self.logger.log('warning', f'[LOOP] Spire ranking score | no ui rankings')
           continue
         await self.render_message(ui)
         await self._add_message_id(ui.message)
-        self.logger.log_only('info', f'[LOOP] Spire ranking score sent in channel {channel}')
+        self.logger.log('info', f'[LOOP] Spire ranking score sent in channel {channel}')
       except Exception as e:
-        self.logger.log_only('error', f'[LOOP] Spire ranking score | error while sending rankings : {e}')
+        self.logger.log('error', f'[LOOP] Spire ranking score | error while sending rankings : {e}')
 
   # Ranking message handlers
   #    render message
@@ -199,7 +199,7 @@ class SpireRankingSession:
   async def _set_channels(self, whichone: str) -> bool:
     result = await self.bot.back_requests.call('getSpireByDate', [{'date': self.state.spire_date}])
     if 'error' in result:
-      self.logger.log_only('error', f'[LOOP] Spire ranking {whichone} : error while getting spire')
+      self.logger.log('error', f'[LOOP] Spire ranking {whichone} : error while getting spire')
       return False
     self.state.channels = result.get('channels')
     return True
@@ -209,7 +209,7 @@ class SpireRankingSession:
     self.state.spire_date = datetime.now(tz=timezone.utc).isoformat()
     result = await self.bot.back_requests.call('getSpireByDate', [{'date': self.state.spire_date}])
     if 'error' in result:
-      self.logger.log_only('error', '[LOOP] Spire ranking start : error while creating new spire')
+      self.logger.log('error', '[LOOP] Spire ranking start : error while creating new spire')
       return False
     return True
   
@@ -217,7 +217,7 @@ class SpireRankingSession:
   async def _add_message_id(self, message: discord.Message) -> bool:
     result = await self.bot.back_requests.call('addMessageId', [{'date': self.state.spire_date, 'channel_id': message.channel.id, 'ranking_message_id': message.id}])
     if 'error' in result:
-      self.logger.log_only('error', f'[LOOP] Spire ranking score : error while adding ranking_message_id')
+      self.logger.log('error', f'[LOOP] Spire ranking score : error while adding ranking_message_id')
       return False
     return True
   
@@ -225,7 +225,7 @@ class SpireRankingSession:
   async def _delete_message_id(self, message: discord.Message) -> bool:
     result = await self.bot.back_requests.call('deleteMessageId', [{'date': self.state.spire_date, 'channel_id': message.channel.id, 'ranking_message_id': message.id}])
     if 'error' in result:
-      self.logger.log_only('error', f'[LOOP] Spire ranking score : error while deleting ranking_message_id')
+      self.logger.log('error', f'[LOOP] Spire ranking score : error while deleting ranking_message_id')
       return False
     return True
   
@@ -234,7 +234,7 @@ class SpireRankingSession:
     self.state.player_scores = await self.bot.back_requests.call('getSpireDataScores', [{'type': 'player', 'date': self.state.spire_date}])
     self.state.guild_scores = await self.bot.back_requests.call('getSpireDataScores', [{'type': 'guild', 'date': self.state.spire_date}])
     if 'error' in self.state.player_scores or 'error' in self.state.guild_scores:
-      self.logger.log_only('error', f'[LOOP] Spire ranking score : error while getting scores')
+      self.logger.log('error', f'[LOOP] Spire ranking score : error while getting scores')
       return False
     return True
   
