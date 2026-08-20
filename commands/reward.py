@@ -24,7 +24,7 @@ class Reward(commands.Cog):
   @reward.command(name='add')
   @session_command(command_name='reward add', oneshot=False)
   async def rewardadd_app_command(self, interaction: discord.Interaction, level: str):
-    self.logger.log_only('debug', f'[REWARD ADD] level : {level} | interaction : {interaction.id}')
+    self.logger.log('debug', f'[REWARD ADD] level : {level} | interaction : {interaction.id}')
     session_data = {
       'cog': self,
       'interaction': interaction,
@@ -37,7 +37,7 @@ class Reward(commands.Cog):
   @reward.command(name='show')
   @session_command(command_name='reward show')
   async def rewardshow_app_command(self, interaction: discord.Interaction, level: str):
-    self.logger.log_only('debug', f'[REWARD SHOW] level : {level} | interaction : {interaction.id}')
+    self.logger.log('debug', f'[REWARD SHOW] level : {level} | interaction : {interaction.id}')
     session_data = {
       'cog': self,
       'interaction': interaction,
