@@ -15,7 +15,7 @@ class Update(commands.Cog):
   @app_commands.command(name='update')
   @session_command(command_name='update', oneshot=False)
   async def update_app_command(self, interaction: discord.Interaction, type: str):
-    self.logger.log_only('debug', f'[UPDATE] Type : {type}')
+    self.logger.log('debug', f'[UPDATE] Type : {type}')
     session_data = {
       'cog': self,
       'interaction': interaction,
