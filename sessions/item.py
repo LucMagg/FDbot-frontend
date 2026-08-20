@@ -23,11 +23,14 @@ class ItemSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Item', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -45,10 +48,10 @@ class ItemSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not found':
-        self.logger.log_only('debug', f'[ITEM] Item not found in DB : {self.state.item}')
+        self.logger.log('debug', f'[ITEM] Item not found in DB : {self.state.item}')
         description += f'{self.error_msg.get('part1')}{self.state.item}{self.error_msg.get('part2')}'
       case 'request error':
-        self.logger.log_only('error', f'[ITEM] Error while requesting backend')
+        self.logger.log('error', f'[ITEM] Error while requesting backend')
         description += self.error_msg.get('generic')
     return {'description': description, 'color': self.bot.message.get_message('error').get('color')}
   
