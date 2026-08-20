@@ -20,14 +20,15 @@ class UpdateSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    self.ui.more_response = self.return_msg.get('warning')
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
-    self.logger.ok_log('update', self.ui.interaction)
-    self.bot.session_manager.delete(self.ui.interaction)
+    try:
+      self.ui.wait_message = True
+      self.ui.more_response = self.return_msg.get('warning')
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Update', e)
 
   # Get command response
   async def _get_response(self) -> Dict:
