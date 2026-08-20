@@ -32,21 +32,24 @@ class LevelSession:
 
   # Session entry point  
   async def start(self):
-    if not await self._allowed_user():
-      return
-    if not await self._process_level_response():
-      return
-    await self.render_modal()
+    try:
+      if not await self._allowed_user():
+        return
+      if not await self._process_level_response():
+        return
+      await self.render_modal()
+    except Exception as e:
+      self.logger.session_exception('Level', e)
 
   # First step : level name translations modal
   async def render_modal(self):
-    self.logger.log_only('debug', '[LEVEL] Render NameLocalizations modal')
+    self.logger.log('debug', '[LEVEL] Render NameLocalizations modal')
     self.ui.title = self.return_msg.get('translations')
     self.ui.modal = NameLocalizationsModal(self, fields=self.other_available_languages)
     await self.ui.send()
   
   async def handle_modal_submit(self, interaction: discord.Interaction, data: dict):
-    self.logger.log_only('debug', '[LEVEL] NameLocalizations modal submit')
+    self.logger.log('debug', '[LEVEL] NameLocalizations modal submit')
     await self.ui.clear()
     await self.ui.set_interaction(interaction=interaction)
     for index, d in enumerate(data):
@@ -55,12 +58,12 @@ class LevelSession:
     if exists:
       await self._return_error('already exists', lang=exists)
       return
-    self.logger.log_only('debug', f'[LEVEL] Names : {self.state.name}')
+    self.logger.log('debug', f'[LEVEL] Names : {self.state.name}')
     await self.render_root()
 
   # Second step : root view
   async def render_root(self):
-    self.logger.log_only('debug', '[LEVEL] Render Root view')
+    self.logger.log('debug', '[LEVEL] Render Root view')
     if self.ui.view:
       self.ui.view.stop()
     self.ui.content = self.return_msg.get('reward types')
@@ -68,8 +71,8 @@ class LevelSession:
     await self.ui.send()
 
   async def validate_root_selection(self):
-    self.logger.log_only('debug', '[LEVEL] Root view validation')
-    self.logger.log_only('debug', f'[LEVEL] selected_rewards {self.state.selected_rewards}')
+    self.logger.log('debug', '[LEVEL] Root view validation')
+    self.logger.log('debug', f'[LEVEL] selected_rewards {self.state.selected_rewards}')
     action = self.state.validate_root()
     if action == 'invalid':
       return
@@ -80,7 +83,7 @@ class LevelSession:
 
   # Third step : reward view
   async def render_reward(self):
-    self.logger.log_only('debug', '[LEVEL] Render Reward view')
+    self.logger.log('debug', '[LEVEL] Render Reward view')
     if self.ui.view:
       self.ui.view.stop()
     reward_node = self.state.get_reward_node()
@@ -92,8 +95,8 @@ class LevelSession:
     await self.ui.send()
 
   async def validate_reward_selection(self):
-    self.logger.log_only('debug', '[LEVEL] Reward view validation')
-    self.logger.log_only('debug', f'[LEVEL] selected_rewards {self.state.selected_rewards} | selections {self.state.selections}')
+    self.logger.log('debug', '[LEVEL] Reward view validation')
+    self.logger.log('debug', f'[LEVEL] selected_rewards {self.state.selected_rewards} | selections {self.state.selections}')
     action = self.state.advance_reward_flow()
     if action == 'finish':
       await self.finish()
@@ -102,14 +105,14 @@ class LevelSession:
   
   # Final step : build/add level to BDD and send confirmation
   async def finish(self):
-    self.logger.log_only('debug', '[LEVEL] Reward final message')
+    self.logger.log('debug', '[LEVEL] Reward final message')
     await self.ui.clear()
     level = await self._add_level()
     if not level:
-      self.logger.log_only('error', '[LEVEL] Error while sending level')
+      self.logger.log('error', '[LEVEL] Error while sending level')
       self.ui.generic_error_message = True
     else:
-      self.logger.log_only('debug', '[LEVEL] New level created')
+      self.logger.log('debug', '[LEVEL] New level created')
       self.ui.response = {'description': f'{self.return_msg.get('final part1')}{self.state.name.get('self.ui.langcode')}{self.return_msg.get('final part2')}', 'color': 'default'}
     await self.ui.send()
     self.logger.ok_log('level', self.ui.interaction)
@@ -117,7 +120,7 @@ class LevelSession:
 
   # Timeout handler
   async def handle_timeout(self, whichone: str, timeout: int = 180):
-    self.logger.log_only('debug', f'[LEVEL] {whichone} timeout')
+    self.logger.log('debug', f'[LEVEL] {whichone} timeout')
     await self.ui.clear()
     self.ui.timeout = timeout
     self.ui.timeout_message = True
@@ -130,13 +133,13 @@ class LevelSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not allowed user':
-        self.logger.log_only('debug', f'[LEVEL] User {author} not allowed to create a level')
+        self.logger.log('debug', f'[LEVEL] User {author} not allowed to create a level')
         description += self.error_msg.get('level').get('private')
       case 'already exists':
-        self.logger.log_only('debug', f'[LEVEL] Level name already exists in language [{lang}]')
+        self.logger.log('debug', f'[LEVEL] Level name already exists in language [{lang}]')
         description += f'{self.error_msg.get('level').get('part1')}{self.state.name[lang]}{self.error_msg.get('level').get('part2')}'
       case 'no energy':
-        self.logger.log_only('debug', '[LEVEL] Missing parameters')
+        self.logger.log('debug', '[LEVEL] Missing parameters')
         description += self.error_msg.get('level').get('no_energy')
     self.ui.response = {'description': description, 'color': self.bot.message.get_message('error').get('color')}
     await self.ui.send()
@@ -171,7 +174,7 @@ class LevelSession:
   # Build level helper
   async def _add_level(self) -> bool:
     rewards = self.state.build_global_selected_rewards()
-    self.logger.log_only('debug', f'[LEVEL] Level final data : {rewards}')
+    self.logger.log('debug', f'[LEVEL] Level final data : {rewards}')
     gear = next((g for g in rewards if g.get('name').get('en') == 'gear'), None)
     if gear: # gear special case
       gear_choices = await self._resolve_gear(gear.get('choices'))
