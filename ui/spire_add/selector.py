@@ -20,5 +20,5 @@ class Selector(discord.ui.Select):
   async def callback(self, interaction: discord.Interaction):
     await self.session.ui.set_interaction(interaction)
     self.session.state.selection = self.values[0]
-    self.session.logger.log_only('debug', f'[SPIRE ADD] selected: {self.session.state.selection} | type: {type(self.session.state.selection)}')
+    self.session.logger.log('debug', f'[SPIRE ADD] selected: {self.session.state.selection} | type: {type(self.session.state.selection)}')
     await self.session.flow_manager()
