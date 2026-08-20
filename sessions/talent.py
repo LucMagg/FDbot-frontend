@@ -19,11 +19,14 @@ class TalentSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Talent', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -43,10 +46,10 @@ class TalentSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not found':
-        self.logger.log_only('debug', f'[TALENT] Talent not found in DB : {self.state.talent}')
+        self.logger.log('debug', f'[TALENT] Talent not found in DB : {self.state.talent}')
         description += f'{self.error_msg.get('talent').get('part1')}{self.state.talent}{self.error_msg.get('talent').get('part2')}'
       case 'no hero or pet':
-        self.logger.log_only('error', f'[TALENT] No hero nor pet found in DB : {self.state.talent}')
+        self.logger.log('error', f'[TALENT] No hero nor pet found in DB : {self.state.talent}')
         description += f'{self.error_msg.get('talent').get('no talent1')}{self.state.talent}{self.error_msg.get('talent').get('no talent2')}'
     return {'description': description, 'color': self.bot.message.get_message('error').get('color')}
   
