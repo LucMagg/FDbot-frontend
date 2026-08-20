@@ -9,7 +9,7 @@ class SetupUpdateService:
   async def command_setup_updater(self, command_types: list[str] = [], update_all_commands: bool = False):
     list_of_commands_to_update = ', '.join([c.get('name') for c in self.commands if self.check_setup_type(c.get('setup_type', ''), command_types)])
     print(list_of_commands_to_update)
-    self.logger.log_only('debug', f'[UPDATE COMMANDS] {list_of_commands_to_update}')
+    self.logger.log('debug', f'[UPDATE COMMANDS] {list_of_commands_to_update}')
 
     for c in self.commands:
       if self.check_setup_type(c.get('setup_type', ''), command_types) or (c.get('to_update') and update_all_commands):
