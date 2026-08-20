@@ -29,7 +29,7 @@ class Set_trapSession:
       self.ui.response = await self._get_response()
       await self.ui.send()
     except Exception as e:
-      self.bot.logger.log_only('error', f'[SET_TRAP] Error: {e}')
+      self.logger.session_exception('Set_trap', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -53,10 +53,10 @@ class Set_trapSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not found':
-        self.logger.log_only('error', f'[SET_TRAP] Role {self.state.trap_id} not found')
+        self.logger.log('error', f'[SET_TRAP] Role {self.state.trap_id} not found')
         description += f'{self.error_msg.get('set_trap').get('not found1')}{self.state.trap_id}{self.error_msg.get('set_trap').get('not found2')}'
       case 'request error':
-        self.logger.log_only('error', f'[SET_TRAP] Error while requesting backend')
+        self.logger.log('error', f'[SET_TRAP] Error while requesting backend')
         description += self.error_msg.get('generic')
     return {'description': description, 'color': self.bot.message.get_message('error').get('color')}
   
