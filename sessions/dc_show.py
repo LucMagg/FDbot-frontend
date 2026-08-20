@@ -29,7 +29,7 @@ class DcShowSession:
       await self._get_response()
       await self.ui.send()
     except Exception as e:
-      self.logger.log_only('error', f'[DC SHOW] Error : {e}')
+      self.logger.session_exception('Dc Show', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -58,7 +58,7 @@ class DcShowSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'request error':
-        self.logger.log_only('error', f'[DC SHOW] Error while requesting backend')
+        self.logger.log('error', f'[DC SHOW] Error while requesting backend')
         description += self.error_msg.get('generic')
     self.ui.response = {'description': description, 'color': self.bot.message.get_message('error').get('color')}
     return
