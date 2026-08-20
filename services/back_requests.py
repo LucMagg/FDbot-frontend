@@ -20,58 +20,58 @@ class BackRequests:
         json_data = json.load(file)
       return json_data
     except Exception as e:
-      self.logger.log_only('error', f'[BR] Failed loading all_requests.json : {e}')
+      self.logger.log('error', f'[BR] Failed loading all_requests.json : {e}')
   
   async def call(self, whichone, params=None):
     all_requests = self.load_requests()
     my_request = next((r for r in all_requests if r.get('name') == whichone), None)
 
     if my_request is None:
-      self.logger.log_only('error', f'[BR] No request {whichone} found')
+      self.logger.log('error', f'[BR] No request {whichone} found')
       return None
     
     url = self.build_url(my_request, params)
-    self.logger.log_only('debug', f'[BR] Request : {my_request.get('name')} | url built : {url.get('url')}')
+    self.logger.log('debug', f'[BR] Request : {my_request.get('name')} | url built : {url.get('url')}')
     try:
       match my_request.get('type'):
         case 'get':
           if url.get('has_json_in_params') is not None:
-            self.logger.log_only('debug', f'[BR] json : {params[url.get('has_json_in_params')]}')
+            self.logger.log('debug', f'[BR] json : {params[url.get('has_json_in_params')]}')
             response = requests.get(url.get('url'), json=params[url.get('has_json_in_params')])
           else:
             response = requests.get(url.get('url'))
         case 'post':
           if url.get('has_json_in_params') is not None:
-            self.logger.log_only('debug', f'[BR] json : {params[url.get('has_json_in_params')]}')
+            self.logger.log('debug', f'[BR] json : {params[url.get('has_json_in_params')]}')
             response = requests.post(url.get('url'), json=params[url.get('has_json_in_params')])
           else:
             response = requests.post(url.get('url'))
         case 'put':
           if url.get('has_json_in_params') is not None:
-            self.logger.log_only('debug', f'[BR] json : {params[url.get('has_json_in_params')]}')
+            self.logger.log('debug', f'[BR] json : {params[url.get('has_json_in_params')]}')
             response = requests.put(url.get('url'), json=params[url.get('has_json_in_params')])
           else:
             response = requests.put(url.get('url'))
         case 'delete':
           if url.get('has_json_in_params') is not None:
-            self.logger.log_only('debug', f'[BR] json : {params[url.get('has_json_in_params')]}')
+            self.logger.log('debug', f'[BR] json : {params[url.get('has_json_in_params')]}')
             response = requests.delete(url.get('url'), json=params[url.get('has_json_in_params')])
           else:
             response = requests.delete(url.get('url'))
 
       match response.status_code:
         case 200 | 201:
-          self.logger.log_only('debug', f'[BR] Backend answer : {response.status_code}')
+          self.logger.log('debug', f'[BR] Backend answer : {response.status_code}')
           return response.json()
         case 404:
-          self.logger.log_only('debug', f'[BR] Backend answer : {response.status_code}')
+          self.logger.log('debug', f'[BR] Backend answer : {response.status_code}')
           return response.json()
         case _:
-          self.logger.log_only('error', f'[BR] Backend answer : {response.status_code} | Erreur : {response}')
+          self.logger.log('error', f'[BR] Backend answer : {response.status_code} | Erreur : {response}')
           return False
 
     except RequestException as e:
-      self.logger.log_only('error', f'[BR] Request error : {str(e)}')
+      self.logger.log('error', f'[BR] Request error : {str(e)}')
       return False
 
   def build_url(self, my_request, params):
