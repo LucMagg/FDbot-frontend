@@ -24,11 +24,14 @@ class PetSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Pet', e)
 
   # Get command response
   async def _get_response(self) -> Dict:
@@ -52,7 +55,7 @@ class PetSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not found':
-        self.logger.log_only('debug', f'[PET] Argument not found in DB : {self.state.pet}')
+        self.logger.log('debug', f'[PET] Argument not found in DB : {self.state.pet}')
         description += f'{self.error_msg.get('part1')}{self.state.hero}{self.error_msg.get('part2')}'
     return {'description': description, 'color': self.bot.message.get_message('error').get('color')}
   
