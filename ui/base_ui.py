@@ -2,6 +2,7 @@ import discord
 from dataclasses import dataclass, field
 from typing import Optional
 from services.discord_handler.discord_handler import DiscordHandler
+from services.discord_handler.exceptions import SendFailedError
 
 
 @dataclass(slots=True)
@@ -66,6 +67,8 @@ class BaseUiData:
     await self.set_message(result)
     if self.message and self.pin:
       await self.message.pin()
+    if self.send_failed:
+      await self._cleanup_failed_session
   
   async def set_interaction(self, interaction: discord.Interaction):
     self.previous_interaction = self.interaction
@@ -115,6 +118,12 @@ class BaseUiData:
       self.title = None
       self.modal = None
       self.timeout_message = False
+
+  async def _cleanup_failed_session(self):
+    if self.interaction and hasattr(self.bot, 'session_manager'):
+      self.bot.session_manager.delete(self.interaction)
+      self.bot.logger.log_only('debug', f'[UI] Session deleted after send failure | interaction={self.interaction.id}')
+    raise SendFailedError(f'Send failed for interaction {self.interaction.id if self.interaction else self.channel.id}')
 
   @classmethod
   def from_channel(cls, channel: discord.TextChannel, bot) -> "BaseUiData":
