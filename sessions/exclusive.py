@@ -21,11 +21,14 @@ class ExclusiveSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Exclusive', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -46,7 +49,7 @@ class ExclusiveSession:
   
   # Error builder
   def _return_error(self) -> dict:
-    self.logger.log_only('debug', f'[EXCLUSIVE] Event not found in DB : {self.state.event}')
+    self.logger.log('debug', f'[EXCLUSIVE] Event not found in DB : {self.state.event}')
     description = (
       f'## {self.error_msg.get('title')} ##\n' +
       f'{self.error_msg.get('exclusive').get('part1')}{self.state.event}{self.error_msg.get('exclusive').get('part2')}'
