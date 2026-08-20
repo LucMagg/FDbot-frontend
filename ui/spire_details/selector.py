@@ -22,7 +22,7 @@ class MapSelector(discord.ui.Select):
     super().__init__(placeholder=session.state.placeholder, options=options, row=row)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', f'[SPIRE DETAILS] Map selected: {self.values[0]}')
+    self.session.logger.log('debug', f'[SPIRE DETAILS] Map selected: {self.values[0]}')
     await self.session.ui.set_interaction(interaction)
     self.session.state.selection = self.values[0]
     await self.session.flow_manager()
@@ -39,7 +39,7 @@ class BracketSelector(discord.ui.Select):
     super().__init__(placeholder=session.state.placeholder, options=options, row=row)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', f'[SPIRE DETAILS] Bracket selected: {self.values[0]}')
+    self.session.logger.log('debug', f'[SPIRE DETAILS] Bracket selected: {self.values[0]}')
     await self.session.ui.set_interaction(interaction)
     self.session.state.selection = self.values[0]
     await self.session.flow_manager()
