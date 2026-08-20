@@ -26,11 +26,14 @@ class XpSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Xp', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -44,13 +47,13 @@ class XpSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'input error current':
-        self.logger.log_only('debug', f'[XP] Current input error : {self.state.current_ascend} lvl {self.state.current_level}')
+        self.logger.log('debug', f'[XP] Current input error : {self.state.current_ascend} lvl {self.state.current_level}')
         description += (
           f'{self.error_msg.get('start')}{self.state.stars}{self.error_msg.get('input1')}'
           f'{self.state.current_ascend}{self.error_msg.get('input2')}{self.state.current_level}{self.error_msg.get('input3')}'
         )
       case 'input error target':
-        self.logger.log_only('debug', f'[XP] Target input error : {self.state.target_ascend} lvl {self.state.target_level}')
+        self.logger.log('debug', f'[XP] Target input error : {self.state.target_ascend} lvl {self.state.target_level}')
         description += (
           f'{self.error_msg.get('start')}{self.state.stars}{self.error_msg.get('input1')}'
           f'{self.state.target_ascend}{self.error_msg.get('input2')}{self.state.target_level}{self.error_msg.get('input3')}'
