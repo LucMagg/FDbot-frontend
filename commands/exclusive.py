@@ -21,7 +21,7 @@ class Exclusive(commands.Cog):
   @app_commands.command(name='exclusive')
   @session_command(command_name='exclusive')
   async def exclusive_app_command(self, interaction: discord.Interaction, event: str):
-    self.logger.log_only('debug', f'[EXCLUSIVE] Event : {event}')
+    self.logger.log('debug', f'[EXCLUSIVE] Event : {event}')
     session_data = {
       'cog': self,
       'interaction': interaction,
