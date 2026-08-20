@@ -21,7 +21,7 @@ class Classe(commands.Cog):
   @app_commands.command(name='class')
   @session_command(command_name='class')
   async def classe_app_command(self, interaction: discord.Interaction, classe: str):
-    self.logger.log_only('debug', f'[CLASS] Classe : {classe}')
+    self.logger.log('debug', f'[CLASS] Classe : {classe}')
     session_data = {
       'cog': self,
       'interaction': interaction,
