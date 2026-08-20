@@ -3,6 +3,7 @@ import logging
 import discord
 from logging.handlers import RotatingFileHandler
 from utils.str_utils import str_now
+from services.discord_handler.exceptions import SendFailedError
 
 class Logger:
   def __init__(self, log_file):
@@ -22,42 +23,38 @@ class Logger:
     if not self.logger.handlers:
       self.logger.addHandler(file_handler)
 
-  def command_log(self, cmd: str, interaction: discord.Interaction):
+  def command_log(self, cmd: str, interaction: discord.Interaction) -> None:
     message = f'[{str_now()}] [{cmd.upper()}] Command entered by [{interaction.user}] in channel [{interaction.channel}] of server [{interaction.guild.name}]'
     print(message)
     self.logger.info(message)
 
-  def command_fail(self, cmd: str, interaction: discord.Interaction):
-    message = f'[{str_now()}] [{cmd.upper()}] [{interaction.user}] session already ongoing | failed to start command [{cmd}]'
-    print(message)
-    self.logger.info(message)
-
-  def ok_log(self, cmd: str, interaction: discord.Interaction):
+  def ok_log(self, cmd: str, interaction: discord.Interaction) -> None:
     message = f'[{str_now()}] [{cmd.upper()}] Command success for [{interaction.user}]'
     print(message)
     self.logger.info(message)
 
-  def nok_log(self, cmd: str, interaction: discord.Interaction):
+  def nok_log(self, cmd: str, interaction: discord.Interaction) -> None:
     message = f'[{str_now()}] [{cmd.upper()}] Command error for [{interaction.user}]'
     print(message)
     self.logger.info(message)
 
-  def timeout_log(self, cmd: str, interaction: discord.Interaction):
+  def timeout_log(self, cmd: str, interaction: discord.Interaction) -> None:
     message = f'[{str_now()}] [{cmd.upper()}] Command timeout for [{interaction.user}]'
     print(message)
     self.logger.info(message)
-
-  def error_log(self, msg: str):
-    message = f'[{str_now()}] [ERROR] {msg}'
-    print(message)
-    self.logger.error(message)
 
   def bot_log(self, msg: str):
     message = f'[{str_now()}] {msg}'
     print(message)
     self.logger.info(message)
 
-  def log_only(self, level: str, msg: str):
+  def session_exception(self, cmd: str, e: Exception) -> None:
+    if isinstance(e, SendFailedError):
+      self.logger.debug(f'[{str_now()}] [{cmd.upper()}] Send failed, session cleaned up : {e}')
+    else:
+      self.logger.error(f'[{str_now()}] [{cmd.upper()}] Error : {e}')
+
+  def log(self, level: str, msg: str) -> None:
     message = f'[{str_now()}] {msg}'
     match level:
       case 'debug':
