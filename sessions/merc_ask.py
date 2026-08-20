@@ -25,11 +25,14 @@ class MercAskSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Merc Ask', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -51,19 +54,19 @@ class MercAskSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'hero not found':
-        self.logger.log_only('error', f'[MERC ASK] Hero not found : {self.state.merc.get('name')}')
+        self.logger.log('error', f'[MERC ASK] Hero not found : {self.state.merc.get('name')}')
         description += (
           f'{self.error_msg.get('merc').get('part1')}{self.state.merc.get('name')}'
           f'{self.error_msg.get('merc').get('not found')}{self.error_msg.get('merc').get('part2')}'
         )
       case 'merc not found':
-        self.logger.log_only('debug', f'[MERC ASK] Merc not found : {self.state.found_hero.get('name')}')
+        self.logger.log('debug', f'[MERC ASK] Merc not found : {self.state.found_hero.get('name')}')
         description += (
           f'{self.error_msg.get('merc').get('part1')}{self.state.found_hero.get('name')}'
           f'{self.error_msg.get('merc').get('no merc')}{self.error_msg.get('merc').get('part2')}'
         )
       case 'no other merc':
-        self.logger.log_only('debug', f'[MERC ASK] No other player has merc : {self.state.found_hero.get('name')}')
+        self.logger.log('debug', f'[MERC ASK] No other player has merc : {self.state.found_hero.get('name')}')
         description += (
           f'{self.error_msg.get('merc').get('no other1')}{self.state.found_hero.get('name')}'
           f'{self.error_msg.get('merc').get('no other2')}'
