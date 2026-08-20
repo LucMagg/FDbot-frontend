@@ -21,7 +21,7 @@ class Pet(commands.Cog):
   @app_commands.command(name='pet')
   @session_command(command_name='pet')
   async def pet_app_command(self, interaction: discord.Interaction, pet: str):
-    self.logger.log_only('debug', f'[PET] Pet : {pet}')
+    self.logger.log('debug', f'[PET] Pet : {pet}')
     session_data = {
       'cog': self,
       'interaction': interaction,
