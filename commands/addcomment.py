@@ -21,7 +21,7 @@ class Addcomment(commands.Cog):
   @app_commands.command(name='addcomment')
   @session_command(command_name='addcomment')
   async def addcomment_app_command(self, interaction: discord.Interaction, hero_or_pet: str, comment: Optional[str] = None):
-    self.logger.log_only('debug', f'[ADDCOMMENT] hero_or_pet : {hero_or_pet} | comment : {comment}')
+    self.logger.log('debug', f'[ADDCOMMENT] hero_or_pet : {hero_or_pet} | comment : {comment}')
     session_data = {
       'cog': self,
       'interaction': interaction,
