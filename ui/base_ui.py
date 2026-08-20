@@ -11,7 +11,7 @@ class BaseUiData:
   previous_interaction: Optional[discord.Interaction] = None
   message: Optional[discord.Message] = None
   previous_message: Optional[discord.Message] = None
-  
+
   discord_handler: "DiscordHandler" = field(init=False)
   langcode: str = field(init=False)
 
@@ -19,6 +19,7 @@ class BaseUiData:
   delete_previous: bool = True
   max_attempts: int = 3
   base_backoff: float = 0.5
+  send_failed: bool = False
 
   wait_message: bool = False
   more_response: str = ''
@@ -37,7 +38,7 @@ class BaseUiData:
   timeout: Optional[int] = 180
 
   # loop fields
-  bot: Optional[discord.Client] = None  # pour from_channel, LoopUi
+  bot: Optional[discord.Client] = None  # for from_channel, LoopUi
   pin: bool = False
   unpin: bool = False
   current_page: int = 0
@@ -47,14 +48,14 @@ class BaseUiData:
   labels: dict = field(default_factory=dict)
 
   def __post_init__(self):
-    b = self.interaction.client if self.interaction else self.bot
-    if b is None:
+    self.bot = self.interaction.client if self.interaction else self.bot
+    if self.bot is None:
       raise ValueError('[UI] Error : interaction or channel is required')
-    self.discord_handler = DiscordHandler(b)
+    self.discord_handler = DiscordHandler(self.bot)
     try:
-      self.langcode = b.language.set_language(interaction=self.interaction) if self.interaction else b.language.set_language(channel_id=self.channel.id) if self.channel else 'en'
+      self.langcode = self.bot.language.set_language(interaction=self.interaction) if self.interaction else self.bot.language.set_language(channel_id=self.channel.id) if self.channel else 'en'
     except Exception as e:
-      b.logger.log_only('info', f'[UI] Error while setting langcode : {e} -> fallback to English')
+      self.bot.logger.log('info', f'[UI] Error while setting langcode : {e} -> fallback to English')
       self.langcode = 'en'
 
   async def send(self):
@@ -90,8 +91,7 @@ class BaseUiData:
 
   async def _clear_embed(self):
     if self.response or self.wait_message:
-      if self.bot:
-        self.bot.logger.log_only('debug', '[UI] Clear embed')
+      self.bot.logger.log('debug', '[UI] Clear embed')
       self.wait_message = False
       self.more_response = ''
       self.generic_error_message = False
@@ -100,8 +100,7 @@ class BaseUiData:
 
   async def _clear_view(self):
     if self.view:
-      if self.bot:
-        self.bot.logger.log_only('debug', '[UI] Clear view')
+      self.bot.logger.log('debug', '[UI] Clear view')
       self.view.clear_items()
       self.view.stop()
       self.content = None
@@ -111,8 +110,7 @@ class BaseUiData:
 
   async def _clear_modal(self):
     if self.modal:
-      if self.bot:
-        self.bot.logger.log_only('debug', '[UI] Clear modal')
+      self.bot.logger.log('debug', '[UI] Clear modal')
       self.modal.stop()
       self.title = None
       self.modal = None
