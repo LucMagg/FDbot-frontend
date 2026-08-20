@@ -26,11 +26,14 @@ class MercShowSession:
 
   # Session entry point
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Merc Show', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -49,14 +52,14 @@ class MercShowSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'no user':
-        self.logger.log_only('error', f'[MERC SHOW] User not found : {self.state.user}')
+        self.logger.log('error', f'[MERC SHOW] User not found : {self.state.user}')
         description += (
           f'{self.error_msg.get('merc').get('no user1')}{self.state.user}'
           f'{self.error_msg.get('merc').get('no user2')}{self.state.guild_name}'
           f'{self.error_msg.get('merc').get('no user3')}{self.error_msg.get('merc').get('part2')}'
         )
       case 'request error':
-        self.logger.log_only('error', f'[MERC SHOW] Error while requesting backend')
+        self.logger.log('error', f'[MERC SHOW] Error while requesting backend')
         description += self.error_msg.get('generic')
     return {'description': description, 'color': self.bot.message.get_message('error').get('color')}
   
