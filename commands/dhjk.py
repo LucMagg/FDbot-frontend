@@ -27,13 +27,13 @@ class Dhjk(commands.Cog):
   def _get_images(self) -> list:
     images = []
     if not os.path.isdir(self.image_path):
-      self.logger.log_only('warning', f'[DHJK] Unable to find folder : {self.image_path}')
+      self.logger.log('warning', f'[DHJK] Unable to find folder : {self.image_path}')
       return images
     for filename in os.listdir(self.image_path):
       if filename.lower().endswith('.gif'):
         images.append(os.path.join(self.image_path, filename))
     if not images:
-      self.logger.log_only('warning', f'[DHJK] No GIF found in {self.image_path}')
+      self.logger.log('warning', f'[DHJK] No GIF found in {self.image_path}')
     return images
   
 async def setup(bot):
