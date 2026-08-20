@@ -47,7 +47,7 @@ class DcAddSession:
         await self._get_response()
       await self.ui.send()
     except Exception as e:
-      self.logger.log_only('error', f'[DC ADD] Error : {e}')
+      self.logger.session_exception('Dc Add', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -76,16 +76,16 @@ class DcAddSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not a pic':
-        self.logger.log_only('error', f'[DC ADD] Screenshot is not a valid picture')
+        self.logger.log('error', f'[DC ADD] Screenshot is not a valid picture')
         description += self.error_msg.get('not pic')
       case 'file':
-        self.logger.log_only('error', f'[DC ADD] Error while saving file')
+        self.logger.log('error', f'[DC ADD] Error while saving file')
         description += self.error_msg.get('file error')
       case 'invalid link':
-        self.logger.log_only('error', f'[DC ADD] Couldn\'t regex {self.state.replay}')
+        self.logger.log('error', f'[DC ADD] Couldn\'t regex {self.state.replay}')
         description += self.error_msg.get('addreplay')
       case 'request error':
-        self.logger.log_only('error', f'[DC ADD] Error while requesting backend')
+        self.logger.log('error', f'[DC ADD] Error while requesting backend')
         description += self.error_msg.get('generic')
     self.ui.response = {'description': description, 'color': self.bot.message.get_message('error').get('color')}
     return
