@@ -47,10 +47,10 @@ class MyBot(commands.Bot):
       self.application_id = app_info.id
     if guild_id:
       url = f'https://discord.com/api/v10/applications/{self.application_id}/guilds/{guild_id}/commands'
-      self.logger.log_only('info', f'Sync GUILD {guild_id}')
+      self.logger.log('info', f'Sync GUILD {guild_id}')
     else:
       url = f'https://discord.com/api/v10/applications/{self.application_id}/commands'
-      self.logger.log_only('info', 'Sync GLOBAL')
+      self.logger.log('info', 'Sync GLOBAL')
     return url
       
   async def clear_global_commands(self):
@@ -61,21 +61,21 @@ class MyBot(commands.Bot):
         commands = await resp.json()
       for cmd in commands:
         await session.delete(f'{url}/{cmd.get('id')}', headers=headers)
-        self.logger.log_only('info', f'Global command deleted: {cmd.get('name')}')
+        self.logger.log('info', f'Global command deleted: {cmd.get('name')}')
 
   async def sync_commands(self, guild_id: Optional[int] = None):
     payloads = []
     for cmd in self.tree.get_commands():
       command_data = next((c for c in self.static_data.commands if c['name'] == cmd.name), None)
       if not command_data:
-        self.logger.log_only('warning', f'No JSON data for command {cmd.name}')
+        self.logger.log('warning', f'No JSON data for command {cmd.name}')
         continue
       try:
         payload = self.command.build_command_payload(cmd, command_data)     
         if payload:
           payloads.append(payload)
       except Exception as e:
-        self.logger.log_only('error', f'Error building payload for command {cmd.name}: {e}')
+        self.logger.log('error', f'Error building payload for command {cmd.name}: {e}')
     await self.send_commands_to_discord_API(payloads, guild_id)
 
   async def send_commands_to_discord_API(self, payloads: list[dict], guild_id: Optional[int] = None):
@@ -165,7 +165,7 @@ class MyBot(commands.Bot):
         if isinstance(val, app_commands.Group) and val.parent is None:
           if val.name not in existing:
             self.tree.add_command(val)
-            self.logger.log_only('debug', f'Group /{val.name} added to tree')
+            self.logger.log('debug', f'Group /{val.name} added to tree')
 
   @tasks.loop(seconds=30)
   async def status_loop(self):
@@ -176,7 +176,7 @@ class MyBot(commands.Bot):
       return
     if message.author.id == 617661648173268993 and 'paf' in str_to_slug(message.content):
       await message.reply(content='CONTREPAF!!! :rofl:')
-      self.logger.bot_log('Contre-pafé :D')
+      self.logger.log('info', 'Contre-pafé :D')
     await self.process_commands(message)
 
   async def on_member_update(self, before: discord.Member, after: discord.Member):
@@ -186,9 +186,9 @@ class MyBot(commands.Bot):
     if any(tr for tr in self.trap_roles if tr in (after_roles - before_roles)):
       try:
         await after.ban(reason='Anti-bot trap')
-        self.logger.log_only('info', f'[BAN] {after} ({after.id}) is banned')
+        self.logger.log('info', f'[BAN] {after} ({after.id}) is banned')
       except discord.Forbidden:
-        self.logger.log_only('error', f'[ERROR] Unable to ban {after}: not enough permissions')
+        self.logger.log('error', f'[ERROR] Unable to ban {after}: not enough permissions')
 
   async def on_command_error(self, ctx, error):
     self.logger.error_log(f'Command error: {str(error)}')
