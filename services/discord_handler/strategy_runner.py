@@ -43,29 +43,29 @@ class StrategyRunner:
             log_id = data.message.id
           else:
             log_id = result.id
-          self.logger.log_only('debug', f'[IH] Response sent | strategy={strategy.__name__} | id={log_id}')
+          self.logger.log('debug', f'[IH] Response sent | strategy={strategy.__name__} | id={log_id}')
           self.file_manager.notify_sent(payload.get('files', []), result)
           return result
         except HTTPException as e:
           if e.status == 404:
-            self.logger.log_only('warning', f'[IH] Strategy {strategy.__name__} got 404 → skipping')
+            self.logger.log('warning', f'[IH] Strategy {strategy.__name__} got 404 → skipping')
             break
           wait = getattr(e, 'retry_after', None) or (data.base_backoff * (2 ** attempt))
           if e.status == 429:
-            self.logger.log_only('warning', f'[IH] Rate limited. Sleeping {wait}s')
+            self.logger.log('warning', f'[IH] Rate limited. Sleeping {wait}s')
           else:
-            self.logger.log_only('warning', f'[IH] Strategy {strategy.__name__} failed (attempt {attempt + 1}): {e}')
+            self.logger.log('warning', f'[IH] Strategy {strategy.__name__} failed (attempt {attempt + 1}): {e}')
           await asyncio.sleep(wait)
         except InteractionResponded:
-          self.logger.log_only('warning', f'[IH] Strategy {strategy.__name__} already responded → skipping')
+          self.logger.log('warning', f'[IH] Strategy {strategy.__name__} already responded → skipping')
           break
         except Exception as e:
-          self.logger.log_only('warning', f'[IH] Strategy {strategy.__name__} failed (attempt {attempt + 1}): {e}')
+          self.logger.log('warning', f'[IH] Strategy {strategy.__name__} failed (attempt {attempt + 1}): {e}')
           await asyncio.sleep(data.base_backoff * (2 ** attempt))
       else:
-        self.logger.log_only('warning', f'[IH] Strategy {strategy.__name__} exhausted all attempts')
+        self.logger.log('warning', f'[IH] Strategy {strategy.__name__} exhausted all attempts')
     prev_id = data.previous_interaction.id if data.previous_interaction else None
-    self.logger.log_only('error', f'[IH] All strategies failed | interaction={data.interaction.id} | previous={prev_id}')
+    self.logger.log('error', f'[IH] All strategies failed | interaction={data.interaction.id} | previous={prev_id}')
     return None
 
   # Kwargs builders
@@ -128,11 +128,11 @@ class StrategyRunner:
       if not interaction.response.is_done():
         await interaction.response.defer()
     except InteractionResponded:
-      self.logger.log_only('warning', f'[IH] Defer: {interaction.id} already responded')
+      self.logger.log('warning', f'[IH] Defer: {interaction.id} already responded')
     except HTTPException as e:
-      self.logger.log_only('warning', f'[IH] Defer HTTPException {e.status}: {e}')
+      self.logger.log('warning', f'[IH] Defer HTTPException {e.status}: {e}')
     except Exception as e:
-      self.logger.log_only('warning', f'[IH] Defer unknown error: {e}')
+      self.logger.log('warning', f'[IH] Defer unknown error: {e}')
 
   # Delete previous interaction/message if exists
   async def _safe_delete_previous(self, data: BaseUiData|LoopUi, result: discord.Message|None) -> None:
@@ -143,17 +143,17 @@ class StrategyRunner:
         msg = await data.previous_interaction.original_response()
         if msg.pinned():
           await msg.unpin()
-          self.logger.log_only('debug', f'[IH] Previous interaction unpinned: {msg.id}')
+          self.logger.log('debug', f'[IH] Previous interaction unpinned: {msg.id}')
         await msg.delete()
-        self.logger.log_only('debug', f'[IH] Previous interaction deleted: {msg.id}')
+        self.logger.log('debug', f'[IH] Previous interaction deleted: {msg.id}')
       except Exception:
         pass
     if data.previous_message:
       try:
         if data.previous_message.pinned:
           await data.previous_message.unpin()
-          self.logger.log_only('debug', f'[IH] Previous message unpinned: {data.previous_message.id}')
+          self.logger.log('debug', f'[IH] Previous message unpinned: {data.previous_message.id}')
         await data.previous_message.delete()
-        self.logger.log_only('debug', f'[IH] Previous message deleted: {data.previous_message.id}')
+        self.logger.log('debug', f'[IH] Previous message deleted: {data.previous_message.id}')
       except Exception:
         pass
