@@ -21,7 +21,7 @@ class Talent(commands.Cog):
   @app_commands.command(name='talent')
   @session_command(command_name='talent')
   async def talent_app_command(self, interaction: discord.Interaction, talent: str):
-    self.logger.log_only('debug', f'[TALENT] Talent : {talent}')
+    self.logger.log('debug', f'[TALENT] Talent : {talent}')
     session_data = {
       'cog': self,
       'interaction': interaction,
