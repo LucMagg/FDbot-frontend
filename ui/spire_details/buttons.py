@@ -52,7 +52,7 @@ class CancelButton(discord.ui.Button):
     super().__init__(label=session.state.cancel_label, style=discord.ButtonStyle.danger, row=row)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', '[SPIRE DETAILS] Canceled')
+    self.session.logger.log('debug', '[SPIRE DETAILS] Canceled')
     await self.session.ui.set_interaction(interaction)
     self.session.state.clear_nav()
     self.session.state.step = 'cancel' if self.session.state.step == 'main' else 'main'
@@ -66,7 +66,7 @@ class MapPreviousButton(discord.ui.Button):
     super().__init__(label=session.state.previous_label, style=discord.ButtonStyle.grey if is_disabled else discord.ButtonStyle.blurple, disabled=is_disabled, row=row)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', '[SPIRE DETAILS] Map previous button')
+    self.session.logger.log('debug', '[SPIRE DETAILS] Map previous button')
     await self.session.ui.set_interaction(interaction)
     self.session.state.page -= 1
     await self.session._render_map_view()
@@ -79,7 +79,7 @@ class MapNextButton(discord.ui.Button):
     super().__init__(label=session.state.next_label, style=discord.ButtonStyle.grey if is_disabled else discord.ButtonStyle.blurple, disabled=is_disabled, row=row)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', '[SPIRE DETAILS] Map next button')
+    self.session.logger.log('debug', '[SPIRE DETAILS] Map next button')
     await self.session.ui.set_interaction(interaction)
     self.session.state.page += 1
     await self.session._render_map_view()
@@ -104,7 +104,7 @@ class WaterButton(discord.ui.Button):
     super().__init__(label=session.state.water_label, style=discord.ButtonStyle.primary, row=row)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', '[SPIRE DETAILS] Map with water')
+    self.session.logger.log('debug', '[SPIRE DETAILS] Map with water')
     await self.session.ui.set_interaction(interaction)
     self.session.state.selection = 'water'
     await self.session.flow_manager()
@@ -116,7 +116,7 @@ class LavaButton(discord.ui.Button):
     super().__init__(label=session.state.lava_label, style=discord.ButtonStyle.danger, row=row)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', '[SPIRE DETAILS] Map with lava')
+    self.session.logger.log('debug', '[SPIRE DETAILS] Map with lava')
     await self.session.ui.set_interaction(interaction)
     self.session.state.selection = 'lava'
     await self.session.flow_manager()
@@ -128,7 +128,7 @@ class YesButton(discord.ui.Button):
     super().__init__(label=session.state.yes_label, style=discord.ButtonStyle.success)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', f'[SPIRE DETAILS] {' '.join(self.session.state.step.split('_')).capitalize()} submit')
+    self.session.logger.log('debug', f'[SPIRE DETAILS] {' '.join(self.session.state.step.split('_')).capitalize()} submit')
     await self.session.ui.set_interaction(interaction)
     self.session.state.validate = True
     await self.session.flow_manager()
@@ -140,7 +140,7 @@ class NoButton(discord.ui.Button):
     super().__init__(label=session.state.no_label, style=discord.ButtonStyle.danger)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', f'[SPIRE DETAILS] {' '.join(self.session.state.step.split('_')).capitalize()} cancel')
+    self.session.logger.log('debug', f'[SPIRE DETAILS] {' '.join(self.session.state.step.split('_')).capitalize()} cancel')
     await self.session.ui.set_interaction(interaction)
     self.session.state.validate = False
     await self.session.flow_manager()
@@ -152,7 +152,7 @@ class TalentsChangeButton(discord.ui.Button):
     super().__init__(label=session.state.change_label, style=discord.ButtonStyle.danger)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', f'[SPIRE DETAILS] {self.session.state.talents_step}/3 change')
+    self.session.logger.log('debug', f'[SPIRE DETAILS] {self.session.state.talents_step}/3 change')
     await self.session.ui.set_interaction(interaction)
     self.session.state.validate = False
     await self.session.flow_manager()
@@ -165,7 +165,7 @@ class TalentsContinueButton(discord.ui.Button):
     super().__init__(label=label, style=discord.ButtonStyle.success)
 
   async def callback(self, interaction: discord.Interaction):
-    self.session.logger.log_only('debug', f'[SPIRE DETAILS] {self.session.state.talents_step}/3 change')
+    self.session.logger.log('debug', f'[SPIRE DETAILS] {self.session.state.talents_step}/3 change')
     await self.session.ui.set_interaction(interaction)
     self.session.state.validate = True
     await self.session.flow_manager()
