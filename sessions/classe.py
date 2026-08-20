@@ -20,11 +20,14 @@ class ClasseSession:
 
   # Session entry point  
   async def start(self):
-    self.ui.wait_message = True
-    await self.ui.send()
-    await self.ui.clear()
-    self.ui.response = await self._get_response()
-    await self.ui.send()
+    try:
+      self.ui.wait_message = True
+      await self.ui.send()
+      await self.ui.clear()
+      self.ui.response = await self._get_response()
+      await self.ui.send()
+    except Exception as e:
+      self.logger.session_exception('Class', e)
 
   # Get command response
   async def _get_response(self) -> dict:
@@ -44,10 +47,10 @@ class ClasseSession:
     description = f'## {self.error_msg.get('title')} ##\n'
     match error:
       case 'not found':
-        self.logger.log_only('debug', f'[CLASS] Argument not found in DB : {self.state.classe}')
+        self.logger.log('debug', f'[CLASS] Argument not found in DB : {self.state.classe}')
         description += f'{self.error_msg.get('class').get('part1')}{self.state.classe}{self.error_msg.get('class').get('part2')}'
       case 'request error':
-        self.logger.log_only('error', f'[CLASS] Error while requesting backend')
+        self.logger.log('error', f'[CLASS] Error while requesting backend')
         description += self.error_msg.get('generic')
     return {'description': description, 'color': self.bot.message.get_message('error').get('color')}
   
