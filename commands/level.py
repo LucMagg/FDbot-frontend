@@ -22,7 +22,7 @@ class Level(commands.Cog):
   @app_commands.command(name='level')
   @session_command(command_name='level', oneshot=False)
   async def level_app_command(self, interaction: discord.Interaction, name_in_english: str, standard_energy_cost: Optional[int] = None, coop_energy_cost: Optional[int] = None):
-    self.logger.log_only('debug', f'[LEVEL] name_in_english : {name_in_english} | standard_energy_cost : {standard_energy_cost} | coop_energy_cost : {coop_energy_cost}')
+    self.logger.log('debug', f'[LEVEL] name_in_english : {name_in_english} | standard_energy_cost : {standard_energy_cost} | coop_energy_cost : {coop_energy_cost}')
     session_data = {
       'cog': self,
       'interaction': interaction,
