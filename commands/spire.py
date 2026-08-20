@@ -20,7 +20,7 @@ class Spire(commands.Cog):
   @spire.command(name='add')
   @session_command(command_name='spire add', oneshot=False)
   async def spireadd_app_command(self, interaction: discord.Interaction, screenshot: Optional[discord.Attachment] = None):
-    self.logger.log_only('debug', f'[SPIRE ADD] Screenshot url : {screenshot.url if screenshot else 'no screenshot'} | User : {nick(interaction)}')
+    self.logger.log('debug', f'[SPIRE ADD] Screenshot url : {screenshot.url if screenshot else 'no screenshot'} | User : {nick(interaction)}')
     session_data = {
       'cog': self,
       'interaction': interaction,
@@ -32,7 +32,7 @@ class Spire(commands.Cog):
   @spire.command(name='details')
   @session_command(command_name='spire details', oneshot=False)
   async def spiredetails_app_command(self, interaction: discord.Interaction):
-    self.logger.log_only('debug', f'[SPIRE DETAILS] User : {nick(interaction)}')
+    self.logger.log('debug', f'[SPIRE DETAILS] User : {nick(interaction)}')
     session_data = {
       'cog': self,
       'interaction': interaction
